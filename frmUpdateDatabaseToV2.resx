@@ -57,16 +57,23 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="MainMenu1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 1</value>
-  </metadata>
-  <metadata name="toolStripBottom.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>154, 1</value>
-  </metadata>
-  <metadata name="contextMenuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>317, 1</value>
-  </metadata>
-  <metadata name="$this.TrayHeight" type="System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>42</value>
-  </metadata>
+  <data name="label3.Text" xml:space="preserve">
+    <value>First, make the following changes using SSMS  (sql files found in Documents &gt; Server management
+1.  Drop constraints - this drops all the "non-zero" constraints
+2.  Change Column names - changes column names to English
+3.  Change Table names - changes tables name to English
+4.  Drop 3 "answer - question" files
+5.  Do the following (no sql file given)
+a.  Drop "non-student" table
+b.  Add Requirements table
+</value>
+  </data>
+  <data name="label5.Text" xml:space="preserve">
+    <value>Next we need to make column indexes unique.
+1.  Courses-Terms:  Unique multi-column index will be "courseID, termID, graduateCourse". 
+     So, first, In SSMS add a "_group, int, Not Null - default 1" column to "CoursesTerms"
+     And then run the "Add Section" command below - it adds _groups  for every Course_Term 
+     that has doubles.   (ASM: First look at the doubles to decide if this is best.)
+</value>
+  </data>
 </root>

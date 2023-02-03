@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33122.133
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccessFreeData2", "AccessFreeData2.csproj", "{2F615284-AAE7-4A8F-8D5C-A559CE2046DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlCollegeTranscripts", "SqlCollegeTranscripts.csproj", "{2F615284-AAE7-4A8F-8D5C-A559CE2046DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

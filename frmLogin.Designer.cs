@@ -1,4 +1,4 @@
-﻿namespace AccessFreeData2
+﻿namespace SqlCollegeTranscripts
 {
     partial class frmLogin
     {

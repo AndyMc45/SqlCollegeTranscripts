@@ -1,6 +1,7 @@
-using AccessFreeData;
+using System;
+using System.Windows.Forms;
 
-namespace AccessFreeData2
+namespace SqlCollegeTranscripts
 {
     internal static class Program
     {

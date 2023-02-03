@@ -3,75 +3,59 @@ using System;
 using System.Windows.Forms;
 using System.Data;
 using System.Data.SqlClient;
-using AccessFreeData2;
 
-namespace AccessFreeData
+namespace SqlCollegeTranscripts
 {
 	internal partial class frmListDatabases
 		: System.Windows.Forms.Form
 	{
-		public frmListDatabases()
+        //This form used both for deleting connections AND listing / selecting a database from Server list
+
+
+        public frmListDatabases()
 			: base()
 		{
 			//This call is required by the Windows Form Designer.
 			InitializeComponent();
 		}
 
-		public string serverOnlyConnectionString;
-        public string databaseName = "";
+        List<connectionString> csList = new List<connectionString>();
+        public string serverOnlyConnectionString = string.Empty;
+        public string databaseName = string.Empty;
 
         private void frmDeleteDatabase_Load_1(object sender, EventArgs e)
         {
-            //This form used both for deleting connections AND listing databases on Server
-            translation.load_captions(this);
-			if (serverOnlyConnectionString == "")
+			if (serverOnlyConnectionString != string.Empty)  // listing databases to select
 			{
-				write_list();
-				this.Text = translation.tr("DeleteDatabase", "", "", "");
-			}
-			else
+                this.cmdDelete.Visible = false;  // Delete invisible
+                this.cmdExit.Text = "OK";
+                this.Text = "List of Databases on the Server";
+                this.listSqlDatabases(serverOnlyConnectionString);
+            }
+            else   // deleting databases fromlist
 			{
-				this.cmdDelete.Visible = false;
-				this.cmdExit.Text = "OK";
-				this.Text = "List of Databases on the Server";
-				this.listSqlDatabases(serverOnlyConnectionString);
+				this.cmdExit.Text = "Exit";
+				this.cmdDelete.Text = "Delete";
+                write_csList();
 			}
 		}
 		private void cmdDelete_Click(Object eventSender, EventArgs eventArgs)
 		{
-			int i = 0;
-			string dbCS = "", path = "", dbType = "", readOnly = "";
-			//Update settings - move all elements in the list after the deleted item forward one spot
-			//We use settings and not the caption, because captions may contain " (Read only)"
-			if (lstDatabaseList.Items.Count > 0)
-			{
-				i = lstDatabaseList.SelectedIndex; //Index of setting is also i.
-				Helper.regitDelete("DatabaseList", "path", i);
-                Helper.regitDelete("DatabaseList", "type", i);
-                Helper.regitDelete("DatabaseList", "ro", i);
-                Helper.regitDelete("DatabaseList", "cs", i);
-
-				//Clear the list and rewrite it
+			// Delete item from Registry
+			int i = lstDatabaseList.SelectedIndex;
+			if (i > -1) {
+				AppData.DeleteConnectionStringFromList(i);  // Assumes lblDataList and csList match for every i
+				//Clear the connection string list and rewrite it
 				lstDatabaseList.Items.Clear();
-				write_list();
-			}
-		}
-		private void write_list()
+				write_csList();
+            }
+        }
+		private void write_csList()
 		{
-			int i = 0;
-			string caption = Interaction.GetSetting("AccessFreeData", "DatabaseList", "path" + i.ToString().Trim(), "end"); //Default is "end" in case it doesn't exist
-			while (caption != "end")
-			{
-				lstDatabaseList.Items.Add(caption);
-				i++;
-				caption = Interaction.GetSetting("AccessFreeData", "DatabaseList", "path" + i.ToString().Trim(), "end"); //Default is "end" in case it doesn't exist
-			}
-			//If there are no elements in the path, delete the msSql and msAccess default strings
-			//This allows user to see my default strings if need be.
-			if (i == 0)
-			{
-				Interaction.DeleteSetting("AccessFreeData", "DatabaseList", "");
-			}
+			csList = AppData.GetConnectionStringList();
+			foreach(connectionString cs in csList) {
+                lstDatabaseList.Items.Add(cs.comboString);
+            }
 		}
 		private void listSqlDatabases(string cs)
 		{
@@ -92,7 +76,7 @@ namespace AccessFreeData
         }
 		private void cmdExit_Click(Object eventSender, EventArgs eventArgs)
 		{	// Retrun selected database name 
-			if (serverOnlyConnectionString != "")
+			if (serverOnlyConnectionString != string.Empty)
 			{
 				databaseName = lstDatabaseList.GetItemText(lstDatabaseList.SelectedItem);
 			}

@@ -1,5 +1,5 @@
 
-namespace AccessFreeData
+namespace SqlCollegeTranscripts
 {
 	partial class frmConnection
 	{
@@ -11,9 +11,6 @@ namespace AccessFreeData
 		private System.ComponentModel.IContainer components;
 		public System.Windows.Forms.ToolTip ToolTipMain;
 		public System.Windows.Forms.Button cmdDatabaseList;
-		private System.Windows.Forms.RadioButton _optSpecialDatabase_2;
-		private System.Windows.Forms.RadioButton _optSpecialDatabase_1;
-		private System.Windows.Forms.RadioButton _optSpecialDatabase_0;
 		public System.Windows.Forms.TextBox txtUserId;
 		public System.Windows.Forms.OpenFileDialog CommonDialogOpen;
 		public System.Windows.Forms.SaveFileDialog CommonDialogSave;
@@ -28,8 +25,6 @@ namespace AccessFreeData
 		public System.Windows.Forms.Button cmdTest;
 		public System.Windows.Forms.Button cmdCancel;
 		public System.Windows.Forms.Button cmdOK;
-		public System.Windows.Forms.Label Label7;
-		public System.Windows.Forms.Label Label6;
 		public System.Windows.Forms.Label lblUserID;
 		public System.Windows.Forms.Label lblServer;
 		public System.Windows.Forms.Label lblDatabase;
@@ -44,9 +39,6 @@ namespace AccessFreeData
             this.components = new System.ComponentModel.Container();
             this.ToolTipMain = new System.Windows.Forms.ToolTip(this.components);
             this.cmdDatabaseList = new System.Windows.Forms.Button();
-            this._optSpecialDatabase_2 = new System.Windows.Forms.RadioButton();
-            this._optSpecialDatabase_1 = new System.Windows.Forms.RadioButton();
-            this._optSpecialDatabase_0 = new System.Windows.Forms.RadioButton();
             this.txtUserId = new System.Windows.Forms.TextBox();
             this.CommonDialogOpen = new System.Windows.Forms.OpenFileDialog();
             this.CommonDialogSave = new System.Windows.Forms.SaveFileDialog();
@@ -61,8 +53,6 @@ namespace AccessFreeData
             this.cmdTest = new System.Windows.Forms.Button();
             this.cmdCancel = new System.Windows.Forms.Button();
             this.cmdOK = new System.Windows.Forms.Button();
-            this.Label7 = new System.Windows.Forms.Label();
-            this.Label6 = new System.Windows.Forms.Label();
             this.lblUserID = new System.Windows.Forms.Label();
             this.lblServer = new System.Windows.Forms.Label();
             this.lblDatabase = new System.Windows.Forms.Label();
@@ -85,57 +75,6 @@ namespace AccessFreeData
             this.cmdDatabaseList.UseVisualStyleBackColor = false;
             this.cmdDatabaseList.Click += new System.EventHandler(this.cmdDatabaseList_Click);
             // 
-            // _optSpecialDatabase_2
-            // 
-            this._optSpecialDatabase_2.AllowDrop = true;
-            this._optSpecialDatabase_2.BackColor = System.Drawing.SystemColors.Control;
-            this._optSpecialDatabase_2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this._optSpecialDatabase_2.ForeColor = System.Drawing.SystemColors.ControlText;
-            this._optSpecialDatabase_2.Location = new System.Drawing.Point(55, 219);
-            this._optSpecialDatabase_2.Name = "_optSpecialDatabase_2";
-            this._optSpecialDatabase_2.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this._optSpecialDatabase_2.Size = new System.Drawing.Size(137, 22);
-            this._optSpecialDatabase_2.TabIndex = 20;
-            this._optSpecialDatabase_2.TabStop = true;
-            this._optSpecialDatabase_2.Tag = "noneOfAbove";
-            this._optSpecialDatabase_2.Text = "Neither";
-            this._optSpecialDatabase_2.UseVisualStyleBackColor = false;
-            this._optSpecialDatabase_2.CheckedChanged += new System.EventHandler(this._optSpecialDatabase_2_CheckedChanged);
-            // 
-            // _optSpecialDatabase_1
-            // 
-            this._optSpecialDatabase_1.AllowDrop = true;
-            this._optSpecialDatabase_1.BackColor = System.Drawing.SystemColors.Control;
-            this._optSpecialDatabase_1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this._optSpecialDatabase_1.ForeColor = System.Drawing.SystemColors.ControlText;
-            this._optSpecialDatabase_1.Location = new System.Drawing.Point(55, 192);
-            this._optSpecialDatabase_1.Name = "_optSpecialDatabase_1";
-            this._optSpecialDatabase_1.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this._optSpecialDatabase_1.Size = new System.Drawing.Size(113, 21);
-            this._optSpecialDatabase_1.TabIndex = 19;
-            this._optSpecialDatabase_1.TabStop = true;
-            this._optSpecialDatabase_1.Tag = "addressBook";
-            this._optSpecialDatabase_1.Text = "Address book";
-            this._optSpecialDatabase_1.UseVisualStyleBackColor = false;
-            this._optSpecialDatabase_1.CheckedChanged += new System.EventHandler(this._optSpecialDatabase_1_CheckedChanged);
-            // 
-            // _optSpecialDatabase_0
-            // 
-            this._optSpecialDatabase_0.AllowDrop = true;
-            this._optSpecialDatabase_0.BackColor = System.Drawing.SystemColors.Control;
-            this._optSpecialDatabase_0.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this._optSpecialDatabase_0.ForeColor = System.Drawing.SystemColors.ControlText;
-            this._optSpecialDatabase_0.Location = new System.Drawing.Point(55, 164);
-            this._optSpecialDatabase_0.Name = "_optSpecialDatabase_0";
-            this._optSpecialDatabase_0.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this._optSpecialDatabase_0.Size = new System.Drawing.Size(113, 21);
-            this._optSpecialDatabase_0.TabIndex = 18;
-            this._optSpecialDatabase_0.TabStop = true;
-            this._optSpecialDatabase_0.Tag = "transcript";
-            this._optSpecialDatabase_0.Text = "Transcript";
-            this._optSpecialDatabase_0.UseVisualStyleBackColor = false;
-            this._optSpecialDatabase_0.CheckedChanged += new System.EventHandler(this._optSpecialDatabase_0_CheckedChanged);
-            // 
             // txtUserId
             // 
             this.txtUserId.AcceptsReturn = true;
@@ -157,7 +96,7 @@ namespace AccessFreeData
             this.chkReadOnly.BackColor = System.Drawing.SystemColors.Control;
             this.chkReadOnly.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.chkReadOnly.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.chkReadOnly.Location = new System.Drawing.Point(207, 164);
+            this.chkReadOnly.Location = new System.Drawing.Point(12, 149);
             this.chkReadOnly.Name = "chkReadOnly";
             this.chkReadOnly.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.chkReadOnly.Size = new System.Drawing.Size(137, 33);
@@ -202,14 +141,15 @@ namespace AccessFreeData
             this.txtHelp.BackColor = System.Drawing.SystemColors.Control;
             this.txtHelp.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtHelp.Cursor = System.Windows.Forms.Cursors.IBeam;
+            this.txtHelp.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.txtHelp.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.txtHelp.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.txtHelp.Location = new System.Drawing.Point(8, 247);
+            this.txtHelp.Location = new System.Drawing.Point(0, 204);
             this.txtHelp.MaxLength = 0;
             this.txtHelp.Multiline = true;
             this.txtHelp.Name = "txtHelp";
             this.txtHelp.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.txtHelp.Size = new System.Drawing.Size(809, 42);
+            this.txtHelp.Size = new System.Drawing.Size(829, 46);
             this.txtHelp.TabIndex = 5;
             this.txtHelp.Text = "Text1";
             // 
@@ -224,6 +164,7 @@ namespace AccessFreeData
             this.cmbStrings.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.cmbStrings.Size = new System.Drawing.Size(809, 25);
             this.cmbStrings.TabIndex = 3;
+            this.cmbStrings.SelectedIndexChanged += new System.EventHandler(this.cmbStrings_SelectedIndexChanged);
             // 
             // cmdTest
             // 
@@ -231,7 +172,7 @@ namespace AccessFreeData
             this.cmdTest.BackColor = System.Drawing.SystemColors.Control;
             this.cmdTest.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.cmdTest.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdTest.Location = new System.Drawing.Point(552, 184);
+            this.cmdTest.Location = new System.Drawing.Point(552, 151);
             this.cmdTest.Name = "cmdTest";
             this.cmdTest.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.cmdTest.Size = new System.Drawing.Size(81, 31);
@@ -247,7 +188,7 @@ namespace AccessFreeData
             this.cmdCancel.BackColor = System.Drawing.SystemColors.Control;
             this.cmdCancel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.cmdCancel.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdCancel.Location = new System.Drawing.Point(752, 184);
+            this.cmdCancel.Location = new System.Drawing.Point(752, 151);
             this.cmdCancel.Name = "cmdCancel";
             this.cmdCancel.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.cmdCancel.Size = new System.Drawing.Size(73, 32);
@@ -263,7 +204,7 @@ namespace AccessFreeData
             this.cmdOK.BackColor = System.Drawing.SystemColors.Control;
             this.cmdOK.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.cmdOK.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.cmdOK.Location = new System.Drawing.Point(652, 184);
+            this.cmdOK.Location = new System.Drawing.Point(652, 151);
             this.cmdOK.Name = "cmdOK";
             this.cmdOK.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.cmdOK.Size = new System.Drawing.Size(81, 31);
@@ -272,32 +213,6 @@ namespace AccessFreeData
             this.cmdOK.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
             this.cmdOK.UseVisualStyleBackColor = false;
             this.cmdOK.Click += new System.EventHandler(this.cmdOK_Click);
-            // 
-            // Label7
-            // 
-            this.Label7.AllowDrop = true;
-            this.Label7.BackColor = System.Drawing.SystemColors.Control;
-            this.Label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.Label7.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.Label7.Location = new System.Drawing.Point(207, 136);
-            this.Label7.Name = "Label7";
-            this.Label7.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.Label7.Size = new System.Drawing.Size(129, 17);
-            this.Label7.TabIndex = 17;
-            this.Label7.Text = "Read only database:";
-            // 
-            // Label6
-            // 
-            this.Label6.AllowDrop = true;
-            this.Label6.BackColor = System.Drawing.SystemColors.Control;
-            this.Label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.Label6.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.Label6.Location = new System.Drawing.Point(21, 135);
-            this.Label6.Name = "Label6";
-            this.Label6.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.Label6.Size = new System.Drawing.Size(121, 18);
-            this.Label6.TabIndex = 16;
-            this.Label6.Text = "School Databases:";
             // 
             // lblUserID
             // 
@@ -310,7 +225,7 @@ namespace AccessFreeData
             this.lblUserID.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.lblUserID.Size = new System.Drawing.Size(153, 17);
             this.lblUserID.TabIndex = 14;
-            this.lblUserID.Text = "[2] User ID";
+            this.lblUserID.Text = "{2} User ID";
             // 
             // lblServer
             // 
@@ -323,7 +238,7 @@ namespace AccessFreeData
             this.lblServer.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.lblServer.Size = new System.Drawing.Size(209, 17);
             this.lblServer.TabIndex = 11;
-            this.lblServer.Text = "[0] Server: ";
+            this.lblServer.Text = "{0} Server: ";
             // 
             // lblDatabase
             // 
@@ -336,7 +251,7 @@ namespace AccessFreeData
             this.lblDatabase.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.lblDatabase.Size = new System.Drawing.Size(169, 17);
             this.lblDatabase.TabIndex = 9;
-            this.lblDatabase.Text = "[1] Database:";
+            this.lblDatabase.Text = "{1} Database:";
             // 
             // lblConnection
             // 
@@ -356,11 +271,8 @@ namespace AccessFreeData
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
-            this.ClientSize = new System.Drawing.Size(829, 297);
+            this.ClientSize = new System.Drawing.Size(829, 250);
             this.Controls.Add(this.cmdDatabaseList);
-            this.Controls.Add(this._optSpecialDatabase_2);
-            this.Controls.Add(this._optSpecialDatabase_1);
-            this.Controls.Add(this._optSpecialDatabase_0);
             this.Controls.Add(this.txtUserId);
             this.Controls.Add(this.chkReadOnly);
             this.Controls.Add(this.txtServer);
@@ -370,8 +282,6 @@ namespace AccessFreeData
             this.Controls.Add(this.cmdTest);
             this.Controls.Add(this.cmdCancel);
             this.Controls.Add(this.cmdOK);
-            this.Controls.Add(this.Label7);
-            this.Controls.Add(this.Label6);
             this.Controls.Add(this.lblUserID);
             this.Controls.Add(this.lblServer);
             this.Controls.Add(this.lblDatabase);
@@ -387,17 +297,7 @@ namespace AccessFreeData
             this.PerformLayout();
 
 		}
-		void ReLoadForm(bool addEvents)
-		{
-			InitializeoptSpecialDatabase();
-		}
-		void InitializeoptSpecialDatabase()
-		{
-			this.optSpecialDatabase = new System.Windows.Forms.RadioButton[3];
-			this.optSpecialDatabase[2] = _optSpecialDatabase_2;
-			this.optSpecialDatabase[1] = _optSpecialDatabase_1;
-			this.optSpecialDatabase[0] = _optSpecialDatabase_0;
-		}
+
 		#endregion
 	}
 }

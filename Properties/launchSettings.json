@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "SqlCollegeTranscripts": {
+      "commandName": "Project",
+      "hotReloadEnabled": false,
+      "nativeDebugging": true
+    }
+  }
+}

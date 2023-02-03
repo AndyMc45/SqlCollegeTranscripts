@@ -1,40 +1,33 @@
 ﻿using Microsoft.VisualBasic;
 using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Data;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Transactions;
 using System.Windows.Forms;
 using System.IO;
-// using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-// using Word = Microsoft.Office.Interop.Word;
-using AccessFreeData2;
-using Microsoft.Office.Interop.Word;
-// using Microsoft.VisualBasic.ApplicationServices;
 using System.Diagnostics.Metrics;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using System.Reflection;
 using System.Collections.Generic;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
-using System.Reflection.PortableExecutable;
 using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using System.ComponentModel;
+using System.Security.Cryptography;
+using System.ComponentModel.DataAnnotations;
+using System.Runtime.CompilerServices;
+using Microsoft.VisualBasic.ApplicationServices;
+using SqlCollegeTranscripts;
+using System.Windows.Forms.VisualStyles;
 
-namespace AccessFreeData
+namespace SqlCollegeTranscripts
 {
     // The basic design of the program:
-    // Two parts to writing the screen: write filters and writeGrid(False).
     // sqlCurrent stores the table and fields, the Where clauses, and one OrderBy clause.
     // sqlCurrent.returnSql returns the sql string.  This is then bound to the Grid (via an sqlDataAdaptor)
 
     //User actions, and how the program reacts to each as follows
-    //1.  Open New connection -- call closeConnection (reinitiae everything to empty state; list tables in menu), 
+    //1.  Open New connection -- calls closeConnection (reinitiae everything to empty state; list tables in menu), 
     //    and then open the new connection
     //2.  Open New Table -- sets new sqlCurrent, calls Write New Filters, Calls write New Orderby, Calls write Grid
     //    Write New Table sets table strings (including inner joins) and field strings.
@@ -45,120 +38,84 @@ namespace AccessFreeData
     internal partial class DataGridViewForm : Form
     {
         #region Variables
-        private System.Data.DataTable? currentDT = null;   //Data Table that is bound to the datagrid
-        private SqlDataAdapter? currentDA = null;  // Adaptor for the above Data table
         //Store one extra fld that is not on the form -- for Father, Son, etc. recordsets
-        private string myExtraField = "", myExtraValue = "";
-        internal bool msAccess = false, msSql = false;  // currently only using msSql
-        internal string password = "";
+        internal bool mySql = false, msSql = false;  // currently only using msSql
         internal float changeColwidth = 0;
         internal int changeCol = 0, changeRow = 0;
-        internal SqlBuilder? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
+        internal sqlFactory? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
         private int pageSize = 0;
         private string logFileName = "";
         internal bool updating = false; //updating means changes is cmbFilter or cmbText are by me not the user
-        private bool isTranscript = false, readOnly = false, bookCenter = false, isAddressBook = false;
-        private int flexGridfontSize = 0;
-        private where[] cmbFilters = new where[8];  // Store the where of the combo boxes
+        private bool readOnly = false;
         private where? mainFilter;   //Stores main filter
-        private where[] pastFilters = new where[5];  // Use this to fill in past main filters in combo box
-        private where[] cellFilters = new where[6];  // Store the where clauses of the cellFilters 
+        internal BindingList<where>? pastFilters;  // Use this to fill in past main filters in combo box
         private FileStream? ts;
+        // DisplayFieldMap maps foreign keys to Display list fields 
+        // private List<Tuple<string, List<field>>> DisplayFieldMap = new List<Tuple<string, List<field>>>();
         #endregion
 
         //----------------------------------------------------------------------------------------------------------------------
-        #region Entire Form constructor and events
+        #region Entire Form constructor, events, and methods only used in these
         //----------------------------------------------------------------------------------------------------------------------
 
         internal DataGridViewForm()
         {
             //Required by windows forms
             InitializeComponent();
+
         }
 
         private void DataGridViewForm_Load(object sender, EventArgs e)
         {
             // Set things that don't change even if connection changes
-            // 1. Set language
-            string language = Interaction.GetSetting("AccessFreeData", "Options", "Language", "English");
-            if (language == "chinese")
-            {
-                translation.load_chinese_messages();
-                translation.load_chinese_captions();
-                //translation.load_captions(DataGridViewForm.DefInstance);
-            }
-            else
-            {
-                translation.load_english_messages();
-                translation.load_english_captions();
-                //translation.load_captions();
-            }
 
+            // 0.  Main filter datasource and 'last' element never changes
+            where wh = new where("none","none", "0", "int");
+            wh.displayValue= "Select Row";
+            updating = true; // following calls _cmbMainFilter changeindex event. "Updating" cancels that event.
+                pastFilters = new BindingList<where>();
+                pastFilters.Add(wh);
+                _cmbMainFilter.DisplayMember = "displayValue";
+                _cmbMainFilter.ValueMember = "whereValue";
+                _cmbMainFilter.DataSource = pastFilters;
+                lblMainFilter.Text = "Row Filter:";
+            updating = false;
+
+            // 1. Set language
             // 2. Set pageSize
             pageSize = 200;
-            try
-            { pageSize = Convert.ToInt32(Interaction.GetSetting("AccessFreeData", "Options", "RecordsPerPage", "200"));
+            string strPageSize = AppData.GetKeyValue("RPP");  // If not set, this will return string.Empty
+            int newPageSize = 0;
+            if (int.TryParse(strPageSize, out newPageSize))
+            {
+                if (newPageSize > 9)  // Don't allow less than 10
+                { 
+                    pageSize = newPageSize;
+                }
             }
-            catch { }
+            txtRecordsPerPage.Text = pageSize.ToString();
 
             // 3. Menu options from last save
-            if (Interaction.GetSetting("AccessFreeData", "Options", "HideRedColumns", "False") == "True")
-            {
-                mnuToolHideRedColumns.Checked = true;
-            }
-
-            //  Set hide white menu option
-            if (Interaction.GetSetting("AccessFreeData", "Options", "HideWhiteColumns", "False") == "True")
-            {
-                mnuToolHideWhiteColumns.Checked = true;
-            }
-
-            ////  Set hide white menu option
-            //if (Interaction.GetSetting("AccessFreeData", "Options", "UseTableFilters", "False") == "True")
-            //{
-            //    mnuOptionsUseTableFilters.Checked = true;
-            //}
-
-            //  Set show ID option option
-            if (Interaction.GetSetting("AccessFreeData", "Options", "mnuOptionShowID", "False") == "True")
-            {
-                mnuOptionShowID.Checked = true;
-            }
-
-            //  Set transcript showQPA option
-            if (Interaction.GetSetting("transcript", "options", "showQPA", "False") == "True")
-            {
-                mnuOptionShowID.Checked = true;
-            }
             // 4. Set font size
             setFontSizeForAllControls();
 
             // 5. Load Database List (in files menu)
             load_mnuDatabaseList();
 
-            // 6. Open last connection 
-            if (Interaction.GetSetting("AccessFreeData", "DatabaseList", "cs0", "end") != "end")
-            {
-                openConnection();            
-            }
-         }
+            // 6. Open Log file
+            // openLogFile(); //errors ignored
 
+            // 7. Open last connection 
+                string msg = openConnection();            
+                if(msg != string.Empty) { txtMessages.Text = msg; } 
+         }
 
         private void DataGridViewForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             try
             {
                 //Cleanup
-                currentDA = null;
-                currentDT = null;
-                if (SqlHelper.cn != null)
-                {
-                    if (SqlHelper.cn.State == ConnectionState.Open)
-                    {
-                        SqlHelper.cn.Close();
-                    }
-                }
-                SqlHelper.cn = null;
+                MsSql.CloseConnectionAndDataAdapters();
                 closeLogFile();
                 // ts = null;
                 // fso = null;
@@ -166,202 +123,31 @@ namespace AccessFreeData
             catch { }
         }
 
-        #endregion
-
-        //----------------------------------------------------------------------------------------------------------------------
-        #region New Connection - open and close and related functions
-        //----------------------------------------------------------------------------------------------------------------------
-        private void openConnection()
-        {
-            string cs = "", dbPath = "";
-            try
-            {
-                // 1. Close old connection if any
-                closeConnectionAndIntializeForm();  
-
-                // 2. Get Items from registry
-                // 2a. dbPath from registry - only used in caption
-                dbPath = Interaction.GetSetting("AccessFreeData", "DatabaseList", "path0", "end");
-                this.Text = dbPath;
-
-                // 2b. Get the type of database from registry - should always be MsSql
-                if (Interaction.GetSetting("AccessFreeData", "DatabaseList", "type0", "") == "MsAccess")
-                {
-                    msAccess = true;
-                }
-                else if (Interaction.GetSetting("AccessFreeData", "DatabaseList", "type0", "") == "MsSql")
-                {
-                    msSql = true;
-                }
-                else
-                {
-                    msSql = true;
-                }
-
-                // 2c. Get connection string from registry
-           
-                cs = Interaction.GetSetting("AccessFreeData", "DatabaseList", "cs0", "end");
-
-                // 3. Get password from user
-                if (cs.IndexOf("[3]") >= 0)
-                {
-                    //Password empty on first load and when set to empty before calling openConnection
-                    if (password == "")
-                    {
-                        frmLogin passwordForm = new frmLogin();
-                        passwordForm.ShowDialog();
-                        password = passwordForm.password;
-                        passwordForm = null;
-                    }
-                    cs = cs.Replace("[3]", password);
-                }
-
-                // 4. Set up the special databases variables
-                switch (Interaction.GetSetting("AccessFreeData", "DatabaseList", "sd0", ""))
-                {
-                    case "bookCenter":
-                        bookCenter = true;
-                        break;
-                    case "transcript":
-                        isTranscript = true;
-                        mnuTranscript.Available = true;
-                        break;
-                    case "addressBook":
-                        isAddressBook = true;
-                        mnuAddressBook.Available = true;
-                        break;
-                }
-                //Read only database variable
-                if (Interaction.GetSetting("AccessFreeData", "DatabaseList", "ro0", "") == "true") 
-                { 
-                    readOnly = true; 
-                }
-
-                // 5. Open connection
-                if (SqlHelper.cn == null)   // ? always true since cn has been closed ?
-                {
-                    SqlHelper.cn = new SqlConnection(cs);
-                }
-                SqlHelper.cn.Open();
-
-                //6. Check for system tables, create if missing, Load two tables
-                if (!(newSysTables.tableExists("afdTableData") && newSysTables.tableExists("afdFieldData")))
-                {
-                    MessageBox.Show(translation.tr("YouMustCreateSystemDataFilesToUseTheProgram", "", "", "") + Environment.NewLine + translation.tr("UseTheFileMenuCommandToDoThis", "", "", ""));
-                }
-                else
-                {
-                // Fill tablesDT, fieldsDT, and the mnuOpenTables menu
-                    string selectAllTables = "SELECT * FROM afdTableData";
-                    SqlHelper.tablesDA = new SqlDataAdapter(selectAllTables, SqlHelper.cn);
-                    SqlHelper.tablesDT = new System.Data.DataTable("afdTables");
-                    SqlHelper.tablesDA.FillSchema(SqlHelper.tablesDT, SchemaType.Source);
-                    SqlHelper.tablesDA.Fill(SqlHelper.tablesDT);
-
-                    string selectAllFields = "SELECT * FROM afdFieldData";
-                    SqlHelper.fieldsDA = new SqlDataAdapter(selectAllFields, SqlHelper.cn);
-                    SqlHelper.fieldsDT = new System.Data.DataTable("afdFields");
-                    SqlHelper.fieldsDA.Fill(SqlHelper.fieldsDT);
-                    foreach (DataRow row in SqlHelper.tablesDT.Rows)
-                    {
-                        string? tn = row["tableName"].ToString();
-                        if(tn != null) { 
-                            mnuOpenTables.DropDownItems.Add(tn);
-                        }
-                    }
-                }
-
-                //using (System.Data.DataTable table = SqlHelper.cn.GetSchema("Tables"))
-                //{
-                //    dataGridView1.DataSource = table;
-                //}
-
-                openLogFile(); //errors ignored
-            }
-            catch (System.Exception excep)
-            {
-                MessageBox.Show(translation.tr("ErrorOpeningTheConnection", "", "", "") + Environment.NewLine + excep.Message + Environment.NewLine + Information.Err().Number.ToString());
-                closeConnectionAndIntializeForm();
-            }
-        }
-
-        private void closeConnectionAndIntializeForm()
+        private void setFontSizeForAllControls()
         {
             // Control arrays - can't make array in design mode in .net
-            System.Windows.Forms.ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7};
-            System.Windows.Forms.ComboBox[] cmbFilterBackup = { _cmbFilterBackup_0, _cmbFilterBackup_1, _cmbFilterBackup_2, _cmbFilterBackup_3, _cmbFilterBackup_4, _cmbFilterBackup_5, _cmbFilterBackup_6, _cmbFilterBackup_7};
-            System.Windows.Forms.Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7};
-            System.Windows.Forms.Label[] lblCellFilter = { lblCellFilter_0, lblCellFilter_1, lblCellFilter_2 };
-            System.Windows.Forms.TextBox[] txtCellFilter = { txtCellFilter_0, txtCellFilter_1, txtCellFilter_2};
+            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
+            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            TextBox[] txtCellFilter = { txtCellFilter_1, txtCellFilter_2 };
+            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            RadioButton[] radioButtons = { rbView, rbEdit, rbDelete, rbAdd, rbMerge };
 
-            // Close connections if open
-            if (SqlHelper.cn != null)
-            {
-                SqlHelper.cn.Close();
-                SqlHelper.cn = null;
-                closeLogFile();
-            }
-            if (SqlHelper.tablesDT != null) {SqlHelper.tablesDT.Clear(); }
-            if (SqlHelper.fieldsDT != null) { SqlHelper.fieldsDT.Clear(); }
-
-            // Clear old values if any
-            currentSql = null;
-            password = "";
-            bookCenter = false;
-            isTranscript = false;
-            readOnly = false;
-            msSql = false;
-            msAccess = false;
-
-            // Format and hide various controls
-            txtNewData.BackColor = Color.LightYellow;
-            txtNewData.Visible = false;
-            txtNewData.Text = "";
-
-            listNewData.BackColor = Color.LightYellow;
-            listNewData.Visible = false;
-            listNewDataBackup.Visible = false;
-
-            lblCellFilter_0.Visible = false;
-            txtCellFilter_0.Visible = false;
-
-            cmdAdd.Visible = false;
-
-            // Hide and clear all the cellFilters and cmbFilter elements
-            for (int i = 0; i <= lblCellFilter.Count() - 1; i++)
-            {
-                lblCellFilter[i].Visible = false;
-                txtCellFilter[i].Text = String.Empty;
-                txtCellFilter[i].Visible = false;
-            }
-            for (int i = 0; i <= lblcmbFilter.Count() - 1; i++)
-            {
-                lblcmbFilter[i].Visible = false;
-                cmbFilter[i].Enabled = false;
-                cmbFilter[i].Items.Clear();
-                cmbFilter[i].Items.Add("Hello Hello Hello Hello Hello Hello Hello Hello");
-                cmbFilter[i].Enabled = true;
-                cmbFilter[i].Visible = false;
-
-                cmbFilterBackup[i].Visible = false;
-                cmbFilterBackup[i].Items.Clear();
-            }
-
-            // Hide and Delete the old mnuOpentable members
-            if (mnuOpenTables.DropDownItems != null) 
-            { 
-                mnuOpenTables.DropDownItems.Clear();
-            }
-
-            // Hide special menus
-            mnuTranscript.Available = false;
-            mnuAddressBook.Available = false;
-
-            // Set Table filter
-            lblMainFilter.Text = "Filters:";
-
-            // Set tableLayoutPanel_Filter height - which fires event that sets splitContainer.splitterdistance
-            tableLayoutPanel_Filters.Height = lblMainFilter.Height + 15;
+            //Get size from registry
+            int size = 8;  // default
+            try { size = Convert.ToInt32(Interaction.GetSetting("AccessFreeData", "Options", "FontSize", "9")); }
+            catch { }
+            // Set font
+            System.Drawing.Font font = new System.Drawing.Font("Arial", size, FontStyle.Regular);
+            // Set all controls - (count simply iterate over all controls!)
+            dataGridView1.Font = font;
+            lblMainFilter.Font = font;
+            for (int i = 0; i <= lblcmbFilter.Count() - 1; i++) { lblcmbFilter[i].Font = font; }
+            for (int i = 0; i <= cmbFilter.Count() - 1; i++) { cmbFilter[i].Font = font; }
+            for (int i = 0; i <= txtCellFilter.Count() - 1; i++) { txtCellFilter[i].Font = font; }
+            for (int i = 0; i <= cmbCellFields.Count() - 1; i++) { cmbCellFields[i].Font = font; }
+            for (int i = 0; i <= radioButtons.Count() - 1; i++) { radioButtons[i].Font = font; }
+            cmbEditColumn.Font = font;
+            txtRecordsPerPage.Font = font;  
         }
 
         private void openLogFile()
@@ -420,7 +206,8 @@ namespace AccessFreeData
             }
 
         }
-          private void closeLogFile()
+
+        private void closeLogFile()
         {
             StreamWriter tsWriter = null;
             //UPGRADE_TODO: (1069) Error handling statement (On Error Resume Next) was converted to a pattern that might have a different behavior. More Information: https://docs.mobilize.net/vbuc/ewis#1069
@@ -437,57 +224,542 @@ namespace AccessFreeData
                 // NotUpgradedHelper.NotifyNotUpgradedElement("Resume in On-Error-Resume-Next Block");
             }
         }
+
         #endregion
 
         //----------------------------------------------------------------------------------------------------------------------
-        #region New Menu events -- including context menu
+        #region Opening and closing Connection methods - open and close and related functions
         //----------------------------------------------------------------------------------------------------------------------
+        private string openConnection()
+        {
+            StringBuilder sb = new StringBuilder();
+            try
+            {
+                // 1. Close old connection if any
+                closeConnectionAndIntializeForm();  
+
+                // 2. Get connection string
+                msSql = true;
+
+                connectionString csObject = AppData.GetFirstConnectionStringOrNull();
+                if (csObject == null)
+                {
+                    sb.AppendLine("No previous connection string.");
+                }
+                else
+                { 
+                    // {0} is server, {1} is Database, {2} is user, {3} is password (unknown)
+                    string cs = String.Format(csObject.comboString, csObject.server, csObject.databaseName, csObject.user);
+
+                    // Get password from user
+                    if (cs.IndexOf("{3}") >= 0)
+                    {
+                        frmLogin passwordForm = new frmLogin();
+                        passwordForm.ShowDialog();
+                        string password = passwordForm.password;
+                        passwordForm = null;
+                        cs = cs.Replace("{3}", password);
+                    }
+
+                    //Read only database variable
+                    readOnly = csObject.readOnly;
+
+                    // 5. Open connection
+                    MsSql.openConnection(cs);
+
+                    //6. Fill Information Datatables
+                    MsSql.initializeDatabaseInformationTables();
+
+                    foreach (DataRow row in dataHelper.tablesDT.Rows)
+                    {
+                        string? tn = row["TableName"].ToString();
+                        if(tn != null) { 
+                            mnuOpenTables.DropDownItems.Add(tn);
+                        }
+                    }
+                }
+            }
+            catch (System.Exception excep)
+            {
+                sb.AppendLine("Error opening connection.");
+                MessageBox.Show("Error opening the connection. " + Environment.NewLine + excep.Message + Environment.NewLine + Information.Err().Number.ToString());
+                closeConnectionAndIntializeForm();
+            }
+            return sb.ToString();
+        }
+
+        private void resetMainFilter()
+        {
+            // Remove all but the last element in pastFilters list (i.e. "Row Filter")
+            while(pastFilters.Count > 1) 
+            {
+                pastFilters.RemoveAt(pastFilters.Count - 2);
+            }
+        }
+          
+        private void resetComboAndCellFilters()
+        {
+            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
+            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            TextBox[] txtCellFilter = { txtCellFilter_1, txtCellFilter_2 };
+
+            rbView.Checked = true;
+            cmbEditColumn.Enabled = false;
+
+           // Hide, disable and clear all the cmbCellFilters and cmbCellFields 
+            for (int i = 0; i <= cmbCellFields.Count() - 1; i++)
+            {
+                txtCellFilter[i].Visible = true;
+                txtCellFilter[i].Text = string.Empty;
+                txtCellFilter[i].Enabled = false;
+                txtCellFilter[i].PlaceholderText = "Column Filter";
+                cmbCellFields[i].Visible = true;
+                cmbCellFields[i].Enabled = false;
+                cmbCellFields[i].DataSource = null;
+            }
+            // Disable all the cmbFilters and lblCmbFilters
+            for (int i = 0; i <= lblcmbFilter.Count() - 1; i++)
+            {
+                lblcmbFilter[i].Text = "FK filter:";
+                lblcmbFilter[i].Visible = true;
+                cmbFilter[i].Visible = true;
+                cmbFilter[i].Enabled = false;
+                cmbFilter[i].DataSource = null;
+                cmbFilter[i].Items.Clear();
+            }
+            // Set height of TableLayoutPanel - which will also move the splitContainer splitter.
+            SetTableLayoutPanelHeight();
+
+        }
+
+        private void SetTableLayoutPanelHeight()
+        {
+            tableLayoutPanel_Filters.Height = 2;
+            if (cmbCellFields_1.Enabled)
+            {
+                tableLayoutPanel_Filters.Height =
+                    txtMessages.Height + cmbCellFields_1.Top + cmbCellFields_1.Height + 5;
+            }
+            if (_cmbFilter_0.Enabled || rbEdit.Checked)
+            {
+                tableLayoutPanel_Filters.Height =
+                    txtMessages.Height + _cmbFilter_0.Top + _cmbFilter_1.Height + 5;
+            }
+            if (_cmbFilter_3.Enabled)
+            {
+                tableLayoutPanel_Filters.Height =
+                    txtMessages.Height + _cmbFilter_3.Top + _cmbFilter_3.Height + 5;
+            }
+            if (_cmbFilter_5.Enabled)
+            {
+                tableLayoutPanel_Filters.Height =
+                    txtMessages.Height + _cmbFilter_5.Top + _cmbFilter_5.Height + 5;
+            }
+        }
+
+        private void closeConnectionAndIntializeForm()
+        {
+            MsSql.CloseConnectionAndDataAdapters();
+            // Set all dataHelper datatables to null
+            dataHelper.clearDataTables();
+
+            // Clear other old values
+            currentSql = null;
+            readOnly = false;
+            msSql = false;
+
+            // Hide and Delete the old mnuOpentable members
+            if (mnuOpenTables.DropDownItems != null)
+            {
+                mnuOpenTables.DropDownItems.Clear();
+            }
+            // Hide special menus
+            mnuTranscript.Available = false;
+            mnuAddressBook.Available = false;
+
+            // Format and hide various controls
+            resetMainFilter();
+            updating = true; 
+            resetComboAndCellFilters();
+            updating = false;
+        }
+
+        #endregion
+
+        //----------------------------------------------------------------------------------------------------------------------
+        #region Writing the Grid
+        //----------------------------------------------------------------------------------------------------------------------
+        // Write_Grid_NewTable called by mnuOpenTable_Click, mnuFather_Click, mnuSon_Click
+        // Set initial state and things that don't change for this table here 
+        private void writeGrid_NewTable(string table)
+        {
+  //          var watch = Stopwatch.StartNew();
+
+            toolStripMsg.Text = table;
+            rbView.Checked = true;
+            updating = true; 
+            resetComboAndCellFilters();
+            updating = false;
+
+            // Create currentSql - same currentSql used until new table is loaded
+            currentSql = new sqlFactory(table, 1, pageSize);
+
+            // Put Primary key of main table in the first field of myFields
+            string pk = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
+            field fi = new field(currentSql.myTable, pk, "int");
+            currentSql.myFields.Add(fi);
+
+            // This sets currentSql table and field strings - and these remain the same for this table.
+            // This also sets DisplayFieldDicitionary each foreign table key in main table
+            string msg = currentSql.callInnerJoins(currentSql.myTable, "");
+            if (!String.IsNullOrEmpty(msg)) { toolStripBottom.Text = msg; }
+
+            // Set up 8 cmbFilter labels and boxes - BUT don't bind them yet - 9 milliseconds
+            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
+            int i = 0;
+            // one combo box for each foreignKey
+            foreach (String key in currentSql.DisplayFieldsDictionary.Keys)
+            {
+                field fi2 = dataHelper.getForeignTableAndKey(currentSql.myTable, key);
+                lblcmbFilter[i].Text = fi2.table; // Can be translated or changed
+                cmbFilter[i].Enabled = true;
+                cmbFilter[i].Tag = key;  // Used in program and so don't translate or change
+                i++;
+            }
+
+            // Set up the 2 cmbCellFieldFilter "labels" - 8 milliseconds
+            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            for (int j = 0; j < cmbCellFields.Length; j++)
+            {
+                DataView viewFieldsDT = new DataView(dataHelper.fieldsDT);
+                viewFieldsDT.RowFilter = String.Format("TableName = '{0}' AND is_PK = 'false' AND is_FK = 'false'", currentSql.myTable);
+                DataTable dt2 = new DataTable();
+                dt2.Columns.Add("DisplayName", Type.GetType("System.String"));
+                dt2.Columns.Add("ColumnName", Type.GetType("System.String"));
+                DataRow dataRow2 = dt2.NewRow();
+                dataRow2[0] = "Select Column";
+                dataRow2[1] = "0";
+                dt2.Rows.Add(dataRow2);
+                foreach (DataRowView drv in viewFieldsDT)
+                {
+                    int colNameCol = drv.Row.Table.Columns.IndexOf("ColumnName");
+                    DataRow dr = dt2.NewRow();
+                    dr[0] = drv[colNameCol].ToString();
+                    dr[1] = drv[colNameCol].ToString();
+                    dt2.Rows.Add(dr);
+                }
+                cmbCellFields[j].DisplayMember = "DisplayName";
+                cmbCellFields[j].ValueMember = "ColumnName";
+                cmbCellFields[j].DataSource = dt2;
+                cmbCellFields[j].Enabled = true;
+            }
+
+            // Set up the edit columns
+            DataView viewFieldsDT2 = new DataView(dataHelper.fieldsDT);
+            viewFieldsDT2.RowFilter = String.Format("TableName = '{0}' AND is_PK = 'false' AND is_DK = 'false'", currentSql.myTable);
+            DataTable dt = new DataTable();
+            dt.Columns.Add("DisplayName", Type.GetType("System.String"));
+            dt.Columns.Add("ColumnName", Type.GetType("System.String"));
+            DataRow dataRow = dt.NewRow();
+            dataRow[0] = "Column to Edit";
+            dataRow[1] = "0";
+            dt.Rows.Add(dataRow);
+            foreach (DataRowView drv in viewFieldsDT2)
+            {
+                int colNameCol = drv.Row.Table.Columns.IndexOf("ColumnName");
+                DataRow dr = dt.NewRow();
+                dr[0] = drv[colNameCol].ToString();
+                dr[1] = drv[colNameCol].ToString();
+                dt.Rows.Add(dr);
+            }
+            cmbEditColumn.DisplayMember = "DisplayName";
+            cmbEditColumn.ValueMember = "ColumnName";
+            cmbEditColumn.DataSource = dt;
+            cmbEditColumn.Enabled = false;  // Make true if "edit" mode
+
+            writeGrid_NewMainFilter();
+//           watch.Stop();
+//           txtMessages.Text = watch.ElapsedMilliseconds.ToString() + " " + txtMessages.Text;
+
+        }
+
+        // Write_Grid_NewTable called by WriteGrid_NewTable, Main_Filter Changed
+        internal async Task writeGrid_NewMainFilter()
+        {
+            ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            List<string> keys = currentSql.DisplayFieldsDictionary.Keys.ToList();
+            int i = 0;
+            var getTasks = new List<Task>();
+            foreach (string key in keys)
+            {
+                currentSql.myFieldsCombo[i] = currentSql.DisplayFieldsDictionary[key];
+                string strSql = currentSql.returnSql(command.fkfilter, key, i);
+                getTasks.Add(CmbFkFilter_FillOneFromDatabaseAsync(cmbFilters[i], strSql));
+                i++;
+            }
+           getTasks.Add(writeGrid_NewFilter());
+           await Task.WhenAll(getTasks);
+        }
+
+        internal async Task CmbFkFilter_FillOneFromDatabaseAsync(ComboBox cmb, string strSql)
+        {
+            DataTable dataTable = new System.Data.DataTable();
+            MsSql.FillDataTable(dataTable, strSql);
+            // Add "No filter" as first row
+            DataRow dr = dataTable.NewRow();
+            dr["DisplayField"] = "No Filter";
+            dr["ValueField"] = 0;// Some ID
+            dataTable.Rows.InsertAt(dr, 0);
+            cmb.DisplayMember = "DisplayField";
+            cmb.ValueMember = "ValueField";
+            cmb.DataSource = dataTable;
+            cmb.Enabled = true;
+        }
+
+        internal async Task writeGrid_NewFilter()
+        {
+            // Create the where clauses in sqlBuilder currentSql
+            callSqlWheres();
+            // Get record Count
+            string strSql = currentSql.returnSql(command.count,"",0);
+            currentSql.RecordCount = MsSql.GetRecordCount(strSql);
+            await writeGrid_NewOrderBy();
+        }
+
+        internal async Task writeGrid_NewOrderBy()
+        {
+            // Fetch must have an order by clause - so I will add one on first column
+            if (currentSql.myOrderBys.Count == 0)  //Should always be true at this point
+            {
+                orderBy ob = new orderBy(currentSql.myFields[0], System.Windows.Forms.SortOrder.Ascending);
+                currentSql.myOrderBys.Add(ob);
+            }
+            await writeGrid_NewPage();
+        }
+
+        internal async Task writeGrid_NewPage()
+        {
+
+            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
+
+            // CENTRAL USE OF sqlCurrent IN PROGRAM
+            string strSql = currentSql.returnSql(command.select,"", 0);
+
+            //Clear the grid
+            if (dataGridView1.DataSource != null)
+            {
+                dataGridView1.DataSource = null;
+            }
+
+
+            // Bind database
+            dataHelper.currentDT = new System.Data.DataTable("currentDT");
+            MsSql.FillDataTable(dataHelper.currentDT, strSql);
+            dataGridView1.DataSource = dataHelper.currentDT;
+
+            //Format controls
+            SetTableLayoutPanelHeight();
+
+
+            // Set toolStripButton3 caption
+            toolStripButton3.Text = currentSql.myPage.ToString() + "/" + currentSql.TotalPages.ToString();
+
+            //Set form caption
+            string dbPath = Interaction.GetSetting("AccessFreeData", "DatabaseList", "path0", "");
+            StringBuilder sb = new StringBuilder(dbPath.Substring(dbPath.LastIndexOf("\\") + 1));
+            sb.Append(" - " + currentSql.myTable);
+            sb.Append(" -  " + currentSql.RecordCount.ToString() + " rows");
+            sb.Append(", Page: " + currentSql.myPage.ToString());
+            this.Text = sb.ToString();
+
+            dataGridView1.RowHeadersWidth = 27;
+            for (int i = 0; i <= dataGridView1.ColumnCount - 1; i++)
+            {
+                string fldAlias = dataGridView1.Columns[i].Name;
+                string fld = currentSql.myFields[i].fieldName;
+                string baseTable = currentSql.myFields[i].table; // Convert.ToString(currentDR.GetField(fld).getProperties().Item("BASETABLENAME").getValue());
+                //Set width of column - default
+                string dbType = dataHelper.getStringValueFieldsDT(baseTable, fld, "DataType");
+                switch (dbType)
+                {
+                    case "bigint":
+                    case "numeric":
+                    case "smallint":
+                    case "decimal":
+                    case "smallmoney":
+                    case "int":
+                    case "tinyint":
+                    case "money":
+                    case "float":
+                    case "real":
+                    case "binary":
+                        dataGridView1.Columns[i].Width = 47; //one character = about 200 points
+                        break;
+                    case "date":
+                    case "datetimeoffset":
+                    case "datetime2":
+                    case "smalldatetime":
+                    case "datetime":
+                    case "time":
+                        dataGridView1.Columns[i].Width = 67;
+                        break;
+                    case "char":
+                    case "varchar":
+                    case "nchar":
+                    case "nvarchar":
+                        dataGridView1.Columns[i].Width = 107;  //Same starting string
+                        break;
+                    case "bit":
+                        dataGridView1.Columns[i].Width = 67;
+                        break;
+                    default:
+                        dataGridView1.Columns[i].Width = 107;
+                        break;
+                }
+                //Change to default width if set in afdFieldData
+                int savedWidth = dataHelper.getIntValueFieldsDT(baseTable, fld, "width");
+                if (savedWidth > (47 * 15))
+                {
+                    dataGridView1.Columns[i].Width = savedWidth / 15;
+                }
+
+                if (currentSql.myOrderBys.Count > 0)
+                {
+                    field fldob = currentSql.myOrderBys[0].fld;
+                    int gridColumn = currentSql.myFields.FindIndex(x => x == fldob);  // gridColumn index = myFields index
+                    System.Windows.Forms.SortOrder sortOrder = currentSql.myOrderBys[0].sortOrder;
+                    dataGridView1.Columns[gridColumn].SortMode = DataGridViewColumnSortMode.Programmatic;
+                    dataGridView1.Columns[gridColumn].HeaderCell.SortGlyphDirection = sortOrder;
+                }
+            }
+            return;
+
+            // MessageBox.Show(Information.Err().Description + Environment.NewLine + translation.tr("ErrorWritingToGrid", "", "", ""), AssemblyHelper.GetTitle(System.Reflection.Assembly.GetExecutingAssembly()));
+        }
+        private void callSqlWheres()
+        {   // Adds all the filters 
+            ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            TextBox[] txtCellFilters = { txtCellFilter_1, txtCellFilter_2 };
+            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+
+            // Clear any old filters from currentSql
+            currentSql.myWheres.Clear();
+
+            //Main filter - add this where to the currentSql)
+            if (mainFilter != null)
+            {
+                if (Convert.ToInt32(mainFilter.whereValue) > 0)
+                {
+                    // Check that the table and field is in the myFields
+                    if (currentSql.TableIsInMyTables(mainFilter.fl.table))
+                    {
+                        currentSql.myWheres.Add(mainFilter);
+                    }
+                }
+            }
+            // Foreign key filters
+            for (int i = 0; i < cmbFilters.Length; i++)
+            {
+                if (cmbFilters[i].Enabled)
+                {
+                    if (cmbFilters[i].SelectedIndex != -1)
+                    {
+                        string selectedValue = cmbFilters[i].GetItemText(cmbFilters[i].SelectedValue);
+                        if (Convert.ToInt32(selectedValue) > 0)
+                        {
+                            where wh = new where(currentSql.myTable, cmbFilters[i].Tag.ToString(), selectedValue, "int");
+                            currentSql.myWheres.Add(wh);
+                        }
+                    }
+                }
+            }
+            // Cell filters
+            for (int i = 0; i < txtCellFilters.Length; i++)
+            {
+                if (txtCellFilters[i].Enabled)
+                {
+                    if (txtCellFilters[i].Text != string.Empty)
+                    {
+                        string selectedValue = txtCellFilters[i].Text; 
+                        string fieldName = cmbCellFields[i].GetItemText(cmbCellFields[i].SelectedValue);
+                        string dataType = dataHelper.getStringValueFieldsDT(currentSql.myTable, fieldName, "DataType");
+                        field fi = new field(currentSql.myTable, fieldName, dataType);
+                        where wh = new where(fi, selectedValue);
+                        currentSql.myWheres.Add(wh);
+                    }
+
+                }
+            }
+        }
+
+        #endregion
+
+        //----------------------------------------------------------------------------------------------------------------------
+        #region EVENTS - Menu events
+        //----------------------------------------------------------------------------------------------------------------------
+        private void mnuDeleteDatabase_Click(object sender, EventArgs e)
+        {
+            //frmDeleteDatabase used to show databases
+            frmListDatabases databaseListForm = new frmListDatabases();
+            databaseListForm.ShowDialog();
+            databaseListForm = null;
+        }
+
         private void contextMenu_MainFilter_Click(object sender, EventArgs e)
         {
             if (dataGridView1.SelectedRows.Count > 0)
-            {
-                // This assumes the first field is the index and it is an integer
-                string value = dataGridView1.SelectedRows[0].Cells[0].Value.ToString();
-                mainFilter = new where(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, value, "int");
-                // Update the past main filter list
-                for (int i = pastFilters.Length - 2; i >= 0; i--) 
+            {   
+                // Define mainFilter (Type: where).
+                // This assumes the first column in row is the index and it is an integer
+                string value = dataGridView1.SelectedRows[0].Cells[0].Value.ToString(); //Integer
+                // Set DisplayValue to string with all non-empty cells from selected row (may shorten later)                
+                List<String> displayValueList = new List<String>();
+                foreach( DataGridViewCell cell in dataGridView1.SelectedRows[0].Cells ) 
                 {
-                    if (pastFilters[i] != null)
-                    {
-                        pastFilters[i+1] = pastFilters[i];
+                    if (cell.Value != null)
+                    {  
+                        if(!String.IsNullOrEmpty(cell.Value.ToString()))
+                        {
+                            field fi = currentSql.myFields[cell.ColumnIndex];
+                            if(dataHelper.isDisplayKey(fi.table,fi.fieldName))
+                            { 
+                                displayValueList.Add(Convert.ToString(cell.Value));
+                            }
+                        }
                     }
-                    pastFilters[0] = mainFilter;
                 }
-                updateCmbMainFilter();
+                string displayValue = String.Join(", ", displayValueList);
+                mainFilter = new where(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, value, "int");
+                mainFilter.displayValue = displayValue;
+                //Update pastFilters list
+                pastFilters.Insert(0, mainFilter);
+                _cmbMainFilter.SelectedIndex = 0;
             }
-        }
-        private void updateCmbMainFilter()  // Called by context menu "Set main filter" and "Father" table command
-        { 
-            _cmbMainFilter.Items.Clear();
-            for(int i=0; i<pastFilters.Length; i++)
-            {
-                if (pastFilters[i] != null) { _cmbMainFilter.Items.Add(pastFilters[i].value); }
-            }
-            _cmbMainFilter.Items.Add("Clear filter");
-            _cmbMainFilter.SelectedIndex = 0;
         }
 
         private void _cmbMainFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
-            int i = _cmbMainFilter.SelectedIndex;
-            if (i != -1)
-            {
-                if(_cmbMainFilter.SelectedIndex == _cmbMainFilter.Items.Count - 1)
+            if (!updating)
+            { 
+                int i = _cmbMainFilter.SelectedIndex;
+                if (i != -1)  // Always true (I suspect)
                 {
-                    mainFilter = null;
-                    lblMainFilter.Text = "No Filter";
+                    //Last element means "no filter".
+                    if(_cmbMainFilter.SelectedIndex == _cmbMainFilter.Items.Count - 1)
+                    {
+                        mainFilter = null;
+                        lblMainFilter.Text = "No Filter";
+                    }
+                    else { 
+                        mainFilter= pastFilters[i];   // pastFilters is a "where" list that is used to bind _cmbMainFilter
+                        lblMainFilter.Text = mainFilter.fl.table;
+                    }
                 }
-                else { 
-                    mainFilter= pastFilters[i];
-                    lblMainFilter.Text = mainFilter.table;
-                }
+                writeGrid_NewMainFilter();
             }
-            
         }
 
         private void mnuOpenTables_Click(object sender, EventArgs e) { }
@@ -499,37 +771,35 @@ namespace AccessFreeData
             writeGrid_NewTable(tableName);
         }
 
-        private void _mnuDatabaseList_0_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        private void mnuDatabaseList_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
+            ToolStripItem clickedItem = e.ClickedItem;
             int index = 0;
-            ToolStripMenuItem? item = sender as ToolStripMenuItem;
-            if (item != null)
+            ToolStripMenuItem? fatherItem = sender as ToolStripMenuItem;
+            if (fatherItem != null)
             {
-                index = (item.OwnerItem as ToolStripMenuItem).DropDownItems.IndexOf(item);
+                for (int i = 0; i < fatherItem.DropDownItems.Count; i++)
+                {
+                    if (fatherItem.DropDownItems[i] == clickedItem) 
+                    { 
+                        index = i; break;   
+                    }
+                }
             }
-            string readOnly = "", connectionString = "", str = "", tye = "", sd = "";
-            //1. Change clicked link to index 0
-            if (index > 0)
-            { //No need to change if already 0
-              //Get settings to push
-                str = Interaction.GetSetting("AccessFreeData", "DatabaseList", "path" + index.ToString().Trim(), "end");
-                readOnly = Interaction.GetSetting("AccessFreeData", "DatabaseList", "ro" + index.ToString().Trim(), "end");
-                tye = Interaction.GetSetting("AccessFreeData", "DatabaseList", "type" + index.ToString().Trim(), "end");
-                connectionString = Interaction.GetSetting("AccessFreeData", "DatabaseList", "cs" + index.ToString().Trim(), "end");
-                sd = Interaction.GetSetting("AccessFreeData", "DatabaseList", "sd" + index.ToString().Trim(), "end");
-                // push strings to front
-                Helper.regitPush("DatabaseList", "path", str, 10);
-                Helper.regitPush("DatabaseList", "ro", readOnly, 10);
-                Helper.regitPush("DatabaseList", "type", tye, 10);
-                Helper.regitPush("DatabaseList", "cs", connectionString, 10);
-                Helper.regitPush("DatabaseList", "sd", sd, 10);
-                // Reload new list
-                load_mnuDatabaseList();
-            }
-            //2. Open connection - this reads the index 0 settings.  Main use of openConnection
-            password = "";
-            openConnection();
 
+            string readOnly = "", connectionString = "", str = "", tye = "", sd = "";
+            //1. Change clicked link to index 0 - index 0 used to open connection
+            //No need to change if already 0
+            if (index > 0)
+            {
+                List<connectionString> csList = AppData.GetConnectionStringList();
+                connectionString cs = csList[index];   // Assumes list in dropdown matches csList
+                AppData.storeConnectionString(cs);
+
+                //2. Open connection - this reads the index 0 settings.  Main use of openConnection
+                string msg = openConnection();
+                if (msg != string.Empty) { txtMessages.Text = msg; }
+            }
         }
 
         // Add Database - frmConnection
@@ -544,10 +814,10 @@ namespace AccessFreeData
             if (connectionAdded)
             {
                 load_mnuDatabaseList();
-                openConnection();
+                string msg = openConnection();
+                if (msg != string.Empty) { txtMessages.Text = msg; }
             }
         }
-
 
         private void MainMenu1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
@@ -561,28 +831,38 @@ namespace AccessFreeData
 
         internal void load_mnuDatabaseList()
         {
-            int i = 0;
-            //DeleteSetting "AccessFreeData", "DatabaseList"
-            //Hide all the old elements
-            _mnuDatabaseList_0.DropDownItems.Clear();
-            //Show all the new
-            i = 0;
-            string cs = Interaction.GetSetting("AccessFreeData", "DatabaseList", "cs" + i.ToString().Trim(), "end"); //Default is "end" in case it doesn't exist
-            while (cs != "end" && i < 10)
-            {
-                _mnuDatabaseList_0.DropDownItems.Add(cs);
-                i++;
-                cs = Interaction.GetSetting("AccessFreeData", "DatabaseList", "cs" + i.ToString().Trim(), "end");
+            //Get list from App.Data
+            List<connectionString> csList = AppData.GetConnectionStringList();
+            mnuConnectionList.DropDownItems.Clear();
+            foreach (connectionString cs in csList) {
+                // {0} for server, {1} for Database, {2} for user, {3} for password (unknown)
+                string csString = String.Format(cs.comboString, cs.server, cs.databaseName, cs.user, "******");
+                mnuConnectionList.DropDownItems.Add(csString);
             }
         }
 
         #endregion
 
         //----------------------------------------------------------------------------------------------------------------------
-        #region New None menu control events
+        #region Events - Control Events
         //----------------------------------------------------------------------------------------------------------------------
-        #region 5 paging buttons
+        #region 5 paging buttons & RecordsPerPage (RPP)
         // Paging - <<
+        private void txtRecordsPerPage_Leave(object sender, EventArgs e)
+        {
+            int rpp = 0;
+            if(int.TryParse(txtRecordsPerPage.Text,out rpp))
+            {
+                if (rpp > 9)
+                {
+                    pageSize = rpp;
+                    AppData.SaveKeyValue("RPP",rpp.ToString());
+                }
+            
+            }    
+        }
+
+
         private void toolStripButton1_Click(object sender, EventArgs e)
             {
                 if (currentSql != null)
@@ -661,19 +941,97 @@ namespace AccessFreeData
                 }
             }
         #endregion
+        private void lblMainFilter_Click(object sender, EventArgs e)
+        {
+        }
+
+        private void txtCellFilterTextChanged(object sender, EventArgs e)
+        {
+            if (updating == false)
+            { 
+                writeGrid_NewFilter();
+            }
+        }
+
+        public void cmbCellFieldsSelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Clear txtCellFilter which will call "WriteGrid_NewFilter"
+            TextBox[] txtCellFilters = { txtCellFilter_1, txtCellFilter_2 };
+            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            ComboBox cmb = (ComboBox)sender;
+            for (int i = 0; i < cmbCellFields.Count(); i++)
+            {
+                if (cmb == cmbCellFields[i])
+                {
+                    txtCellFilters[i].Text = string.Empty;
+                    if (cmb.SelectedIndex < 1)
+                    {
+                        txtCellFilters[i].Enabled = false;
+                    }
+                    else 
+                    { 
+                        txtCellFilters[i].Enabled = true;
+                    }
+                }
+            }
+        }
+
+          private void cmbCellFilterSelectedIndexChanged(object sender, EventArgs e)
+        {
+            ComboBox cmb = (ComboBox)sender;
+            if (cmb.SelectedIndex > -1) 
+            {
+                writeGrid_NewFilter();
+            }
+
+        }
 
         // Adjusts the width of all the items shown when combobox dropped down to longest item
         private void AdjustWidthComboBox_DropDown(object sender, EventArgs e)
         {
+            // Bound with a DataView and DisplayMember column is "DisplayFields"
+            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            // Bound with a DataTable and DisplayMember column is "DisplayFields"
+            ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            TextBox[] cmbCellFilters = { txtCellFilter_1, txtCellFilter_2 };
+            // Bound with BindingList<where>.  DisplayMember is "where" class property "DisplayValue"
+            ComboBox[] cmbMainFilters = { _cmbMainFilter };
+
+            // A. Get list of display strings in ComboBox
             var senderComboBox = (System.Windows.Forms.ComboBox)sender;
+            List<string> displayValueList = new List<string>();
+            if (cmbCellFields.Contains(senderComboBox))
+            {
+                var itemsList = senderComboBox.Items.Cast<DataRowView>();
+                foreach (DataRowView drv in itemsList)
+                {
+                    int index = drv.Row.Table.Columns.IndexOf("DisplayName");
+                    displayValueList.Add(drv.Row.ItemArray[index].ToString());
+                }
+            }
+            else if (cmbFilters.Contains(senderComboBox))
+            {
+                var itemsList = senderComboBox.Items.Cast<DataRowView>();
+                foreach (DataRowView drv in itemsList)
+                {
+                    int index = drv.Row.Table.Columns.IndexOf("DisplayField");
+                    displayValueList.Add(drv.Row.ItemArray[index].ToString());
+                }
+            }
+            else if (cmbMainFilters.Contains(senderComboBox))
+            {
+                var itemsList = senderComboBox.Items.Cast<where>();
+                foreach (where wh in itemsList) { displayValueList.Add(wh.displayValue); }
+            }
+            // B. Get and set width
             int width = senderComboBox.DropDownWidth;
             using (Graphics g = senderComboBox.CreateGraphics())
             {
                 System.Drawing.Font font = senderComboBox.Font;
                 int vertScrollBarWidth = (senderComboBox.Items.Count > senderComboBox.MaxDropDownItems)
                     ? SystemInformation.VerticalScrollBarWidth : 0;
-                var itemsList = senderComboBox.Items.Cast<object>().Select(item => item.ToString());
-                foreach (string s in itemsList)
+                // var itemsList = senderComboBox.Items.Cast<object>().Select(item => item.ToString());
+                foreach (string s in displayValueList)
                 {
                     int newWidth = (int)g.MeasureString(s, font).Width + vertScrollBarWidth;
                     if (width < newWidth)
@@ -691,411 +1049,64 @@ namespace AccessFreeData
             this.splitContainer1.SplitterDistance = senderPanel.Height + 5; 
         }
 
-        #endregion
-
-        //----------------------------------------------------------------------------------------------------------------------
-        #region Write Grid
-        //----------------------------------------------------------------------------------------------------------------------
-        // New Table called by mnuOpenTable_Click, mnuFather_Click, mnuSon_Click, mnuRepairDatabase_Click 
-        private void writeGrid_NewTable(string table)
+        private void rbView_CheckedChanged(object sender, EventArgs e)
         {
-            toolStripMsg.Text = table; //Default
-            // Create currentSql - same currentSql used until new table is loaded
-            currentSql = new SqlBuilder(table, "grid", 1, pageSize);
-            // Primary key of main table is the first field
-            string pk = SqlHelper.getTablePrimaryKeyField(currentSql.myTable, false);
-            field fi = new field(currentSql.myTable, pk);
-            currentSql.myFields.Add(fi);
-            // This sets currentSql table and field strings - and these remain the same for this table-job pair.
-            // Note: there may be no inner joins.  If so, the main table is still in table list.
-            string msg = currentSql.callInnerJoins(currentSql.myTable, !mnuToolHideWhiteColumns.Checked);
-            if (!String.IsNullOrEmpty(msg)) { toolStrip1.Text = msg; }
-            // Add primary key at start of field list because not added above
-            // My program assumes this is the first field in datagridview
-            //if (currentSql.myInnerJoins.Count() == 0)
-            //{
-            // }
-            // setupTopBoxes(); // Mostly remains the same for this table, although we add blank cell filters
-            writeGrid_NewFilter();
+
         }
 
-        internal void writeGrid_NewFilter()
+        private void mnuToolsDatabaseInformation_Click(object sender, EventArgs e)
         {
-            // Create the where clauses in sqlBuilder currentSql
-            callSqlWheres();
-            // Get record Count - callSqlWheres() will reduce this number
-            string strSql = currentSql.returnSql("count");
-            using (SqlCommand cmd = new SqlCommand(strSql, SqlHelper.cn))
-            {
-                currentSql.RecordCount = (int)cmd.ExecuteScalar();
-            }
-            writeGrid_NewOrderBy();
+            frmDatabaseInfo formDBI = new frmDatabaseInfo();
+            formDBI.ShowDialog();
         }
 
-        internal void writeGrid_NewOrderBy()
+        private void _cmbFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // Fetch must have an order by clause - so I will add one on first column
-            if (currentSql.myOrderBys.Count == 0)  //Should always be true at this point
+            ComboBox cb = (ComboBox)sender;
+            int index = cb.SelectedIndex;
+            if (index != -1)
             {
-                orderBy ob = new orderBy(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, System.Windows.Forms.SortOrder.Ascending, 0);
-                currentSql.myOrderBys.Add(ob);
+                writeGrid_NewFilter();  // Doesn't change items in cmb_Filters
             }
+        }
+
+        private void dataGridView1_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            System.Windows.Forms.SortOrder newSortOrder = System.Windows.Forms.SortOrder.Ascending;   // default
+            // Check for same column ascending and change to descending  
+            if (currentSql.myOrderBys.Count > 0)
+            {
+                if (currentSql.myOrderBys[0].fld == currentSql.myFields[e.ColumnIndex])  // New column is the same as the old.
+                {
+                    if (currentSql.myOrderBys[0].sortOrder == System.Windows.Forms.SortOrder.Ascending)
+                    {
+                        newSortOrder = System.Windows.Forms.SortOrder.Descending;
+                    }
+                }
+            }
+            // Update myOrdersBy to sort by newColumn and dir - may be same column
+            currentSql.myOrderBys.Clear();
+            orderBy ob = new orderBy(currentSql.myFields[e.ColumnIndex], newSortOrder);
+            currentSql.myOrderBys.Add(ob);
+            currentSql.myPage = 1;
+            // Write the grid with the new order - write Grid will format the header cell
             writeGrid_NewPage();
         }
-        
-        internal void writeGrid_NewPage()
+
+        private void mnuUpdateDatabase_Click(object sender, EventArgs e)
         {
-            System.Windows.Forms.ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            System.Windows.Forms.ComboBox[] cmbFilterBackup = { _cmbFilterBackup_0, _cmbFilterBackup_1, _cmbFilterBackup_2, _cmbFilterBackup_3, _cmbFilterBackup_4, _cmbFilterBackup_5, _cmbFilterBackup_6, _cmbFilterBackup_7 };
-            System.Windows.Forms.Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
-
-            // CENTRAL USE OF sqlCurrent IN PROGRAM
-            // Get strSql --> sqlCommand --> ExecuteReader
-            string strSql = currentSql.returnSql("select");
-
-            //Clear the grid
-            if (dataGridView1.DataSource != null) { dataGridView1.DataSource = null;}
-            if (dataGridView1.Rows != null) { dataGridView1.Rows.Clear(); dataGridView1.Columns.Clear(); }
-
-            // Bind database
-            // Clear old DT and DA - not clear if needed
-            if (currentDA != null) { currentDA = null; }
-            if (currentDT != null) { currentDT = null; }
-            //old - cmd = new SqlCommand(strSql, SqlHelper.cn);
-            //old - currentDR = cmd.ExecuteReader();
-            currentDA = new SqlDataAdapter(strSql, SqlHelper.cn);
-            currentDT = new System.Data.DataTable("currentDT");
-            currentDA.FillSchema(currentDT, SchemaType.Source);
-            currentDA.Fill(currentDT);
-            dataGridView1.DataSource = currentDT;
-            dataGridView1.Refresh();
-
-            //Format controls
-            // Set toolStripButton3 caption
-            toolStripButton3.Text = currentSql.myPage.ToString() + "/" + currentSql.TotalPages.ToString();
-
-            //Set form caption
-            string dbPath = Interaction.GetSetting("AccessFreeData", "DatabaseList", "path0", "");
-            StringBuilder sb = new StringBuilder(dbPath.Substring(dbPath.LastIndexOf("\\") + 1));
-            sb.Append(" - " + currentSql.myTable);
-            sb.Append(" -  " + currentSql.RecordCount.ToString() + " rows");
-            sb.Append(", Page: " + currentSql.myPage.ToString());
-            this.Text = sb.ToString();
-
-            dataGridView1.RowHeadersWidth = 27;
-            for (int i = 0; i <= dataGridView1.ColumnCount - 1; i++)
-            {
-                string fldAlias = dataGridView1.Columns[i].Name;
-                string fld = currentSql.myFields[i].fieldName;
-                string baseTable = currentSql.myFields[i].table; // Convert.ToString(currentDR.GetField(fld).getProperties().Item("BASETABLENAME").getValue());
-                //Set width of column - default
-                string dbType = SqlHelper.getStringValueSystemFieldsField(baseTable, fld, "dbType");
-                switch (dbType)
-                {
-                    case "bigint":
-                    case "numeric":
-                    case "smallint":
-                    case "decimal":
-                    case "smallmoney":
-                    case "int":
-                    case "tinyint":
-                    case "money":
-                    case "float":
-                    case "real":
-                    case "binary":
-                        dataGridView1.Columns[i].Width = 47; //one character = about 200 points
-                        break;
-                    case "date":
-                    case "datetimeoffset":
-                    case "datetime2":
-                    case "smalldatetime":
-                    case "datetime":
-                    case "time":
-                        dataGridView1.Columns[i].Width = 67;
-                        break;
-                    case "char":
-                    case "varchar":
-                    case "nchar":
-                    case "nvarchar":
-                        dataGridView1.Columns[i].Width = 107;  //Same starting string
-                        break;
-                    case "bit":
-                        dataGridView1.Columns[i].Width = 67;
-                        break;
-                    default:
-                        dataGridView1.Columns[i].Width = 107;
-                        break;
-                }
-                //Change to default width if set in afdFieldData
-                int savedWidth = SqlHelper.getIntValueSystemFieldsField(baseTable, fld, "width");
-                if (savedWidth > (47 * 15))
-                {
-                    dataGridView1.Columns[i].Width = savedWidth / 15;
-                }
-
-                //Set sort and header SortGlyph - do after set column widths
-                foreach (DataGridViewColumn column in dataGridView1.Columns)
-                {
-                    column.SortMode = DataGridViewColumnSortMode.NotSortable;
-                    column.HeaderCell.SortGlyphDirection = System.Windows.Forms.SortOrder.None;
-                }
-                if (currentSql.myOrderBys.Count > 0)
-                {
-                    int gridColumn = currentSql.myOrderBys[0].gridColumn;
-                    System.Windows.Forms.SortOrder sortOrder = currentSql.myOrderBys[0].sortOrder;
-                    dataGridView1.Columns[gridColumn].SortMode = DataGridViewColumnSortMode.Programmatic;
-                    dataGridView1.Columns[gridColumn].HeaderCell.SortGlyphDirection = sortOrder;
-                }
-
-
-
-                ////Special widths and colors
-                ////Bold if column is filtered
-                //if (getSystemTableValue("afdFieldData", baseTable, short_Renamed(fld), "filterValue", DbType.String) != "")
-                //{
-                //    dataGridView1.CurrentCell = flexGrid2[i, 0];
-                //    dataGridView1.Columns[i].DefaultCellStyle.Font = new Font("verdana", 10, FontStyle.Bold);
-                //}
-
-                ////Special widths and colors
-                ////Bold if column is filtered
-                //if (getSystemTableValue("afdFieldData", baseTable, short_Renamed(fld), "sort", DbType.Boolean) == "True")
-                //{
-                //    dataGridView1.CurrentCell = flexGrid2[i, 0];
-                //    dataGridView1.Columns[i].DefaultCellStyle.Font = new Font("verdana", 10, FontStyle.Bold);
-                //}
-
-                //    //Hide all ID columns - except the Primary key if option checked
-                //    if (mnuOptionShowID.Checked && this.ClientSize.isTablePrimaryKeyField(currentSql.myTable, fld))
-                //    {
-                //        dataGridView1.CurrentCell = flexGrid2[i, 0];
-                //        //UPGRADE_WARNING: (2080) QBCOlor(15) was upgraded to System.Drawing.Color.White and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
-                //        dataGridView1.Columns[i].DefaultCellStyle.Font = new Font("verdana", 10, FontStyle.Regular);
-                //    }
-                //    else if (isIdField(fld))
-                //    {
-                //        dataGridView1.Columns[i].Width = lngValue(rsTemp, "width") / 15;
-                //    }
-                //    else
-                //    {
-                //        //Set color of header row of column - blue or yellow or orange
-                //        dataGridView1.CurrentCell = flexGrid2[i, 0];
-                //        if (fieldUpdatable(colCaption(i)))
-                //        {
-                //            dataGridView1.CurrentCell.Style.BackColor = Color.LightGreen; //Light Green -- field in this table, can update
-                //                                                                          //Book center: Change light green to light blue if the field has a multilingual translation
-                //            if (bookCenter)
-                //            {
-                //                temp = colCaption(i);
-                //                temp = StringsHelper.Replace(temp.ToLower(), "_name", "", 1, -1, CompareMethod.Binary);
-                //                if (tableExists(temp + "_ml"))
-                //                {
-                //                    dataGridView1.CurrentCell.Style.BackColor = Color.LightCyan; //Light cyan (blue) -- multilingual field (needs translated)
-                //                }
-                //            }
-                //        }
-                //        else if (idFieldUpdatable(colCaption(i)))
-                //        {
-                //            //UPGRADE_WARNING: (2080) QBCOlor(14) was upgraded to System.Drawing.Color.LightYellow and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
-                //            dataGridView1.CurrentCell.Style.BackColor = Color.LightYellow; //Light yellow -- id-field in this table, can update this id.
-                //        }
-                //        else if (idFieldUpdatableInPrinciple(colCaption(i)))
-                //        {
-                //            //UPGRADE_WARNING: (2080) QBCOlor(15) was upgraded to System.Drawing.Color.White and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
-                //            dataGridView1.CurrentCell.Style.BackColor = Color.White; //Bright white -- id-field in this table, but not of a type that represents the table (for example, a number).
-                //                                                                     //Hide these white columns if the option is set
-                //            if (mnuToolHideWhiteColumns.Checked)
-                //            {
-                //                dataGridView1.Columns[i].Width = 0;
-                //            }
-                //        }
-                //        else
-                //        {
-                //            //UPGRADE_WARNING: (2080) QBCOlor(13) was upgraded to System.Drawing.Color.Magenta and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
-                //            dataGridView1.CurrentCell.Style.BackColor = Color.Magenta; //magenta (red)
-                //                                                                       //Hide these red columns if the option is set
-                //            if (mnuToolHideRedColumns.Checked)
-                //            {
-                //                dataGridView1.Columns[i].Width = 0;
-                //            }
-                //        }
-                //    }
-                //    //Center material in column
-                //    dataGridView1.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
-                //    //UPGRADE_ISSUE: (2064) MSHierarchicalFlexGridLib.MSHFlexGrid property dataGridView1.ColAlignmentHeader was not upgraded. More Information: https://docs.mobilize.net/vbuc/ewis#2064
-                //    // dataGridView1.setColAlignmentHeader((int)DataGridViewContentAlignment.MiddleLeft, i, 0);
-                //}
-                //rsTemp = null;
-                ////Force repaint -- this is what may take time
-                //this.ClientSize.Refresh();
-                ////Reset variables
-                //this.ClientSize.Cursor = CursorHelper.CursorDefault;
-                //progressBar1.Visible = false;
-                //updating = false;
-                //Clear out any extra where clause from sqlCurrent -- these only used once.
-                //sqlCurrent.sqlExtraWhere("", "", DbType.Object);
-                //sqlCurrent.ignoreTopBoxes = false;
-                //if (isTranscript)
-                //{
-                //    if (currentSql.myTable == "transcript" && tablePages == 1)
-                //    {
-                //        transcript.QpaToSB(currentDR);
-                //    }
-
-            }
-            //Hide these in case for some reason they are not hidden
-            listNewData.Visible = false;
-            txtNewData.Visible = false;
-
-            return;
-
-            // MessageBox.Show(Information.Err().Description + Environment.NewLine + translation.tr("ErrorWritingToGrid", "", "", ""), AssemblyHelper.GetTitle(System.Reflection.Assembly.GetExecutingAssembly()));
+            frmUpdateDatabaseToV2 updateForm = new frmUpdateDatabaseToV2();
+            updateForm.ShowDialog();
+            updateForm = null;
         }
-
-        private void callSqlWheres()
-        {   // Adds all the 
-            System.Windows.Forms.ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            System.Windows.Forms.TextBox[] cellFilters = { txtCellFilter_0,txtCellFilter_1,txtCellFilter_2};
-
-            // Clear any old filters
-            currentSql.myWheres.Clear();
-
-            //Main filter (this is stored in mainFilter[0] - add this where to the currentSql)
-            if (mainFilter != null)
-            {
-                if (Convert.ToInt32(mainFilter.value) > 0)
-                {
-                    // Check that the table and field is in the myFields
-                    if(currentSql.TableIsInMyTables(mainFilter.table))
-                    { 
-                        currentSql.myWheres.Add(mainFilter);
-                    }
-                }
-            }
-            //string vnt = "";
-
-            //// whereTableCaption = "(";
-
-            ////Load new where clauses in colSqlWhere from the topBoxes that are visible and the extraWhere of this class
-            //if (!currentSql.ignoreTopBoxes && currentSql.myJob != "combo")
-            //{
-            //    //Begin with txtWhere Box
-            //    if (txtCellFilter_0.Visible)
-            //    {
-            //        if (Strings.Len(txtCellFilter_0.Text.Trim()) > 0)
-            //        {
-            //            // whereFld = SqlHelper.getCorrectFieldName(rsCurrent, Convert.ToString(txtWhere.Tag));
-            //            string left = txtCellFilter_0.Tag.ToString();
-            //            string right = txtCellFilter_0.Text.Trim();
-            //            string dbType = "varchar";  // ASM - change to dbType in asfFields table
-            //            where wh = new where(left,right, dbType);
-            //            currentSql.myWheres.Add(wh);
-            //        }
-            //    }
-            //    for (int i = 0; i <= cmbFilter.Count() - 1; i++)
-            //    {
-            //        if (cmbFilter[i].Visible)
-            //        {
-            //            if (cmbFilter[i].SelectedIndex > 0)
-            //            {
-            //                string left = cmbFilter[i].Tag.ToString();
-            //                string right = cmbFilter[i].Text.Trim();
-            //                string dbType = "varchar";  // ASM - change to dbType in asfFields table
-            //                where wh = new where(left, right, dbType);
-            //                currentSql.myWheres.Add(wh);
-            //            }
-            //        }
-            //    }
-            //}
-            ////Update sqlWhere by extra
-            //if (myExtraField != "")
-            //{
-            //    string left = myExtraField;
-            //    string right = myExtraValue;
-            //    string dbType = "varchar";  // ASM - change to dbType in asfFields table
-            //    where wh = new where(left, right, dbType);
-            //    currentSql.myWheres.Add(wh);
-            //}
-        }
-        
-        private string mytableFilterTable()
-        {
-            string result = "";
-            string myField = "", foreignTable = "";
-            // Returns a table that is in one of the cmbFilter boxes and whose filterID > 0
-            // Usually there will be at most one, but may be more for a new table
-            // I choose the first table I find and set all others to "0"
-            // The dataGrid is filtered by this filterID
-            // This filterID is inserted in a cmbFilter, other cmbFilter's are filtered by a higherJoin.
-            // This also set me.myTableFilterValue
-
-            //Look for an id field that is restricted in afdTableData
-            string strSql = "SELECT * FROM afdFieldData where tableName = '" + currentSql.myTable + "'";
-            SqlCommand cmd = new SqlCommand(strSql, SqlHelper.cn);
-            using (SqlDataReader rs = cmd.ExecuteReader())
-            {
-                //Get collection of restricted tables with foreign key in this table.
-                while (rs.Read())
-                {
-                    myField = SqlHelper.strValue(rs, "fieldName");
-                    //Field is a foreign key.
-                    if (SqlHelper.fieldIsForeignKey(currentSql.myTable, myField))
-                    {
-                        foreignTable = SqlHelper.getForeignTable(currentSql.myTable, myField);
-                        //See if foreignTable is restrictTablesToLastKey table.
-                        strSql = "SELECT * FROM afdTableData WHERE tableName = '" + foreignTable + "' AND filterID > 0";
-                        //ASM rs2.Open(strSql, cn, UpgradeHelpers.DB.LockTypeEnum.LockOptimistic);
-                        ////Make the first one myTableFilterTable and clear the rest
-                        //if (!rs2.EOF)
-                        //{
-                        //	if (result == "")
-                        //	{
-                        //		result = Convert.ToString(rs2["tableName"]);
-                        //	}
-                        //	else
-                        //	{
-                        //		rs2["filterID"] = 0;
-                        //		rs2.Update();
-                        //	}
-                        //}
-                    }
-                }
-            }
-            return result;
-        }
-
 
 
         #endregion
+
 
         //----------------------------------------------------------------------------------------------------------------------
         #region New Various functions and methods
         //----------------------------------------------------------------------------------------------------------------------
-        private void setFontSizeForAllControls()
-        {
-            // Control arrays - can't make array in design mode in .net
-            System.Windows.Forms.Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
-            System.Windows.Forms.ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            System.Windows.Forms.Label[] lblCellFilter = { lblCellFilter_0, lblCellFilter_1, lblCellFilter_2 };
-            System.Windows.Forms.TextBox[] txtCellFilter = { txtCellFilter_0, txtCellFilter_1, txtCellFilter_2 };
-
-            //Get size from registry
-            int size = 9;  // default
-            try { size = Convert.ToInt32(Interaction.GetSetting("AccessFreeData", "Options", "FontSize", "9")); }
-            catch { }
-            // Set font
-            System.Drawing.Font font = new System.Drawing.Font("Arial", size, FontStyle.Regular);
-            // Set all controls - (count simply iterate over all controls!)
-            dataGridView1.Font = font;
-            lblMainFilter.Font = font;
-            for (int i = 0; i <= lblcmbFilter.Count() - 1; i++) { lblcmbFilter[i].Font = font; }
-            for (int i = 0; i <= cmbFilter.Count() - 1; i++) { cmbFilter[i].Font = font; }
-            for (int i = 0; i <= lblCellFilter.Count() - 1; i++) { lblCellFilter[i].Font = font; }
-            for (int i = 0; i <= txtCellFilter.Count() - 1; i++) { txtCellFilter[i].Font = font; }
-            cmdAdd.Font = font;
-            listNewData.Font = font;
-            txtNewData.Font = font;
-        }
 
         // Add a "0" to i if it is less than 10.
         private string fileNumber(int i)
@@ -1110,37 +1121,56 @@ namespace AccessFreeData
             }
         }
 
-        private void toolStripStatusLabel1_Click(object sender, EventArgs e)
+        private void splitContainer1_Panel1_Paint(object sender, PaintEventArgs e)
         {
 
         }
 
-        private void coreBindingNavigator2_RefreshItems(object sender, EventArgs e)
+        private void rbEdit_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rbEdit.Checked) 
+            {
+                cmbEditColumn.Enabled = true; }
+            else 
+            {
+                cmbEditColumn.Enabled = false;    
+            }
+            SetTableLayoutPanelHeight(); 
+        }
+
+        private void dataGridView1_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            txtMessages.Text = "Cell double clicked";
+        }
+
+
+        private void dataGridView1_DoubleClick(object sender, EventArgs e)
+        {
+            txtMessages.Text = string.Empty;
+            txtMessages.Text = string.Empty;
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                if (rbEdit.Checked)
+                {
+                    if (cmbEditColumn.SelectedIndex > 0)
+                    {
+                        txtMessages.Text = "Edit column " + cmbEditColumn.SelectedValue;
+                    }
+
+                }
+            }
+        }
+
+        private void rbDelete_CheckedChanged(object sender, EventArgs e)
         {
 
         }
-
-        private void toolStripContainer1_ContentPanel_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-
-        }
-
-        private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        private void lblCellFilter_0_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void _lblCmbFilter_7_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void CommonDialogOpen_FileOk(object sender, CancelEventArgs e)
         {
 
         }
@@ -1204,98 +1234,33 @@ namespace AccessFreeData
             return result;
         }
 
-        private void dataGridView1_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
-        {
-            System.Windows.Forms.SortOrder newSortOrder = System.Windows.Forms.SortOrder.Ascending;   // default
-            // Check for same column ascending and change to descending  
-            if (currentSql.myOrderBys.Count > 0)
-            {
-                if (currentSql.myOrderBys[0].gridColumn == e.ColumnIndex)  // New column is the same as the old.
-                { 
-                    if (currentSql.myOrderBys[0].sortOrder == System.Windows.Forms.SortOrder.Ascending)
-                    {
-                        newSortOrder = System.Windows.Forms.SortOrder.Descending;
-                    }
-                }
-            }
-            // Update myOrdersBy to sort by newColumn and dir
-            currentSql.myOrderBys.Clear();
-            string sqlTable = currentSql.myFields[e.ColumnIndex].table;
-            string sqlField = currentSql.myFields[e.ColumnIndex].fieldName;
-            orderBy ob = new orderBy(sqlTable,sqlField,newSortOrder,e.ColumnIndex); // Note - this will be a problem if the name of column is not the field name
-            currentSql.myOrderBys.Add(ob);
-            currentSql.myPage = 1;
-
-            // Write the grid with the new order - write Grid will format the header cell
-            writeGrid_NewPage();
-
-        }
-
-        private object defaultValue(DbType fieldType)
-        {
-            //UPGRADE_WARNING: (2065) ADODB.DataTypeEnum property DataTypeEnum.adEmpty has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2065
-            object result = null;
-            DbType adDBFileTime = DbType.Object;
-            if (fieldType == DbType.Int16 || fieldType == DbType.Int32 || fieldType == DbType.Single || fieldType == DbType.Double || fieldType == DbType.Decimal || fieldType == DbType.Decimal)
-            {
-                result = 0;
-            }
-            else if (fieldType == DbType.Boolean)
-            {
-                result = false;
-            }
-            else if (fieldType == DbType.DateTime || fieldType == DbType.Time || fieldType == DbType.DateTime || fieldType == adDBFileTime)
-            {
-                result = DateTime.Now;
-            }
-            else if (fieldType == DbType.Currency)
-            {
-                result = Convert.ToDecimal(0);
-            }
-            else if (fieldType == DbType.String || fieldType == DbType.String || fieldType == DbType.String || fieldType == DbType.String || fieldType == DbType.String || fieldType == DbType.String)
-            {
-                result = "";
-            }
-            else
-            { //ignore binary - type 128 because i get errors anyway
-                MessageBox.Show("Unknown data type " + ((int)fieldType).ToString());
-            }
-            return result;
-        }
-
-        private string tableInCombo(int i)
-        {
-            System.Windows.Forms.ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            return SqlHelper.getForeignTable(currentSql.myTable, Convert.ToString(cmbFilter[i].Tag));
-        }
 
         internal bool findInCombos(string comboTable, string strID)
         {
-            System.Windows.Forms.ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            System.Windows.Forms.ComboBox[] cmbFilterBackup = { _cmbFilterBackup_0, _cmbFilterBackup_1, _cmbFilterBackup_2, _cmbFilterBackup_3, _cmbFilterBackup_4, _cmbFilterBackup_5, _cmbFilterBackup_6, _cmbFilterBackup_7 };
+            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
             //Puts strID into the comboTable box, returns true if succesful.
             //CurrentTable is already set and Combos already loaded -- but the grid may not be written yet.
-            int tempForEndVar = cmbFilter.Count() - 1;
-            for (int i = 0; i <= tempForEndVar; i++)
-            {
-                if (cmbFilter[i].Visible)
-                {
-                    //Combo table is in cmbFilter(i) (cmbFilter(i).tag is the id of the table - must.
-                    if (comboTable == tableInCombo(i))
-                    {
-                        int tempForEndVar2 = cmbFilterBackup[i].Items.Count - 1;
-                        for (int j = 0; j <= tempForEndVar2; j++)
-                        {
-                            if ((string)cmbFilterBackup[i].Items[j] == strID)
-                            { //Find strID in cmbFilterBackup
-                                updating = true;
-                                cmbFilter[i].SelectedIndex = j; //Select strID in cmbFilter
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
+            //int tempForEndVar = cmbFilter.Count() - 1;
+            //for (int i = 0; i <= tempForEndVar; i++)
+            //{
+            //    if (cmbFilter[i].Visible)
+            //    {
+            //        //Combo table is in cmbFilter(i) (cmbFilter(i).tag is the id of the table - must.
+            //        if (comboTable == tableInCombo(i))
+            //        {
+            //            int tempForEndVar2 = cmbFilterBackup[i].Items.Count - 1;
+            //            for (int j = 0; j <= tempForEndVar2; j++)
+            //            {
+            //                if ((string)cmbFilterBackup[i].Items[j] == strID)
+            //                { //Find strID in cmbFilterBackup
+            //                    updating = true;
+            //                    cmbFilter[i].SelectedIndex = j; //Select strID in cmbFilter
+            //                    return true;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
             return false;
         }
 
@@ -1517,8 +1482,8 @@ namespace AccessFreeData
 //            lblcmbFilter[Index].Text = StringsHelper.Replace(lblcmbFilter[Index].Text, " (F)", "", 1, -1, CompareMethod.Binary);
 //        }
 //    }
-//    System.Windows.Forms.ComboBox[] cmbFilterBackup = { _cmbFilterBackup_0, _cmbFilterBackup_1, _cmbFilterBackup_2, _cmbFilterBackup_3, _cmbFilterBackup_4, _cmbFilterBackup_5, _cmbFilterBackup_6, _cmbFilterBackup_7, _cmbFilterBackup_8 };
-//    System.Windows.Forms.ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7, _cmbFilter_8 };
+//    ComboBox[] cmbFilterBackup = { _cmbFilterBackup_0, _cmbFilterBackup_1, _cmbFilterBackup_2, _cmbFilterBackup_3, _cmbFilterBackup_4, _cmbFilterBackup_5, _cmbFilterBackup_6, _cmbFilterBackup_7, _cmbFilterBackup_8 };
+//    ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7, _cmbFilter_8 };
 //    string strSql = sqlClass.returnSql();
 
 //    //Open recordset -- the restricted class can cause some unknown error if we have an object in the table
@@ -5135,8 +5100,171 @@ namespace AccessFreeData
 // Create orderBy clauses in sqlBuilder from last page (if any)
 // Start with ID order then keep track of last user orderby 
 
+//  Original code to fill combo with filtered
+//            if (cmb.SelectedIndex > -1)
+//            {
+//                if (cmb.SelectedValue != "0")   // Chose "0" as the "Cell Filter" value
+//                { 
+//                    // Set myFieldsCombo
+//                    currentSql.myFieldsCombo.Clear();
+//                    List<field> fields = new List<field>();
+//                    // The selected text is the ColumnName and the SelectedValue is the dbType
+//                    field fi = dataHelper.getField(currentSql.myTable, cmb.SelectedValue.ToString());
+//                    fields.Add(fi);  // Only one field in the combo
+//                    currentSql.myFieldsCombo = fields;
+
+//                    // Set myOrderBysCombo to the first field in representative fields.
+//                    currentSql.myOrderBysCombo.Clear();
+//                    field sortField = currentSql.myFieldsCombo[0];  // Only field, added above
+//                    orderBy ob = new orderBy(sortField, System.Windows.Forms.SortOrder.Ascending);
+//                    currentSql.myOrderBysCombo.Add(ob);
+
+//                    // Get Sql string to use to bind combo
+////                    string strSql = currentSql.returnSql(command.cellfilter, cmb.SelectedValue.ToString());
+//                    TextBox txtCellFilter = new TextBox();  
+//                    if(cmb = )
+//                    txtCellFilter_1.Enabled = true;
+//              }
+
+//string vnt = "";
+
+//// whereTableCaption = "(";
+
+////Load new where clauses in colSqlWhere from the topBoxes that are visible and the extraWhere of this class
+//if (!currentSql.ignoreTopBoxes && currentSql.myJob != "combo")
+//{
+//    //Begin with txtWhere Box
+//    if (txtCellFilter_0.Visible)
+//    {
+//        if (Strings.Len(txtCellFilter_0.Text.Trim()) > 0)
+//        {
+//            // whereFld = SqlHelper.getCorrectFieldName(rsCurrent, Convert.ToString(txtWhere.Tag));
+//            string left = txtCellFilter_0.Tag.ToString();
+//            string right = txtCellFilter_0.Text.Trim();
+//            string dbType = "varchar";  // ASM - change to dbType in asfFields table
+//            where wh = new where(left,right, dbType);
+//            currentSql.myWheres.Add(wh);
+//        }
+//    }
+//    for (int i = 0; i <= cmbFilter.Count() - 1; i++)
+//    {
+//        if (cmbFilter[i].Visible)
+//        {
+//            if (cmbFilter[i].SelectedIndex > 0)
+//            {
+//                string left = cmbFilter[i].Tag.ToString();
+//                string right = cmbFilter[i].Text.Trim();
+//                string dbType = "varchar";  // ASM - change to dbType in asfFields table
+//                where wh = new where(left, right, dbType);
+//                currentSql.myWheres.Add(wh);
+//            }
+//        }
+//    }
+//}
+////Update sqlWhere by extra
+//if (myExtraField != "")
+//{
+//    string left = myExtraField;
+//    string right = myExtraValue;
+//    string dbType = "varchar";  // ASM - change to dbType in asfFields table
+//    where wh = new where(left, right, dbType);
+//    currentSql.myWheres.Add(wh);
+//}
 
 #endregion
 
+// Old DataGrid Setup columns
+////Special widths and colors
+////Bold if column is filtered
+//if (getSystemTableValue("afdFieldData", baseTable, short_Renamed(fld), "filterValue", DbType.String) != "")
+//{
+//    dataGridView1.CurrentCell = flexGrid2[i, 0];
+//    dataGridView1.Columns[i].DefaultCellStyle.Font = new Font("verdana", 10, FontStyle.Bold);
+//}
+
+////Special widths and colors
+////Bold if column is filtered
+//if (getSystemTableValue("afdFieldData", baseTable, short_Renamed(fld), "sort", DbType.Boolean) == "True")
+//{
+//    dataGridView1.CurrentCell = flexGrid2[i, 0];
+//    dataGridView1.Columns[i].DefaultCellStyle.Font = new Font("verdana", 10, FontStyle.Bold);
+//}
+
+//    //Hide all ID columns - except the Primary key if option checked
+//    if (mnuOptionShowID.Checked && this.ClientSize.isTablePrimaryKeyField(currentSql.myTable, fld))
+//    {
+//        dataGridView1.CurrentCell = flexGrid2[i, 0];
+//        //UPGRADE_WARNING: (2080) QBCOlor(15) was upgraded to System.Drawing.Color.White and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
+//        dataGridView1.Columns[i].DefaultCellStyle.Font = new Font("verdana", 10, FontStyle.Regular);
+//    }
+//    else if (isIdField(fld))
+//    {
+//        dataGridView1.Columns[i].Width = lngValue(rsTemp, "width") / 15;
+//    }
+//    else
+//    {
+//        //Set color of header row of column - blue or yellow or orange
+//        dataGridView1.CurrentCell = flexGrid2[i, 0];
+//        if (fieldUpdatable(colCaption(i)))
+//        {
+//            dataGridView1.CurrentCell.Style.BackColor = Color.LightGreen; //Light Green -- field in this table, can update
+//                                                                          //Book center: Change light green to light blue if the field has a multilingual translation
+//            if (bookCenter)
+//            {
+//                temp = colCaption(i);
+//                temp = StringsHelper.Replace(temp.ToLower(), "_name", "", 1, -1, CompareMethod.Binary);
+//                if (tableExists(temp + "_ml"))
+//                {
+//                    dataGridView1.CurrentCell.Style.BackColor = Color.LightCyan; //Light cyan (blue) -- multilingual field (needs translated)
+//                }
+//            }
+//        }
+//        else if (idFieldUpdatable(colCaption(i)))
+//        {
+//            //UPGRADE_WARNING: (2080) QBCOlor(14) was upgraded to System.Drawing.Color.LightYellow and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
+//            dataGridView1.CurrentCell.Style.BackColor = Color.LightYellow; //Light yellow -- id-field in this table, can update this id.
+//        }
+//        else if (idFieldUpdatableInPrinciple(colCaption(i)))
+//        {
+//            //UPGRADE_WARNING: (2080) QBCOlor(15) was upgraded to System.Drawing.Color.White and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
+//            dataGridView1.CurrentCell.Style.BackColor = Color.White; //Bright white -- id-field in this table, but not of a type that represents the table (for example, a number).
+//                                                                     //Hide these white columns if the option is set
+//            if (mnuToolHideWhiteColumns.Checked)
+//            {
+//                dataGridView1.Columns[i].Width = 0;
+//            }
+//        }
+//        else
+//        {
+//            //UPGRADE_WARNING: (2080) QBCOlor(13) was upgraded to System.Drawing.Color.Magenta and has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2080
+//            dataGridView1.CurrentCell.Style.BackColor = Color.Magenta; //magenta (red)
+//                                                                       //Hide these red columns if the option is set
+//            if (mnuToolHideRedColumns.Checked)
+//            {
+//                dataGridView1.Columns[i].Width = 0;
+//            }
+//        }
+//    }
+//    //Center material in column
+//    dataGridView1.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+//    //UPGRADE_ISSUE: (2064) MSHierarchicalFlexGridLib.MSHFlexGrid property dataGridView1.ColAlignmentHeader was not upgraded. More Information: https://docs.mobilize.net/vbuc/ewis#2064
+//    // dataGridView1.setColAlignmentHeader((int)DataGridViewContentAlignment.MiddleLeft, i, 0);
+//}
+//rsTemp = null;
+////Force repaint -- this is what may take time
+//this.ClientSize.Refresh();
+////Reset variables
+//this.ClientSize.Cursor = CursorHelper.CursorDefault;
+//progressBar1.Visible = false;
+//updating = false;
+//Clear out any extra where clause from sqlCurrent -- these only used once.
+//sqlCurrent.sqlExtraWhere("", "", DbType.Object);
+//sqlCurrent.ignoreTopBoxes = false;
+//if (isTranscript)
+//{
+//    if (currentSql.myTable == "transcript" && tablePages == 1)
+//    {
+//        transcript.QpaToSB(currentDR);
+//    }
 
 

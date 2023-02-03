@@ -4,7 +4,8 @@ using System.Collections.Specialized;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace AccessFreeData
+
+namespace SqlCollegeTranscripts
 {
 	internal partial class frmCaptions
 		: System.Windows.Forms.Form
@@ -32,7 +33,7 @@ namespace AccessFreeData
 		{
 			//ASM int j = 0 
 			//ASM int captionCount = 0;
-			this.Height = 70;
+			this.Height = 105;
 			int left = 35;
 			int top = 35;
 			loading = true;

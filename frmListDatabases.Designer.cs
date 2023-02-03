@@ -1,5 +1,5 @@
 
-namespace AccessFreeData
+namespace SqlCollegeTranscripts
 {
 	partial class frmListDatabases
 	{

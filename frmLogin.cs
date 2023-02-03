@@ -1,6 +1,5 @@
-using AccessFreeData;
 
-namespace AccessFreeData2
+namespace SqlCollegeTranscripts
 {
     internal partial class frmLogin : Form
     {
