@@ -60,9 +60,9 @@
   <data name="label3.Text" xml:space="preserve">
     <value>First, make the following changes using SSMS  (sql files found in Documents &gt; Server management
 1.  Drop constraints - this drops all the "non-zero" constraints
-2.  Change Column names - changes column names to English
-3.  Change Table names - changes tables name to English
-4.  Drop 3 "answer - question" files
+2.  Change Column names - changes column names to English - we have sql file for this
+3.  Change Table names - changes tables name to English - we have sql file for this
+4.  Drop 3 "answer - question" tables  (? if sql file given)
 5.  Do the following (no sql file given)
 a.  Drop "non-student" table
 b.  Add Requirements table
@@ -70,10 +70,10 @@ b.  Add Requirements table
   </data>
   <data name="label5.Text" xml:space="preserve">
     <value>Next we need to make column indexes unique.
-1.  Courses-Terms:  Unique multi-column index will be "courseID, termID, graduateCourse". 
-     So, first, In SSMS add a "_group, int, Not Null - default 1" column to "CoursesTerms"
-     And then run the "Add Section" command below - it adds _groups  for every Course_Term 
-     that has doubles.   (ASM: First look at the doubles to decide if this is best.)
+1.  Courses-Terms:  Unique multi-column index - "courseID, termID, graduateCourse, section". 
+     So, first, In SSMS add a "section, int, Not Null - default 1" column to "CoursesTerms"
+     And then run the "Add Section" command below - it adds sections  for every Course_Term 
+     that has doubles.   But I do this one by one so we can check reason for sections
 </value>
   </data>
 </root>

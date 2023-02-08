@@ -1,16 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.VisualBasic;
 using System.Data;
 using System.Data.SqlClient;
-using static System.ComponentModel.Design.ObjectSelectorEditor;
-using System.Windows.Forms;
-using System.Xml.Linq;
-using System.ComponentModel.DataAnnotations;
-using System.Security.Principal;
-using Windows.ApplicationModel.Background;
+using System.Text;
+using Windows.Media.AppBroadcasting;
 
 namespace SqlCollegeTranscripts
 
@@ -18,18 +10,50 @@ namespace SqlCollegeTranscripts
     internal static class MsSql
     {
         internal static string databaseType = "MsSql";
-        internal static SqlConnection? cn = null;
-        internal static SqlDataAdapter? currentDA;
-        internal static SqlDataAdapter? tablesDA;
-        internal static SqlDataAdapter? fieldsDA;
-        internal static SqlDataAdapter? foreignKeysDA;
-        internal static SqlDataAdapter? indexesDA;
-        internal static SqlDataAdapter? indexColumnsDA;
-        internal static SqlDataAdapter? extraDA;
-        internal static List<SqlDataAdapter> dataAdapterList = 
-            new List<SqlDataAdapter> { currentDA, tablesDA, fieldsDA, foreignKeysDA, indexesDA, indexColumnsDA, extraDA };
-        internal static List<String> dataTableNames =
-            new List<String> { "currentDT", "tablesDT", "fieldsDT", "foreighKeysDT", "indexesDT", "indexColumnsDT", "extraDT" };
+        internal static SqlConnection cn { get; set; }
+        internal static SqlDataAdapter currentDA { get; set; }
+        internal static SqlDataAdapter extraDA { get; set; }  // Might update, delete so can not reuse until grid closed
+        internal static SqlDataAdapter readOnlyDA { get; set; }  // No update of table and so no need to keep adaptar, etc.
+       
+        private static SqlDataAdapter GetDataAdaptor(DataTable dataTable)
+        {
+            if(dataTable == dataHelper.currentDT)
+            {
+                if(currentDA == null) { currentDA = new SqlDataAdapter(); }
+                return currentDA;
+            }
+            else if(dataTable == dataHelper.extraDT)
+            {
+                if (extraDA == null) { extraDA = new SqlDataAdapter(); }
+                return extraDA;
+            }
+            else
+            {
+                if (readOnlyDA == null) { readOnlyDA = new SqlDataAdapter(); }
+                return readOnlyDA;   // Returns null
+            }
+        }
+
+        // Set update command - only one set field and the where is for PK=@PK - i.e. only one row
+        internal static void SetUpdateCommand(field fieldToSet, DataTable dataTable)
+        {
+            // Do this once in the program
+            string msg = string.Empty;
+            // Get data adapter
+            SqlDataAdapter da = GetDataAdaptor(dataTable);
+            string tableName = fieldToSet.table;
+            string fieldName = fieldToSet.fieldName;
+            string dbType = fieldToSet.dbType;
+            SqlDbType sqlDBType = (SqlDbType)Enum.Parse(typeof(SqlDbType), dbType, true);
+            int size = fieldToSet.size;
+            string PK = dataHelper.getTablePrimaryKeyField(tableName);
+            string sqlUpdate =  String.Format("UPDATE {0} SET {1} = {2} WHERE {3} = {4}", 
+                    tableName, fieldName, "@" + fieldName, PK, "@" + PK);
+            SqlCommand sqlCmd = new SqlCommand(sqlUpdate, MsSql.cn);
+            sqlCmd.Parameters.Add("@" + fieldName, sqlDBType , size, fieldName);
+            sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, size, PK);
+            da.UpdateCommand = sqlCmd;
+        }
 
         internal static List<string> defaultConnectionString()
         {
@@ -53,8 +77,8 @@ namespace SqlCollegeTranscripts
             sb.Append("INNER JOIN sys.tables t ON t.OBJECT_ID = sfkc.referenced_object_id");
             string sqlForeignKeys = sb.ToString();
             dataHelper.foreignKeysDT = new DataTable("foreighKeysDT");
-            foreignKeysDA = new SqlDataAdapter(sqlForeignKeys, cn);
-            foreignKeysDA.Fill(dataHelper.foreignKeysDT);
+            readOnlyDA = new SqlDataAdapter(sqlForeignKeys, cn);
+            readOnlyDA.Fill(dataHelper.foreignKeysDT);
             // Indexes - note: si.index_id = 0 if index is a heap (no columns)
             sb.Clear();
             sb.Append("select OBJECT_NAME(so.object_id) as TableName, si.[name] as IndexName, ");
@@ -67,8 +91,8 @@ namespace SqlCollegeTranscripts
             sb.Append("order by TableName ");
             string sqlIndexes = sb.ToString();
             dataHelper.indexesDT = new DataTable("indexesDT");
-            indexesDA = new SqlDataAdapter(sqlIndexes, cn);
-            indexesDA.Fill(dataHelper.indexesDT);
+            readOnlyDA = new SqlDataAdapter(sqlIndexes, cn);
+            readOnlyDA.Fill(dataHelper.indexesDT);
             // IndexColumns
             sb.Clear();
             sb.Append("SELECT OBJECT_NAME(so.object_id) as TableName, si.name as IndexName, COL_NAME(si.object_id, sic.column_id) as ColumnName, ");
@@ -80,8 +104,8 @@ namespace SqlCollegeTranscripts
             sb.Append("ORDER BY TableName, is_PK desc, IndexName ");
             string sqlIndexColumns = sb.ToString();
             dataHelper.indexColumnsDT = new DataTable("indexColumnsDT");
-            indexColumnsDA = new SqlDataAdapter(sqlIndexColumns, cn);
-            indexColumnsDA.Fill(dataHelper.indexColumnsDT);
+            readOnlyDA = new SqlDataAdapter(sqlIndexColumns, cn);
+            readOnlyDA.Fill(dataHelper.indexColumnsDT);
             // Tables
             sb.Clear();
             sb.Append("SELECT so.name as TableName , ");
@@ -93,8 +117,8 @@ namespace SqlCollegeTranscripts
             sb.Append("ORDER BY TableName ");
             string sqlTables = sb.ToString();
             dataHelper.tablesDT = new DataTable("tablesDT");
-            tablesDA = new SqlDataAdapter(sqlTables, cn);
-            tablesDA.Fill(dataHelper.tablesDT);
+            readOnlyDA = new SqlDataAdapter(sqlTables, cn);
+            readOnlyDA.Fill(dataHelper.tablesDT);
             // Fields - do this last
             sb.Clear();
             sb.Append("SELECT so.name as TableName, ");
@@ -112,8 +136,8 @@ namespace SqlCollegeTranscripts
             sb.Append("WHERE so.is_ms_shipped <> 1 AND so.type = 'U' and st.lob_data_space_id = 0 ");
             string sqlFields = sb.ToString();
             dataHelper.fieldsDT = new DataTable("fieldsDT");
-            fieldsDA = new SqlDataAdapter(sqlFields, cn);
-            fieldsDA.Fill(dataHelper.fieldsDT);
+            readOnlyDA = new SqlDataAdapter(sqlFields, cn);
+            readOnlyDA.Fill(dataHelper.fieldsDT);
             dataHelper.updateFieldsTable();
         }
 
@@ -124,38 +148,24 @@ namespace SqlCollegeTranscripts
                 cn = new SqlConnection(connectionString);
             }
             if (cn.State != ConnectionState.Open)
-            { 
+            {
                 cn.Open();
             }
         }
 
         internal static void FillDataTable(DataTable dt, string sqlString)
         {
-            String str;
-            for (int i = 0; i < dataTableNames.Count(); i++)
-            {
-                str = dataTableNames[i];
-                if (str == dt.TableName)
-                {
-                    SqlDataAdapter da = dataAdapterList[0];
-                    if (da != null) { da = null; }
-                    da = new SqlDataAdapter(sqlString, cn);
-                    da.Fill(dt);
-                    return;
-                }
-            }
-            using(SqlDataAdapter da = new SqlDataAdapter(sqlString,cn)) 
-            { 
-                    da.Fill(dt); 
-            }
+            SqlDataAdapter da = GetDataAdaptor(dt);
+            SqlCommand sqlCmd = new SqlCommand(sqlString, cn);
+            da.SelectCommand = sqlCmd;
+            da.Fill(dt);
         }
 
         internal static void CloseConnectionAndDataAdapters()
-        { 
-            foreach(SqlDataAdapter da in dataAdapterList)
-            {
-                // if(da != null) { da = null; }
-            }
+        {
+            currentDA = null;
+            extraDA = null;
+            readOnlyDA = null;
             if (cn != null)
             {
                 if (cn.State == ConnectionState.Open)

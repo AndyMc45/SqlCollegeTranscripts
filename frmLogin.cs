@@ -11,6 +11,9 @@ namespace SqlCollegeTranscripts
         private void frmLogin_Load(object sender, EventArgs e)
         {
             txtPassword.PasswordChar = '#';
+            // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
+            MultiLingual.InsertEnglishIntoDatabase(this);
+
         }
         private void cmdCancel_Click(Object eventSender, EventArgs eventArgs)
         {

@@ -1,17 +1,5 @@
 ﻿using Microsoft.VisualBasic;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Permissions;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using Windows.Storage;
-using System.Xml.Linq;
 using System.Text.Json;
-using static System.Collections.Specialized.BitVector32;
-using System.Windows.Forms;
-using Microsoft.Win32;
 
 namespace SqlCollegeTranscripts
 {
@@ -29,7 +17,7 @@ namespace SqlCollegeTranscripts
             this.server = server;
             this.user = user;
             this.comboString = comboString;
-            this.databaseName= databaseName;
+            this.databaseName = databaseName;
             this.databaseType = databaseType;
             this.readOnly = readOnly;
         }
@@ -46,19 +34,20 @@ namespace SqlCollegeTranscripts
         public static connectionString? GetFirstConnectionStringOrNull()
         {
             string appName = "SqlCollegeTranscripts";
-            string jsonString = Interaction.GetSetting(appName, "ConnectionList", 0.ToString(),"_end");
-            if (jsonString == "_end"){
+            string jsonString = Interaction.GetSetting(appName, "ConnectionList", 0.ToString(), "_end");
+            if (jsonString == "_end")
+            {
                 return default;  // This is the way to return null
             }
             connectionString cs = JsonSerializer.Deserialize<connectionString>(jsonString);
-            return cs; 
+            return cs;
         }
 
         public static List<connectionString> GetConnectionStringList()
         {
             List<string> jsonStringList = regitGetList("ConnectionList");
             List<connectionString> csList = new List<connectionString>();
-            foreach(string str in jsonStringList)
+            foreach (string str in jsonStringList)
             {
                 connectionString cs = JsonSerializer.Deserialize<connectionString>(str);
                 csList.Add(cs);
@@ -110,11 +99,11 @@ namespace SqlCollegeTranscripts
             string currentValue = Interaction.GetSetting(appName, section, i.ToString(), "_end");
             while (currentValue != "_end")
             {
-                Interaction.SaveSetting(appName, section, (i-1).ToString(), currentValue);
+                Interaction.SaveSetting(appName, section, (i - 1).ToString(), currentValue);
                 i++;
                 currentValue = Interaction.GetSetting(appName, section, i.ToString(), "_end");
             }
-            Interaction.DeleteSetting(appName, section, (i-1).ToString());
+            Interaction.DeleteSetting(appName, section, (i - 1).ToString());
 
         }
         private static List<string> regitGetList(string section)
@@ -122,7 +111,7 @@ namespace SqlCollegeTranscripts
             List<string> strList = new List<string>();
             string appName = "SqlCollegeTranscripts";
             int i = 0;
-            string currentValue = Interaction.GetSetting(appName, section, 0.ToString(),"_end");
+            string currentValue = Interaction.GetSetting(appName, section, 0.ToString(), "_end");
             while (currentValue != "_end")
             {
                 strList.Add(currentValue);

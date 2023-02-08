@@ -1,15 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Data.SqlClient;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
-namespace SqlCollegeTranscripts
+﻿namespace SqlCollegeTranscripts
 {
     public partial class frmUpdateDatabaseToV2 : Form
     {
@@ -27,11 +16,7 @@ namespace SqlCollegeTranscripts
         {
             using (frmDatabaseInfo formDI = new frmDatabaseInfo())
             {
-                formDI.job = "CreateGroups";
-                List<string> ic = new List<string>();
-                ic.Add("courseID");
-                ic.Add("termID");
-                formDI.indexColumns = ic;
+                formDI.job = "CourseTerms";
                 formDI.ShowDialog();
             }
 

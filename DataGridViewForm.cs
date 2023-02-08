@@ -1,24 +1,8 @@
 ﻿using Microsoft.VisualBasic;
-using System;
+using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.Text;
-using System.Windows.Forms;
-using System.IO;
-using System.Diagnostics.Metrics;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Threading;
-using System.Threading.Tasks;
-using System.ComponentModel;
-using System.Security.Cryptography;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
-using Microsoft.VisualBasic.ApplicationServices;
-using SqlCollegeTranscripts;
-using System.Windows.Forms.VisualStyles;
 
 namespace SqlCollegeTranscripts
 {
@@ -27,13 +11,23 @@ namespace SqlCollegeTranscripts
     // sqlCurrent.returnSql returns the sql string.  This is then bound to the Grid (via an sqlDataAdaptor)
 
     //User actions, and how the program reacts to each as follows
-    //1.  Open New connection -- calls closeConnection (reinitiae everything to empty state; list tables in menu), 
+    //0.  Form Load - Loads user settings and other things which don't depend on the table
+    //1.  Open New connection -- called near end of Form Load and by File-->connection menu
+    //    First calls closeConnection (reinitiae everything to empty state; list tables in menu), 
     //    and then open the new connection
-    //2.  Open New Table -- sets new sqlCurrent, calls Write New Filters, Calls write New Orderby, Calls write Grid
-    //    Write New Table sets table strings (including inner joins) and field strings.
-    //    Write the New Filters sets the where clauses - as well as setting up the filters at the top of the screen
+    //2.  Open New Table -- calls writeGrid_NewTable
+    //    WriteGrid_NewTable - Sets new sqlCurrent - Calls sqlCurrent.SetInnerJoins which sets sql table strings and field strings.
+    //    WriteGrid_NewTable also resets the top filters and then sets them up for the table (with no actual filtering)
+    //    WriteGrid_NewTable calls Write New Filters calls write New Orderby calls write Grid
+    //    Write the New Filters sets the where clauses in sqlCurrent
     //    Write New OrderBy simply adds an order by clause -- this can be changed via click header of grid event.
-    //    Write the Grid - binds dataViewGrid1 and then sets up the rest of the screen.
+    //    Write the Grid - binds dataViewGrid1 and then does some formatting on datagridview.
+    //3.  Four modes
+    //    View -- Base
+    //    Edit  -- User selects 1 column in table to edit - not table PK or DK but may be FK - and FK may have several DK columns. 
+    //          -- Selecting a column also sets currentDA.UpdateCommand (i.e. currentSql's dataadapter's UpdateCommand)
+    //          -- User clicks on an edit column - textbox appears for non-keys, drop-down appears for FK.
+    //          -- When user exits the cell, call currentDA.Update()
 
     internal partial class DataGridViewForm : Form
     {
@@ -62,7 +56,6 @@ namespace SqlCollegeTranscripts
         {
             //Required by windows forms
             InitializeComponent();
-
         }
 
         private void DataGridViewForm_Load(object sender, EventArgs e)
@@ -70,15 +63,15 @@ namespace SqlCollegeTranscripts
             // Set things that don't change even if connection changes
 
             // 0.  Main filter datasource and 'last' element never changes
-            where wh = new where("none","none", "0", "int");
-            wh.displayValue= "Select Row";
+            where wh = new where("none", "none", "0", "int", 4);
+            wh.displayValue = "Select Row";
             updating = true; // following calls _cmbMainFilter changeindex event. "Updating" cancels that event.
-                pastFilters = new BindingList<where>();
-                pastFilters.Add(wh);
-                _cmbMainFilter.DisplayMember = "displayValue";
-                _cmbMainFilter.ValueMember = "whereValue";
-                _cmbMainFilter.DataSource = pastFilters;
-                lblMainFilter.Text = "Row Filter:";
+            pastFilters = new BindingList<where>();
+            pastFilters.Add(wh);
+            _cmbMainFilter.DisplayMember = "displayValue";
+            _cmbMainFilter.ValueMember = "whereValue";
+            _cmbMainFilter.DataSource = pastFilters;
+            lblMainFilter.Text = "Row Filter:";
             updating = false;
 
             // 1. Set language
@@ -89,7 +82,7 @@ namespace SqlCollegeTranscripts
             if (int.TryParse(strPageSize, out newPageSize))
             {
                 if (newPageSize > 9)  // Don't allow less than 10
-                { 
+                {
                     pageSize = newPageSize;
                 }
             }
@@ -106,9 +99,13 @@ namespace SqlCollegeTranscripts
             // openLogFile(); //errors ignored
 
             // 7. Open last connection 
-                string msg = openConnection();            
-                if(msg != string.Empty) { txtMessages.Text = msg; } 
-         }
+            string msg = openConnection();
+            if (msg != string.Empty) { txtMessages.Text = msg; }
+
+            // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
+            dataHelper.extraDT = new DataTable();  // extraDT used to insert English Into Database, and for other non-permenant things
+            MultiLingual.InsertEnglishIntoDatabase(this);
+        }
 
         private void DataGridViewForm_FormClosed(object sender, FormClosedEventArgs e)
         {
@@ -147,7 +144,7 @@ namespace SqlCollegeTranscripts
             for (int i = 0; i <= cmbCellFields.Count() - 1; i++) { cmbCellFields[i].Font = font; }
             for (int i = 0; i <= radioButtons.Count() - 1; i++) { radioButtons[i].Font = font; }
             cmbEditColumn.Font = font;
-            txtRecordsPerPage.Font = font;  
+            txtRecordsPerPage.Font = font;
         }
 
         private void openLogFile()
@@ -236,7 +233,7 @@ namespace SqlCollegeTranscripts
             try
             {
                 // 1. Close old connection if any
-                closeConnectionAndIntializeForm();  
+                closeConnectionAndIntializeForm();
 
                 // 2. Get connection string
                 msSql = true;
@@ -244,10 +241,10 @@ namespace SqlCollegeTranscripts
                 connectionString csObject = AppData.GetFirstConnectionStringOrNull();
                 if (csObject == null)
                 {
-                    sb.AppendLine("No previous connection string.");
+                    sb.AppendLine(MultiLingual.tr("No previous connection string.", this));
                 }
                 else
-                { 
+                {
                     // {0} is server, {1} is Database, {2} is user, {3} is password (unknown)
                     string cs = String.Format(csObject.comboString, csObject.server, csObject.databaseName, csObject.user);
 
@@ -272,9 +269,13 @@ namespace SqlCollegeTranscripts
 
                     foreach (DataRow row in dataHelper.tablesDT.Rows)
                     {
-                        string? tn = row["TableName"].ToString();
-                        if(tn != null) { 
-                            mnuOpenTables.DropDownItems.Add(tn);
+                        ToolStripItem tsi = new ToolStripMenuItem();
+                        string tn = row["TableName"].ToString();
+                        tsi.Name = tn;
+                        tsi.Text = tn;
+                        if (tn != null)
+                        {
+                            mnuOpenTables.DropDownItems.Add(tsi);
                         }
                     }
                 }
@@ -291,12 +292,12 @@ namespace SqlCollegeTranscripts
         private void resetMainFilter()
         {
             // Remove all but the last element in pastFilters list (i.e. "Row Filter")
-            while(pastFilters.Count > 1) 
+            while (pastFilters.Count > 1)
             {
                 pastFilters.RemoveAt(pastFilters.Count - 2);
             }
         }
-          
+
         private void resetComboAndCellFilters()
         {
             Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
@@ -307,7 +308,7 @@ namespace SqlCollegeTranscripts
             rbView.Checked = true;
             cmbEditColumn.Enabled = false;
 
-           // Hide, disable and clear all the cmbCellFilters and cmbCellFields 
+            // Hide, disable and clear all the cmbCellFilters and cmbCellFields 
             for (int i = 0; i <= cmbCellFields.Count() - 1; i++)
             {
                 txtCellFilter[i].Visible = true;
@@ -380,7 +381,7 @@ namespace SqlCollegeTranscripts
 
             // Format and hide various controls
             resetMainFilter();
-            updating = true; 
+            updating = true;
             resetComboAndCellFilters();
             updating = false;
         }
@@ -394,26 +395,26 @@ namespace SqlCollegeTranscripts
         // Set initial state and things that don't change for this table here 
         private void writeGrid_NewTable(string table)
         {
-  //          var watch = Stopwatch.StartNew();
+            //          var watch = Stopwatch.StartNew();
 
             toolStripMsg.Text = table;
             rbView.Checked = true;
-            updating = true; 
+            updating = true;
             resetComboAndCellFilters();
             updating = false;
 
             // Create currentSql - same currentSql used until new table is loaded
             currentSql = new sqlFactory(table, 1, pageSize);
 
-            // Put Primary key of main table in the first field of myFields
-            string pk = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
-            field fi = new field(currentSql.myTable, pk, "int");
-            currentSql.myFields.Add(fi);
+            //// Put Primary key of main table in the first field of myFields
+            //string pk = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
+            //field fi = new field(currentSql.myTable, pk, "int", 4);
+            //currentSql.myFields.Add(fi);
 
-            // This sets currentSql table and field strings - and these remain the same for this table.
-            // This also sets DisplayFieldDicitionary each foreign table key in main table
-            string msg = currentSql.callInnerJoins(currentSql.myTable, "");
-            if (!String.IsNullOrEmpty(msg)) { toolStripBottom.Text = msg; }
+            //// This sets currentSql table and field strings - and these remain the same for this table.
+            //// This also sets DisplayFieldDicitionary each foreign table key in main table
+            //string msg = currentSql.callInnerJoins();
+            if (!String.IsNullOrEmpty(currentSql.msg)) { toolStripBottom.Text = currentSql.msg; }
 
             // Set up 8 cmbFilter labels and boxes - BUT don't bind them yet - 9 milliseconds
             ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
@@ -480,8 +481,8 @@ namespace SqlCollegeTranscripts
             cmbEditColumn.Enabled = false;  // Make true if "edit" mode
 
             writeGrid_NewMainFilter();
-//           watch.Stop();
-//           txtMessages.Text = watch.ElapsedMilliseconds.ToString() + " " + txtMessages.Text;
+            //           watch.Stop();
+            //           txtMessages.Text = watch.ElapsedMilliseconds.ToString() + " " + txtMessages.Text;
 
         }
 
@@ -499,8 +500,8 @@ namespace SqlCollegeTranscripts
                 getTasks.Add(CmbFkFilter_FillOneFromDatabaseAsync(cmbFilters[i], strSql));
                 i++;
             }
-           getTasks.Add(writeGrid_NewFilter());
-           await Task.WhenAll(getTasks);
+            getTasks.Add(writeGrid_NewFilter());
+            await Task.WhenAll(getTasks);
         }
 
         internal async Task CmbFkFilter_FillOneFromDatabaseAsync(ComboBox cmb, string strSql)
@@ -523,7 +524,7 @@ namespace SqlCollegeTranscripts
             // Create the where clauses in sqlBuilder currentSql
             callSqlWheres();
             // Get record Count
-            string strSql = currentSql.returnSql(command.count,"",0);
+            string strSql = currentSql.returnSql(command.count);
             currentSql.RecordCount = MsSql.GetRecordCount(strSql);
             await writeGrid_NewOrderBy();
         }
@@ -546,9 +547,9 @@ namespace SqlCollegeTranscripts
             Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
 
             // CENTRAL USE OF sqlCurrent IN PROGRAM
-            string strSql = currentSql.returnSql(command.select,"", 0);
+            string strSql = currentSql.returnSql(command.select);
 
-            //Clear the grid
+            //Clear the grid - try deleting this because may not be necessary
             if (dataGridView1.DataSource != null)
             {
                 dataGridView1.DataSource = null;
@@ -670,7 +671,7 @@ namespace SqlCollegeTranscripts
                         string selectedValue = cmbFilters[i].GetItemText(cmbFilters[i].SelectedValue);
                         if (Convert.ToInt32(selectedValue) > 0)
                         {
-                            where wh = new where(currentSql.myTable, cmbFilters[i].Tag.ToString(), selectedValue, "int");
+                            where wh = new where(currentSql.myTable, cmbFilters[i].Tag.ToString(), selectedValue, "int", 4);
                             currentSql.myWheres.Add(wh);
                         }
                     }
@@ -683,10 +684,11 @@ namespace SqlCollegeTranscripts
                 {
                     if (txtCellFilters[i].Text != string.Empty)
                     {
-                        string selectedValue = txtCellFilters[i].Text; 
+                        string selectedValue = txtCellFilters[i].Text;
                         string fieldName = cmbCellFields[i].GetItemText(cmbCellFields[i].SelectedValue);
                         string dataType = dataHelper.getStringValueFieldsDT(currentSql.myTable, fieldName, "DataType");
-                        field fi = new field(currentSql.myTable, fieldName, dataType);
+                        int size = dataHelper.getIntValueFieldsDT(currentSql.myTable, fieldName, "MaxLength");
+                        field fi = new field(currentSql.myTable, fieldName, dataType,size);
                         where wh = new where(fi, selectedValue);
                         currentSql.myWheres.Add(wh);
                     }
@@ -711,28 +713,28 @@ namespace SqlCollegeTranscripts
         private void contextMenu_MainFilter_Click(object sender, EventArgs e)
         {
             if (dataGridView1.SelectedRows.Count > 0)
-            {   
+            {
                 // Define mainFilter (Type: where).
                 // This assumes the first column in row is the index and it is an integer
                 string value = dataGridView1.SelectedRows[0].Cells[0].Value.ToString(); //Integer
                 // Set DisplayValue to string with all non-empty cells from selected row (may shorten later)                
                 List<String> displayValueList = new List<String>();
-                foreach( DataGridViewCell cell in dataGridView1.SelectedRows[0].Cells ) 
+                foreach (DataGridViewCell cell in dataGridView1.SelectedRows[0].Cells)
                 {
                     if (cell.Value != null)
-                    {  
-                        if(!String.IsNullOrEmpty(cell.Value.ToString()))
+                    {
+                        if (!String.IsNullOrEmpty(cell.Value.ToString()))
                         {
                             field fi = currentSql.myFields[cell.ColumnIndex];
-                            if(dataHelper.isDisplayKey(fi.table,fi.fieldName))
-                            { 
+                            if (dataHelper.isDisplayKey(fi.table, fi.fieldName))
+                            {
                                 displayValueList.Add(Convert.ToString(cell.Value));
                             }
                         }
                     }
                 }
                 string displayValue = String.Join(", ", displayValueList);
-                mainFilter = new where(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, value, "int");
+                mainFilter = new where(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, value, "int", 4);
                 mainFilter.displayValue = displayValue;
                 //Update pastFilters list
                 pastFilters.Insert(0, mainFilter);
@@ -743,18 +745,19 @@ namespace SqlCollegeTranscripts
         private void _cmbMainFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (!updating)
-            { 
+            {
                 int i = _cmbMainFilter.SelectedIndex;
                 if (i != -1)  // Always true (I suspect)
                 {
                     //Last element means "no filter".
-                    if(_cmbMainFilter.SelectedIndex == _cmbMainFilter.Items.Count - 1)
+                    if (_cmbMainFilter.SelectedIndex == _cmbMainFilter.Items.Count - 1)
                     {
                         mainFilter = null;
                         lblMainFilter.Text = "No Filter";
                     }
-                    else { 
-                        mainFilter= pastFilters[i];   // pastFilters is a "where" list that is used to bind _cmbMainFilter
+                    else
+                    {
+                        mainFilter = pastFilters[i];   // pastFilters is a "where" list that is used to bind _cmbMainFilter
                         lblMainFilter.Text = mainFilter.fl.table;
                     }
                 }
@@ -766,7 +769,7 @@ namespace SqlCollegeTranscripts
 
         private void mnuOpenTables_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-            string tableName = e.ClickedItem.Text;
+            string tableName = e.ClickedItem.Name;  // the text can be translated.  Set Name = Text when adding ToolStripMenuItem
             //Open a new table
             writeGrid_NewTable(tableName);
         }
@@ -780,9 +783,9 @@ namespace SqlCollegeTranscripts
             {
                 for (int i = 0; i < fatherItem.DropDownItems.Count; i++)
                 {
-                    if (fatherItem.DropDownItems[i] == clickedItem) 
-                    { 
-                        index = i; break;   
+                    if (fatherItem.DropDownItems[i] == clickedItem)
+                    {
+                        index = i; break;
                     }
                 }
             }
@@ -834,7 +837,8 @@ namespace SqlCollegeTranscripts
             //Get list from App.Data
             List<connectionString> csList = AppData.GetConnectionStringList();
             mnuConnectionList.DropDownItems.Clear();
-            foreach (connectionString cs in csList) {
+            foreach (connectionString cs in csList)
+            {
                 // {0} for server, {1} for Database, {2} for user, {3} for password (unknown)
                 string csString = String.Format(cs.comboString, cs.server, cs.databaseName, cs.user, "******");
                 mnuConnectionList.DropDownItems.Add(csString);
@@ -851,95 +855,95 @@ namespace SqlCollegeTranscripts
         private void txtRecordsPerPage_Leave(object sender, EventArgs e)
         {
             int rpp = 0;
-            if(int.TryParse(txtRecordsPerPage.Text,out rpp))
+            if (int.TryParse(txtRecordsPerPage.Text, out rpp))
             {
                 if (rpp > 9)
                 {
                     pageSize = rpp;
-                    AppData.SaveKeyValue("RPP",rpp.ToString());
+                    AppData.SaveKeyValue("RPP", rpp.ToString());
                 }
-            
-            }    
+
+            }
         }
 
 
         private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
             {
-                if (currentSql != null)
+                int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
+                int pageLeap = Math.Max(currentSql.myPage - oneFifth, 1);
+                if (currentSql.myPage != pageLeap)
                 {
-                    int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
-                    int pageLeap = Math.Max(currentSql.myPage - oneFifth, 1);
-                    if (currentSql.myPage != pageLeap)
-                    { 
-                        currentSql.myPage = pageLeap;
-                        writeGrid_NewPage();
-                    }
+                    currentSql.myPage = pageLeap;
+                    writeGrid_NewPage();
                 }
+            }
 
-            }
-            // Paging - <
-            private void toolStripButton2_Click(object sender, EventArgs e)
+        }
+        // Paging - <
+        private void toolStripButton2_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
             {
-                if (currentSql != null)
+                if (currentSql.myPage > 1)
                 {
-                    if (currentSql.myPage > 1)
-                    {
-                        currentSql.myPage--;
-                        writeGrid_NewPage();
-                    }
+                    currentSql.myPage--;
+                    writeGrid_NewPage();
                 }
             }
-            // Paging - pages / totalPages
-            private void toolStripButton3_Click(object sender, EventArgs e)
+        }
+        // Paging - pages / totalPages
+        private void toolStripButton3_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
             {
-                if (currentSql != null)
+                frmCaptions captionsForm = new frmCaptions("Pages", "pages");
+                //Get connection string
+                captionsForm.totalPages = currentSql.TotalPages;
+                captionsForm.gridFormWidth = this.Width;
+                captionsForm.gridFormLeftLocation = this.Location.X;
+                captionsForm.ShowDialog();
+                int pageSelected;
+                bool captionIsInt = Int32.TryParse(captionsForm.selectedCaption, out pageSelected);
+                if (!captionIsInt)
                 {
-                    frmCaptions captionsForm = new frmCaptions("Pages", "pages");
-                    //Get connection string
-                    captionsForm.totalPages = currentSql.TotalPages;
-                    captionsForm.gridFormWidth = this.Width;
-                    captionsForm.gridFormLeftLocation = this.Location.X;
-                    captionsForm.ShowDialog();
-                    int pageSelected;
-                    bool captionIsInt = Int32.TryParse(captionsForm.selectedCaption, out pageSelected); 
-                    if(!captionIsInt)
-                    {
-                        pageSelected = currentSql.myPage;
-                    }
-                    captionsForm.Close();
-                    if (pageSelected != currentSql.myPage)
-                    {
-                        currentSql.myPage = pageSelected;
-                        writeGrid_NewPage();
-                    }
+                    pageSelected = currentSql.myPage;
+                }
+                captionsForm.Close();
+                if (pageSelected != currentSql.myPage)
+                {
+                    currentSql.myPage = pageSelected;
+                    writeGrid_NewPage();
                 }
             }
-                // Paging - >
-            private void toolStripButton4_Click(object sender, EventArgs e)
+        }
+        // Paging - >
+        private void toolStripButton4_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
             {
-                if (currentSql != null)
+                if (currentSql.myPage < currentSql.TotalPages)
                 {
-                    if(currentSql.myPage < currentSql.TotalPages)
-                    { 
-                        currentSql.myPage++;
-                        writeGrid_NewPage();
-                    }
+                    currentSql.myPage++;
+                    writeGrid_NewPage();
                 }
             }
-            // Paging - >>
-            private void toolStripButton5_Click(object sender, EventArgs e)
+        }
+        // Paging - >>
+        private void toolStripButton5_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
             {
-                if(currentSql != null)
+                int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
+                int pageLeap = Math.Min(currentSql.myPage + oneFifth, currentSql.TotalPages);
+                if (pageLeap != currentSql.TotalPages)
                 {
-                    int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
-                    int pageLeap = Math.Min(currentSql.myPage + oneFifth, currentSql.TotalPages);
-                    if (pageLeap != currentSql.TotalPages)
-                    { 
-                        currentSql.myPage = pageLeap;
-                        writeGrid_NewPage();
-                    }
+                    currentSql.myPage = pageLeap;
+                    writeGrid_NewPage();
                 }
             }
+        }
         #endregion
         private void lblMainFilter_Click(object sender, EventArgs e)
         {
@@ -948,7 +952,7 @@ namespace SqlCollegeTranscripts
         private void txtCellFilterTextChanged(object sender, EventArgs e)
         {
             if (updating == false)
-            { 
+            {
                 writeGrid_NewFilter();
             }
         }
@@ -968,18 +972,18 @@ namespace SqlCollegeTranscripts
                     {
                         txtCellFilters[i].Enabled = false;
                     }
-                    else 
-                    { 
+                    else
+                    {
                         txtCellFilters[i].Enabled = true;
                     }
                 }
             }
         }
 
-          private void cmbCellFilterSelectedIndexChanged(object sender, EventArgs e)
+        private void cmbCellFilterSelectedIndexChanged(object sender, EventArgs e)
         {
             ComboBox cmb = (ComboBox)sender;
-            if (cmb.SelectedIndex > -1) 
+            if (cmb.SelectedIndex > -1)
             {
                 writeGrid_NewFilter();
             }
@@ -1046,7 +1050,7 @@ namespace SqlCollegeTranscripts
         private void tableLayoutPanel_Filters_SizeChanged(object sender, EventArgs e)
         {
             TableLayoutPanel senderPanel = (TableLayoutPanel)sender;
-            this.splitContainer1.SplitterDistance = senderPanel.Height + 5; 
+            this.splitContainer1.SplitterDistance = senderPanel.Height + 5;
         }
 
         private void rbView_CheckedChanged(object sender, EventArgs e)
@@ -1128,14 +1132,15 @@ namespace SqlCollegeTranscripts
 
         private void rbEdit_CheckedChanged(object sender, EventArgs e)
         {
-            if (rbEdit.Checked) 
+            if (rbEdit.Checked)
             {
-                cmbEditColumn.Enabled = true; }
-            else 
-            {
-                cmbEditColumn.Enabled = false;    
+                cmbEditColumn.Enabled = true;
             }
-            SetTableLayoutPanelHeight(); 
+            else
+            {
+                cmbEditColumn.Enabled = false;
+            }
+            SetTableLayoutPanelHeight();
         }
 
         private void dataGridView1_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
