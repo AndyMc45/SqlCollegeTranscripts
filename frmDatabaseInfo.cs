@@ -18,11 +18,11 @@ namespace SqlCollegeTranscripts
 
         private void frmDatabaseInfo_Load(object sender, EventArgs e)
         {
-            PrepareForLoadCommand();
             btnLoadCommand.Enabled = true;
             btnExecuteCommand.Enabled = false;
+            PrepareForLoadCommand();
             // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            MultiLingual.InsertEnglishIntoDatabase(this);
+            // MultiLingual.InsertEnglishIntoDatabase(this);
         }
 
         private void PrepareForLoadCommand()
@@ -35,7 +35,20 @@ namespace SqlCollegeTranscripts
                 sb.Append("HAVING count(*) > 1");
                 string strSql = sb.ToString();
                 using (DataTable readOnlyDT = new DataTable("TemporaryAdaptor"))
-                { 
+                {
+                    MsSql.FillDataTable(readOnlyDT, strSql);
+                    dgvMain.DataSource = readOnlyDT;
+                }
+            }
+            else if (job == "Courses")
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append("SELECT courseName, departmentID, count(*) FROM Courses ");
+                sb.Append("GROUP BY courseName, departmentID ");
+                sb.Append("HAVING count(*) > 1");
+                string strSql = sb.ToString();
+                using (DataTable readOnlyDT = new DataTable("readOnly"))
+                {
                     MsSql.FillDataTable(readOnlyDT, strSql);
                     dgvMain.DataSource = readOnlyDT;
                 }
@@ -81,6 +94,13 @@ namespace SqlCollegeTranscripts
                     MsSql.extraDA.UpdateCommand = cmdUpdate;
                     btnLoadCommand.Enabled = false;
                     btnExecuteCommand.Enabled = true;
+                    int i = 1;
+                    int j = dgvMain.Columns.IndexOf(dgvMain.Columns["section"]);
+                    foreach (DataGridViewRow dr in dgvMain.Rows)
+                    {
+                        dgvMain[j,i-1].Value = i.ToString();
+                        i = i + 1;
+                    }
                 }
 
             }
@@ -91,8 +111,7 @@ namespace SqlCollegeTranscripts
             MsSql.extraDA.Update(dataHelper.extraDT);
             PrepareForLoadCommand();
             btnExecuteCommand.Enabled = false;  
-            btnLoadCommand.Enabled = true;  
-
+            btnLoadCommand.Enabled = true;
         }
 
 

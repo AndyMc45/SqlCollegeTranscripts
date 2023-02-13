@@ -36,6 +36,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.cmdAddSectionsToCT = new System.Windows.Forms.Button();
+            this.label6 = new System.Windows.Forms.Label();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -51,6 +52,7 @@
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.label5, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.cmdAddSectionsToCT, 2, 2);
+            this.tableLayoutPanel1.Controls.Add(this.label6, 1, 3);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
@@ -59,8 +61,8 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 96F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 16F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 51F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 61F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 16F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 16F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 16F));
@@ -127,7 +129,6 @@
             this.label5.Size = new System.Drawing.Size(626, 100);
             this.label5.TabIndex = 4;
             this.label5.Text = resources.GetString("label5.Text");
-            this.label5.Click += new System.EventHandler(this.label5_Click);
             // 
             // cmdAddSectionsToCT
             // 
@@ -140,6 +141,16 @@
             this.cmdAddSectionsToCT.Text = "Add sections";
             this.cmdAddSectionsToCT.UseVisualStyleBackColor = true;
             this.cmdAddSectionsToCT.Click += new System.EventHandler(this.cmdAddSectionsToCT_Click);
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(35, 280);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(784, 40);
+            this.label6.TabIndex = 7;
+            this.label6.Text = resources.GetString("label6.Text");
+            this.label6.Click += new System.EventHandler(this.label6_Click);
             // 
             // frmUpdateDatabaseToV2
             // 
@@ -165,5 +176,6 @@
         private Label label4;
         internal Label label5;
         private Button cmdAddSectionsToCT;
+        private Label label6;
     }
 }

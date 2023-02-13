@@ -77,7 +77,7 @@
             this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.tableLayoutPanel_Filters = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this._cmbMainFilter = new System.Windows.Forms.ComboBox();
@@ -108,19 +108,20 @@
             this._lblCmbFilter_7 = new System.Windows.Forms.Label();
             this._cmbFilter_7 = new System.Windows.Forms.ComboBox();
             this._cmbFilter_5 = new System.Windows.Forms.ComboBox();
-            this.txtMessages = new System.Windows.Forms.TextBox();
-            this.dataGridView1 = new System.Windows.Forms.DataGridView();
+            this.btnDeleteAddMerge = new System.Windows.Forms.Button();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.contextMenu_MainFilter = new System.Windows.Forms.ToolStripMenuItem();
+            this.txtMessages = new System.Windows.Forms.TextBox();
+            this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.MainMenu1.SuspendLayout();
             this.toolStripBottom.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
-            this.tableLayoutPanel_Filters.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
+            this.tableLayoutPanel.SuspendLayout();
             this.contextMenuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
             // MainMenu1
@@ -440,6 +441,7 @@
             // 
             // toolStripMsg
             // 
+            this.toolStripMsg.ForeColor = System.Drawing.Color.Red;
             this.toolStripMsg.Name = "toolStripMsg";
             this.toolStripMsg.Size = new System.Drawing.Size(73, 24);
             this.toolStripMsg.Text = "Messages";
@@ -512,83 +514,85 @@
             // 
             // splitContainer1
             // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.splitContainer1.Location = new System.Drawing.Point(0, 30);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.tableLayoutPanel_Filters);
+            this.splitContainer1.Panel1.Controls.Add(this.tableLayoutPanel);
             this.splitContainer1.Panel1.Controls.Add(this.txtMessages);
             this.splitContainer1.Panel1.Margin = new System.Windows.Forms.Padding(0, 80, 0, 80);
-            this.splitContainer1.Panel1.Paint += new System.Windows.Forms.PaintEventHandler(this.splitContainer1_Panel1_Paint);
+            this.splitContainer1.Panel1MinSize = 3;
             // 
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.dataGridView1);
+            this.splitContainer1.Panel2MinSize = 3;
             this.splitContainer1.Size = new System.Drawing.Size(1238, 538);
             this.splitContainer1.SplitterDistance = 215;
             this.splitContainer1.TabIndex = 77;
             // 
-            // tableLayoutPanel_Filters
+            // tableLayoutPanel
             // 
-            this.tableLayoutPanel_Filters.ColumnCount = 13;
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 4F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 140F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 60F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 140F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 69F));
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.tableLayoutPanel_Filters.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel_Filters.Controls.Add(this.comboBox2, 0, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this.comboBox1, 0, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbMainFilter, 2, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_0, 1, 1);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_1, 4, 1);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_1, 3, 1);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_0, 2, 1);
-            this.tableLayoutPanel_Filters.Controls.Add(this.lblMainFilter, 1, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this.rbView, 3, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this.rbEdit, 4, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this.rbDelete, 5, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this.rbAdd, 6, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this.rbMerge, 7, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this.txtCellFilter_2, 10, 2);
-            this.tableLayoutPanel_Filters.Controls.Add(this.cmbCellFields_2, 8, 2);
-            this.tableLayoutPanel_Filters.Controls.Add(this.cmbEditColumn, 8, 0);
-            this.tableLayoutPanel_Filters.Controls.Add(this.txtCellFilter_1, 10, 1);
-            this.tableLayoutPanel_Filters.Controls.Add(this.cmbCellFields_1, 8, 1);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_5, 3, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_4, 2, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_4, 1, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_3, 4, 2);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_3, 3, 2);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_2, 1, 2);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_2, 2, 2);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_6, 6, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_6, 7, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this._lblCmbFilter_7, 9, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_7, 10, 3);
-            this.tableLayoutPanel_Filters.Controls.Add(this._cmbFilter_5, 4, 3);
-            this.tableLayoutPanel_Filters.Location = new System.Drawing.Point(0, 27);
-            this.tableLayoutPanel_Filters.Name = "tableLayoutPanel_Filters";
-            this.tableLayoutPanel_Filters.RowCount = 4;
-            this.tableLayoutPanel_Filters.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel_Filters.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel_Filters.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel_Filters.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel_Filters.Size = new System.Drawing.Size(1238, 160);
-            this.tableLayoutPanel_Filters.TabIndex = 108;
-            this.tableLayoutPanel_Filters.SizeChanged += new System.EventHandler(this.tableLayoutPanel_Filters_SizeChanged);
-            this.tableLayoutPanel_Filters.Resize += new System.EventHandler(this.tableLayoutPanel_Filters_SizeChanged);
+            this.tableLayoutPanel.ColumnCount = 13;
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 4F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 140F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 60F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 96F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 140F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 69F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel.Controls.Add(this.comboBox2, 0, 3);
+            this.tableLayoutPanel.Controls.Add(this.comboBox1, 0, 0);
+            this.tableLayoutPanel.Controls.Add(this._cmbMainFilter, 2, 0);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_0, 1, 1);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_1, 4, 1);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_1, 3, 1);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_0, 2, 1);
+            this.tableLayoutPanel.Controls.Add(this.lblMainFilter, 1, 0);
+            this.tableLayoutPanel.Controls.Add(this.rbView, 3, 0);
+            this.tableLayoutPanel.Controls.Add(this.rbEdit, 4, 0);
+            this.tableLayoutPanel.Controls.Add(this.rbDelete, 5, 0);
+            this.tableLayoutPanel.Controls.Add(this.rbAdd, 6, 0);
+            this.tableLayoutPanel.Controls.Add(this.rbMerge, 7, 0);
+            this.tableLayoutPanel.Controls.Add(this.txtCellFilter_2, 10, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbCellFields_2, 8, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbEditColumn, 8, 0);
+            this.tableLayoutPanel.Controls.Add(this.txtCellFilter_1, 10, 1);
+            this.tableLayoutPanel.Controls.Add(this.cmbCellFields_1, 8, 1);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_5, 3, 3);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_4, 2, 3);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_4, 1, 3);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_3, 4, 2);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_3, 3, 2);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_2, 1, 2);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_2, 2, 2);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_6, 6, 3);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_6, 7, 3);
+            this.tableLayoutPanel.Controls.Add(this._lblCmbFilter_7, 9, 3);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_7, 10, 3);
+            this.tableLayoutPanel.Controls.Add(this._cmbFilter_5, 4, 3);
+            this.tableLayoutPanel.Controls.Add(this.btnDeleteAddMerge, 10, 0);
+            this.tableLayoutPanel.Location = new System.Drawing.Point(0, 27);
+            this.tableLayoutPanel.Name = "tableLayoutPanel";
+            this.tableLayoutPanel.RowCount = 4;
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel.Size = new System.Drawing.Size(1238, 160);
+            this.tableLayoutPanel.TabIndex = 108;
             // 
             // comboBox2
             // 
@@ -652,7 +656,7 @@
             // 
             this._cmbFilter_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel_Filters.SetColumnSpan(this._cmbFilter_1, 2);
+            this.tableLayoutPanel.SetColumnSpan(this._cmbFilter_1, 2);
             this._cmbFilter_1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this._cmbFilter_1.FormattingEnabled = true;
             this._cmbFilter_1.Location = new System.Drawing.Point(339, 43);
@@ -753,6 +757,7 @@
             this.rbAdd.TabIndex = 119;
             this.rbAdd.Text = "Add";
             this.rbAdd.UseVisualStyleBackColor = true;
+            this.rbAdd.CheckedChanged += new System.EventHandler(this.rbAdd_CheckedChanged);
             // 
             // rbMerge
             // 
@@ -765,6 +770,7 @@
             this.rbMerge.TabIndex = 121;
             this.rbMerge.Text = "Merge";
             this.rbMerge.UseVisualStyleBackColor = true;
+            this.rbMerge.CheckedChanged += new System.EventHandler(this.rbMerge_CheckedChanged);
             // 
             // txtCellFilter_2
             // 
@@ -785,7 +791,7 @@
             this.cmbCellFields_2.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
             this.cmbCellFields_2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cmbCellFields_2.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel_Filters.SetColumnSpan(this.cmbCellFields_2, 2);
+            this.tableLayoutPanel.SetColumnSpan(this.cmbCellFields_2, 2);
             this.cmbCellFields_2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbCellFields_2.ForeColor = System.Drawing.Color.Black;
             this.cmbCellFields_2.FormattingEnabled = true;
@@ -800,7 +806,7 @@
             // 
             this.cmbEditColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel_Filters.SetColumnSpan(this.cmbEditColumn, 2);
+            this.tableLayoutPanel.SetColumnSpan(this.cmbEditColumn, 2);
             this.cmbEditColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbEditColumn.Enabled = false;
             this.cmbEditColumn.FormattingEnabled = true;
@@ -808,6 +814,7 @@
             this.cmbEditColumn.Name = "cmbEditColumn";
             this.cmbEditColumn.Size = new System.Drawing.Size(150, 28);
             this.cmbEditColumn.TabIndex = 126;
+            this.cmbEditColumn.SelectedIndexChanged += new System.EventHandler(this.cmbEditColumn_SelectedIndexChanged);
             // 
             // txtCellFilter_1
             // 
@@ -828,7 +835,7 @@
             this.cmbCellFields_1.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             this.cmbCellFields_1.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cmbCellFields_1.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel_Filters.SetColumnSpan(this.cmbCellFields_1, 2);
+            this.tableLayoutPanel.SetColumnSpan(this.cmbCellFields_1, 2);
             this.cmbCellFields_1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbCellFields_1.ForeColor = System.Drawing.Color.Black;
             this.cmbCellFields_1.FormattingEnabled = true;
@@ -880,7 +887,7 @@
             // 
             this._cmbFilter_3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel_Filters.SetColumnSpan(this._cmbFilter_3, 2);
+            this.tableLayoutPanel.SetColumnSpan(this._cmbFilter_3, 2);
             this._cmbFilter_3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this._cmbFilter_3.FormattingEnabled = true;
             this._cmbFilter_3.Location = new System.Drawing.Point(339, 83);
@@ -943,7 +950,7 @@
             // 
             this._cmbFilter_6.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel_Filters.SetColumnSpan(this._cmbFilter_6, 2);
+            this.tableLayoutPanel.SetColumnSpan(this._cmbFilter_6, 2);
             this._cmbFilter_6.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this._cmbFilter_6.FormattingEnabled = true;
             this._cmbFilter_6.Location = new System.Drawing.Point(595, 123);
@@ -983,7 +990,7 @@
             // 
             this._cmbFilter_5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel_Filters.SetColumnSpan(this._cmbFilter_5, 2);
+            this.tableLayoutPanel.SetColumnSpan(this._cmbFilter_5, 2);
             this._cmbFilter_5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this._cmbFilter_5.FormattingEnabled = true;
             this._cmbFilter_5.Location = new System.Drawing.Point(339, 123);
@@ -993,38 +1000,21 @@
             this._cmbFilter_5.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
             this._cmbFilter_5.SelectedIndexChanged += new System.EventHandler(this._cmbFilter_SelectedIndexChanged);
             // 
-            // txtMessages
+            // btnDeleteAddMerge
             // 
-            this.txtMessages.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.txtMessages.Dock = System.Windows.Forms.DockStyle.Top;
-            this.txtMessages.Location = new System.Drawing.Point(0, 0);
-            this.txtMessages.Margin = new System.Windows.Forms.Padding(2);
-            this.txtMessages.Name = "txtMessages";
-            this.txtMessages.ReadOnly = true;
-            this.txtMessages.Size = new System.Drawing.Size(1238, 27);
-            this.txtMessages.TabIndex = 109;
-            // 
-            // dataGridView1
-            // 
-            this.dataGridView1.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
-            this.dataGridView1.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
-            this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView1.ContextMenuStrip = this.contextMenuStrip1;
-            this.dataGridView1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGridView1.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
-            this.dataGridView1.GridColor = System.Drawing.Color.WhiteSmoke;
-            this.dataGridView1.Location = new System.Drawing.Point(0, 0);
-            this.dataGridView1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.dataGridView1.MultiSelect = false;
-            this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.RowHeadersWidth = 51;
-            this.dataGridView1.RowTemplate.Height = 27;
-            this.dataGridView1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridView1.Size = new System.Drawing.Size(1238, 319);
-            this.dataGridView1.TabIndex = 1;
-            this.dataGridView1.CellContentDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellContentDoubleClick);
-            this.dataGridView1.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridView1_ColumnHeaderMouseClick);
-            this.dataGridView1.DoubleClick += new System.EventHandler(this.dataGridView1_DoubleClick);
+            this.btnDeleteAddMerge.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.btnDeleteAddMerge.AutoSize = true;
+            this.tableLayoutPanel.SetColumnSpan(this.btnDeleteAddMerge, 2);
+            this.btnDeleteAddMerge.ContextMenuStrip = this.contextMenuStrip1;
+            this.btnDeleteAddMerge.Enabled = false;
+            this.btnDeleteAddMerge.ForeColor = System.Drawing.Color.Black;
+            this.btnDeleteAddMerge.Location = new System.Drawing.Point(884, 3);
+            this.btnDeleteAddMerge.Name = "btnDeleteAddMerge";
+            this.btnDeleteAddMerge.Size = new System.Drawing.Size(97, 30);
+            this.btnDeleteAddMerge.TabIndex = 127;
+            this.btnDeleteAddMerge.Text = "Merge rows";
+            this.btnDeleteAddMerge.UseVisualStyleBackColor = true;
+            this.btnDeleteAddMerge.Click += new System.EventHandler(this.btnDeleteAddMerge_Click);
             // 
             // contextMenuStrip1
             // 
@@ -1041,6 +1031,46 @@
             this.contextMenu_MainFilter.Text = "Set as main filter";
             this.contextMenu_MainFilter.Click += new System.EventHandler(this.contextMenu_MainFilter_Click);
             // 
+            // txtMessages
+            // 
+            this.txtMessages.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.txtMessages.Dock = System.Windows.Forms.DockStyle.Top;
+            this.txtMessages.ForeColor = System.Drawing.Color.Red;
+            this.txtMessages.Location = new System.Drawing.Point(0, 0);
+            this.txtMessages.Margin = new System.Windows.Forms.Padding(2);
+            this.txtMessages.Name = "txtMessages";
+            this.txtMessages.ReadOnly = true;
+            this.txtMessages.Size = new System.Drawing.Size(1238, 27);
+            this.txtMessages.TabIndex = 109;
+            // 
+            // dataGridView1
+            // 
+            this.dataGridView1.AllowUserToAddRows = false;
+            this.dataGridView1.AllowUserToDeleteRows = false;
+            this.dataGridView1.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
+            this.dataGridView1.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
+            this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridView1.ContextMenuStrip = this.contextMenuStrip1;
+            this.dataGridView1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataGridView1.EnableHeadersVisualStyles = false;
+            this.dataGridView1.GridColor = System.Drawing.Color.WhiteSmoke;
+            this.dataGridView1.Location = new System.Drawing.Point(0, 0);
+            this.dataGridView1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.dataGridView1.MultiSelect = false;
+            this.dataGridView1.Name = "dataGridView1";
+            this.dataGridView1.RowHeadersWidth = 51;
+            this.dataGridView1.RowTemplate.Height = 27;
+            this.dataGridView1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dataGridView1.Size = new System.Drawing.Size(1238, 319);
+            this.dataGridView1.TabIndex = 1;
+            this.dataGridView1.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellContentClick);
+            this.dataGridView1.CellContentDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellContentDoubleClick);
+            this.dataGridView1.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellEndEdit);
+            this.dataGridView1.CellLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellLeave);
+            this.dataGridView1.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGridView1_ColumnHeaderMouseClick);
+            this.dataGridView1.SelectionChanged += new System.EventHandler(this.dataGridView1_SelectionChanged);
+            this.dataGridView1.DoubleClick += new System.EventHandler(this.dataGridView1_DoubleClick);
+            // 
             // DataGridViewForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -1054,6 +1084,7 @@
             this.Text = "DataGridViewForm";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.DataGridViewForm_FormClosed);
             this.Load += new System.EventHandler(this.DataGridViewForm_Load);
+            this.Resize += new System.EventHandler(this.DataGridViewForm_Resize);
             this.MainMenu1.ResumeLayout(false);
             this.MainMenu1.PerformLayout();
             this.toolStripBottom.ResumeLayout(false);
@@ -1063,10 +1094,10 @@
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
-            this.tableLayoutPanel_Filters.ResumeLayout(false);
-            this.tableLayoutPanel_Filters.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
+            this.tableLayoutPanel.ResumeLayout(false);
+            this.tableLayoutPanel.PerformLayout();
             this.contextMenuStrip1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -1116,7 +1147,7 @@
         private ToolStripButton toolStripButton4;
         private ToolStripButton toolStripButton5;
         private SplitContainer splitContainer1;
-        private TableLayoutPanel tableLayoutPanel_Filters;
+        private TableLayoutPanel tableLayoutPanel;
         private Label _lblCmbFilter_0;
         private Label _lblCmbFilter_7;
         private Label _lblCmbFilter_5;
@@ -1156,5 +1187,6 @@
         public ToolStripMenuItem mnuToolShowSystemTables;
         public ToolStripMenuItem mnuFindID;
         public ToolStripMenuItem mnuUpdateDatabase;
+        private Button btnDeleteAddMerge;
     }
 }

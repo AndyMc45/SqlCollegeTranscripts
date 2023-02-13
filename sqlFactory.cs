@@ -16,18 +16,18 @@ namespace SqlCollegeTranscripts
             myPageSize = pageSize;
             
             // Put Primary key of main table in the first field of myFields
-            string pk = dataHelper.getTablePrimaryKeyField(myTable);
+            string pk = dataHelper.getTablePrimaryKeyField(myTable).fieldName;
             field fi = new field(myTable, pk, "int", 4);
             myFields.Add(fi);
 
             // This sets currentSql table and field strings - and these remain the same for this table.
             // This also sets DisplayFieldDicitionary each foreign table key in main table
-            msg = callInnerJoins();
+            errorMsg = callInnerJoins();
         }
 
         #region Variables
         //The table and job for this sql - myJob will by "" or "combo"
-        internal string msg = String.Empty;
+        internal string errorMsg = String.Empty;
         internal bool formLoading;
         internal string myTable = "";
         internal int myPage = 0;  // Asks for all records, 1 is first page
@@ -53,17 +53,18 @@ namespace SqlCollegeTranscripts
         // Fields for combos - main form constructs these from myRepresentativeColumns list for each combo
         internal List<field>[] myFieldsCombo = new List<field>[8];  // Table and field
 
-        // Dictionary(String --> Field List) - foreign keys of this table mapped to fields to show in combo.  Set by innerjoin call.	
+        // Dictionary(field --> Field List) - foreign keys of this table mapped to fields to show in combo.  Set by innerjoin call.	
         internal Dictionary<string, List<field>> DisplayFieldsDictionary = new Dictionary<string, List<field>>();
         #endregion
 
         // The primary function of this class
         internal string returnSql(command cmd)
         {
-            string msg = returnSql(cmd, "", 0);
+            field emptyField = new field("None", "None", "bit", 0); 
+            string msg = returnSql(cmd, emptyField, 0);
             return msg;
         }
-        internal string returnSql(command cmd, string filterColumn, int ComboNumber)
+        internal string returnSql(command cmd, field filterColumn, int ComboNumber)
         {
             // The main function of this class - used for tables and combos.
             // Logic: Set 
@@ -72,24 +73,23 @@ namespace SqlCollegeTranscripts
             //This exception only for combo's, and class must be immediately destroyed afterwards
             if (cmd == command.count)
             {
-                sqlString = "SELECT COUNT(1) FROM " + sqlTableString() + " " + sqlWhereString();  // + " " + sqlOrderByStr();
+                sqlString = "SELECT COUNT(1) FROM " + sqlTableString() + " " + sqlWhereString(false);  // + " " + sqlOrderByStr();
             }
             else if (cmd == command.select)
             {
                 if (myPage == -1 || (recordCount <= offset + myPageSize))
                 {
-                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " " + sqlWhereString() + " " + sqlOrderByStr(myOrderBys) + " ";
+                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " " + sqlOrderByStr(myOrderBys) + " ";
                 }
                 else
                 { // Sql 2012 required for this "Fetch" clause paging
-                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + sqlWhereString() + sqlOrderByStr(myOrderBys) + " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + myPageSize.ToString() + " ROWS ONLY";
+                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + sqlWhereString(false) + sqlOrderByStr(myOrderBys) + " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + myPageSize.ToString() + " ROWS ONLY";
                 }
             }
             else if (cmd == command.fkfilter)
             {
-                string FkColumn = filterColumn;
                 // Get primary key of the combo table - required since this is the value feild
-                field FkTablePKField = dataHelper.getForeignTableAndKey(myTable, FkColumn);
+                field FkTablePKField = dataHelper.getForeignKeyRefField(filterColumn);
                 // Create display field from fields  Concat_WS(x,y,z) as DisplayField
                 StringBuilder sqlFieldStringSB = new StringBuilder();
                 sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
@@ -103,7 +103,7 @@ namespace SqlCollegeTranscripts
                 sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
                 sqlFieldStringSB.Append(" as ValueField");
                 // Get string
-                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString() + " Order by DisplayField";
+                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayField";
             }
             else if (cmd == command.cellfilter)
             {
@@ -113,11 +113,11 @@ namespace SqlCollegeTranscripts
                 sqlFieldStringSB.Append(fieldList);
                 sqlFieldStringSB.Append(" as DisplayField");
                 sqlFieldStringSB.Append(", ");
-                field myField = dataHelper.getField(myTable, filterColumn);
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(myField));
+                // field myField = dataHelper.getField(myTable, filterColumn);
+                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(filterColumn));
                 sqlFieldStringSB.Append(" as ValueField");
                 // Get string
-                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString() + " Order by DisplayField";
+                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayField";
             }
             return sqlString;
         }
@@ -153,7 +153,7 @@ namespace SqlCollegeTranscripts
             return String.Join(",", fieldStrList);
         }
 
-        private string sqlWhereString()
+        private string sqlWhereString(bool strict)   // Not strict uses "Like" to get strings that start with a string
         {
             // Make a list of the conditions
             List<string> WhereStrList = new List<string>();
@@ -188,16 +188,23 @@ namespace SqlCollegeTranscripts
                     case "varchar":
                     case "nchar":
                     case "nvarchar":
-                        condition = dataHelper.QualifiedFieldName(ws.fl) + " Like '" + ws.whereValue + "%'";  //Same starting string
+                        if(strict)
+                        {
+                            condition = dataHelper.QualifiedFieldName(ws.fl) + " '" + ws.whereValue + "'";  //Exact string
+                        }
+                        else
+                        { 
+                            condition = dataHelper.QualifiedFieldName(ws.fl) + " Like '" + ws.whereValue + "%'";  //Same starting string
+                        }
                         break;
                     case "bit":
                         if (ws.whereValue.ToLower() == "true")
                         {
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = " + dataHelper.getSqlTrue();
+                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.trueString + "'";
                         }
                         else
                         {
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = " + dataHelper.getSqlFalse();
+                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.falseString + "'";
                         }
                         break;
                 }
@@ -206,6 +213,7 @@ namespace SqlCollegeTranscripts
                     WhereStrList.Add(condition);
                 }
             }
+            // Use list of conditions to get sql where clause.
             if (WhereStrList.Count > 0)
             {
                 // Return string constructed from list of conditions
@@ -243,33 +251,35 @@ namespace SqlCollegeTranscripts
         // Two ways to call
         private string callInnerJoins()
         {
-            string msg = callInnerJoins(myTable, "");
+            field empty = new field("None", "Note", "Note", 0);
+            string msg = callInnerJoins(myTable, empty);
             return msg;
         }
-        private string callInnerJoins(string currentTable, string myTableInnerJoinField)
+        private string callInnerJoins(string currentTable, field myTableInnerJoinField)
         {
+            // (myTableInnerJoinField used in constructing the DisplayFieldsDictionary
+            // - i.e. a map from top table FK's to all displaykeys that come from it including grandson tables)
+      
             StringBuilder MsgStr = new StringBuilder();
-            string field1 = "", table2 = "";
+            // string field1 = "", table2 = "";
             DataRow[] drs = dataHelper.fieldsDT.Select("TableName = '" + currentTable + "'");
-            // Loop through fields - adding to innerjoins and fields lists
+            // Loop through fields in table - adding to innerjoins and fields lists
             foreach (DataRow dr in drs)
             {
-                field1 = Convert.ToString(dr[dr.Table.Columns.IndexOf("ColumnName")]);
-                string dbType = Convert.ToString(dr[dr.Table.Columns.IndexOf("DataType")]);
-                int size = Convert.ToInt32(dr[dr.Table.Columns.IndexOf("MaxLength")]);
-                field fi = new field(currentTable, field1, dbType, size);
+                // Get the field for this row - containing table, fieldName, DataType, Size
+                field drField = dataHelper.getFieldValueFieldsDT(dr);
 
                 //Primary Key - program assumes this will be the first field
-                if (dataHelper.isTablePrimaryKeyField(currentTable, field1))
+                if (dataHelper.isTablePrimaryKeyField(drField))
                 {
                     // Don't add primary key to fields - but primary key of myTable added in DataGridViewForm.cs call
                 }
 
                 // Foreign Key
-                else if (dataHelper.fieldIsForeignKey(currentTable, field1))  // Inner join
+                else if (dataHelper.fieldIsForeignKey(drField))  // Inner join
                 {
-                    field RefTableField = dataHelper.getForeignTableAndKey(currentTable, field1);
-                    table2 = RefTableField.table;
+                    field RefTableField = dataHelper.getForeignKeyRefField(drField);
+                    string table2 = RefTableField.table;
                     // Handle circles (don't allow) and repeats (needs an alias)
                     int alliasCount = 0;
                     bool everythingOK = true;
@@ -290,7 +300,7 @@ namespace SqlCollegeTranscripts
                             MsgStr.Append("Alias: " + table2 + alliasCount.ToString());
                         }
                     }
-                    innerJoin new_ij = new innerJoin(fi, table2);
+                    innerJoin new_ij = new innerJoin(drField, table2);
                     if (everythingOK)
                     {
                         // Following not yet implemented - Allias name ignored as of now
@@ -298,23 +308,23 @@ namespace SqlCollegeTranscripts
                         {
                             new_ij.table2Allias = table2 + alliasCount.ToString();
                         }
-                        // Add to inner joins (but no field added to myFields)
+                        // Add to inner joins
                         myInnerJoins.Add(new_ij);
 
                         //Recursive step - table 2 becomes table 1
                         if (currentTable == myTable)
                         {
-                            callInnerJoins(table2, field1);
+                            // Add this FK field of the main table - needed when editing table
+                            myFields.Add(drField);
+                            // Add the display keys of the lower tables for all FK in myTable
+                            callInnerJoins(table2, drField);  // field1 will remain even for grandson tables
                         }
-                        else if (dataHelper.isDisplayKey(currentTable, field1))
+                        else if (dataHelper.isDisplayKey(drField.table, drField.fieldName))
                         {
-                            callInnerJoins(table2, myTableInnerJoinField);
+                            // For currentTable other than myTable, only add the lower display keys
+                            // if this FK is a display key (i.e. such as in "marraige table with only person 1 and person2 FK's
+                            callInnerJoins(table2, myTableInnerJoinField);   //Maintains higher level "field1" to any grandsons.
                         }
-                        //else
-                        //{   
-                        //	// Table 2 will have dvg columns, but no representative columns
-                        //		callInnerJoins(table2,String.Empty);  // Will not add to myRepresentative column
-                        //}
                     }
                 }
 
@@ -323,19 +333,19 @@ namespace SqlCollegeTranscripts
                 {
                     if (currentTable == myTable)  // In My Table
                     {
-                        myFields.Add(fi);
+                        myFields.Add(drField);
                     }
-                    else if (dataHelper.isDisplayKey(currentTable, field1))  // looping through a son of myTable
+                    else if (dataHelper.isDisplayKey(currentTable, drField.fieldName))  // looping through a son of myTable
                     {
-                        myFields.Add(fi);
+                        myFields.Add(drField);
                         //Add fi to the DisplayFieldsDictionary
                         List<field> fieldList = new List<field>();
-                        if (DisplayFieldsDictionary.ContainsKey(myTableInnerJoinField))
+                        if (DisplayFieldsDictionary.ContainsKey(myTableInnerJoinField.fieldName))
                         {
-                            fieldList = DisplayFieldsDictionary[myTableInnerJoinField];
+                            fieldList = DisplayFieldsDictionary[myTableInnerJoinField.fieldName];
                         }
-                        fieldList.Add(fi);
-                        DisplayFieldsDictionary[myTableInnerJoinField] = fieldList;
+                        fieldList.Add(drField);
+                        DisplayFieldsDictionary[myTableInnerJoinField.fieldName] = fieldList;
                     }
                 }
 

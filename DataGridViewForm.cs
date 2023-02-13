@@ -2,7 +2,10 @@
 using System.ComponentModel;
 using System.Data;
 using System.Globalization;
+using System.Net.Http.Headers;
 using System.Text;
+using Windows.Media.Playback;
+using Windows.UI.Core.AnimationMetrics;
 
 namespace SqlCollegeTranscripts
 {
@@ -32,10 +35,8 @@ namespace SqlCollegeTranscripts
     internal partial class DataGridViewForm : Form
     {
         #region Variables
-        //Store one extra fld that is not on the form -- for Father, Son, etc. recordsets
+        internal ProgramMode programMode = ProgramMode.view;
         internal bool mySql = false, msSql = false;  // currently only using msSql
-        internal float changeColwidth = 0;
-        internal int changeCol = 0, changeRow = 0;
         internal sqlFactory? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
         private int pageSize = 0;
         private string logFileName = "";
@@ -44,8 +45,7 @@ namespace SqlCollegeTranscripts
         private where? mainFilter;   //Stores main filter
         internal BindingList<where>? pastFilters;  // Use this to fill in past main filters in combo box
         private FileStream? ts;
-        // DisplayFieldMap maps foreign keys to Display list fields 
-        // private List<Tuple<string, List<field>>> DisplayFieldMap = new List<Tuple<string, List<field>>>();
+        private Color[] ColorArray = new Color[] {Color.LightCyan, Color.LightGreen,Color.LavenderBlush,Color.SeaShell, Color.AliceBlue, Color.Azure,Color.LightGray,Color.LightSalmon };
         #endregion
 
         //----------------------------------------------------------------------------------------------------------------------
@@ -266,7 +266,8 @@ namespace SqlCollegeTranscripts
 
                     //6. Fill Information Datatables
                     MsSql.initializeDatabaseInformationTables();
-
+                    
+                    // 7.  Load Table mainmenu
                     foreach (DataRow row in dataHelper.tablesDT.Rows)
                     {
                         ToolStripItem tsi = new ToolStripMenuItem();
@@ -278,6 +279,7 @@ namespace SqlCollegeTranscripts
                             mnuOpenTables.DropDownItems.Add(tsi);
                         }
                     }
+                    programMode = ProgramMode.view;
                 }
             }
             catch (System.Exception excep)
@@ -307,6 +309,7 @@ namespace SqlCollegeTranscripts
 
             rbView.Checked = true;
             cmbEditColumn.Enabled = false;
+            _cmbMainFilter.Enabled = false;  // Sets panel height to 2
 
             // Hide, disable and clear all the cmbCellFilters and cmbCellFields 
             for (int i = 0; i <= cmbCellFields.Count() - 1; i++)
@@ -331,32 +334,30 @@ namespace SqlCollegeTranscripts
             }
             // Set height of TableLayoutPanel - which will also move the splitContainer splitter.
             SetTableLayoutPanelHeight();
-
         }
 
         private void SetTableLayoutPanelHeight()
         {
-            tableLayoutPanel_Filters.Height = 2;
-            if (cmbCellFields_1.Enabled)
+            int height = 2;
+            if (_cmbMainFilter.Enabled)  // 1st row
             {
-                tableLayoutPanel_Filters.Height =
-                    txtMessages.Height + cmbCellFields_1.Top + cmbCellFields_1.Height + 5;
+                height = _cmbMainFilter.Top + _cmbMainFilter.Height + 2;
             }
-            if (_cmbFilter_0.Enabled || rbEdit.Checked)
+            if (_cmbFilter_0.Enabled || rbEdit.Checked)  // 2nd row
             {
-                tableLayoutPanel_Filters.Height =
-                    txtMessages.Height + _cmbFilter_0.Top + _cmbFilter_1.Height + 5;
+                height = _cmbFilter_0.Top + _cmbFilter_0.Height + 2;
             }
-            if (_cmbFilter_3.Enabled)
+            if (_cmbFilter_3.Enabled)  // 3rd row
             {
-                tableLayoutPanel_Filters.Height =
-                    txtMessages.Height + _cmbFilter_3.Top + _cmbFilter_3.Height + 5;
+                height = _cmbFilter_3.Top + _cmbFilter_3.Height + 2;
             }
-            if (_cmbFilter_5.Enabled)
+            if (_cmbFilter_5.Enabled)  // 4th row
             {
-                tableLayoutPanel_Filters.Height =
-                    txtMessages.Height + _cmbFilter_5.Top + _cmbFilter_5.Height + 5;
+                height = _cmbFilter_5.Top + _cmbFilter_5.Height + 2;
             }
+            tableLayoutPanel.Height = height; 
+            // Reposition the splitter
+            this.splitContainer1.SplitterDistance = txtMessages.Height + tableLayoutPanel.Height;
         }
 
         private void closeConnectionAndIntializeForm()
@@ -396,7 +397,8 @@ namespace SqlCollegeTranscripts
         private void writeGrid_NewTable(string table)
         {
             //          var watch = Stopwatch.StartNew();
-
+            dataGridView1.ColumnHeadersDefaultCellStyle.BackColor = Color.Yellow;
+            dataGridView1.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.WhiteSmoke;
             toolStripMsg.Text = table;
             rbView.Checked = true;
             updating = true;
@@ -414,17 +416,19 @@ namespace SqlCollegeTranscripts
             //// This sets currentSql table and field strings - and these remain the same for this table.
             //// This also sets DisplayFieldDicitionary each foreign table key in main table
             //string msg = currentSql.callInnerJoins();
-            if (!String.IsNullOrEmpty(currentSql.msg)) { toolStripBottom.Text = currentSql.msg; }
+            if (!String.IsNullOrEmpty(currentSql.errorMsg)) { toolStripBottom.Text = currentSql.errorMsg; }
 
             // Set up 8 cmbFilter labels and boxes - BUT don't bind them yet - 9 milliseconds
+            _cmbMainFilter.Enabled = true;
             ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
             Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
             int i = 0;
             // one combo box for each foreignKey
-            foreach (String key in currentSql.DisplayFieldsDictionary.Keys)
+            foreach (string key in currentSql.DisplayFieldsDictionary.Keys)
             {
-                field fi2 = dataHelper.getForeignTableAndKey(currentSql.myTable, key);
-                lblcmbFilter[i].Text = fi2.table; // Can be translated or changed
+                field FK = dataHelper.getFieldValueFieldsDT(currentSql.myTable, key);
+                field RefPK = dataHelper.getForeignKeyRefField(FK);
+                lblcmbFilter[i].Text = RefPK.table; // Can be translated or changed
                 cmbFilter[i].Enabled = true;
                 cmbFilter[i].Tag = key;  // Used in program and so don't translate or change
                 i++;
@@ -495,8 +499,9 @@ namespace SqlCollegeTranscripts
             var getTasks = new List<Task>();
             foreach (string key in keys)
             {
+                field FK = dataHelper.getFieldValueFieldsDT(currentSql.myTable, key);
                 currentSql.myFieldsCombo[i] = currentSql.DisplayFieldsDictionary[key];
-                string strSql = currentSql.returnSql(command.fkfilter, key, i);
+                string strSql = currentSql.returnSql(command.fkfilter, FK, i);
                 getTasks.Add(CmbFkFilter_FillOneFromDatabaseAsync(cmbFilters[i], strSql));
                 i++;
             }
@@ -542,7 +547,6 @@ namespace SqlCollegeTranscripts
 
         internal async Task writeGrid_NewPage()
         {
-
             ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
             Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
 
@@ -636,10 +640,33 @@ namespace SqlCollegeTranscripts
                     dataGridView1.Columns[gridColumn].HeaderCell.SortGlyphDirection = sortOrder;
                 }
             }
-            return;
 
-            // MessageBox.Show(Information.Err().Description + Environment.NewLine + translation.tr("ErrorWritingToGrid", "", "", ""), AssemblyHelper.GetTitle(System.Reflection.Assembly.GetExecutingAssembly()));
+            // Color headers
+            int keyIndex = 0;
+            foreach (string key in currentSql.DisplayFieldsDictionary.Keys)
+            {
+                int colIndex = currentSql.myFields.FindIndex(x => x.fieldName == key);
+                //                DataGridViewColumn col = dataGridView1.Columns[key];
+                //               col.HeaderCell.Style.BackColor = ColorArray[keyIndex];
+                dataGridView1.Columns[colIndex].HeaderCell.Style.BackColor = ColorArray[keyIndex];
+                foreach (field fl in currentSql.DisplayFieldsDictionary[key])
+                {
+ //                   col = dataGridView1.Columns[fl.fieldName];
+ //                   col.HeaderCell.Style.BackColor= ColorArray[keyIndex];
+                    colIndex = currentSql.myFields.FindIndex(x => x == fl);
+                    dataGridView1.Columns[colIndex].HeaderCell.Style.BackColor = ColorArray[keyIndex];
+                }
+                keyIndex = keyIndex + 1;
+            }
+
+            foreach (DataGridViewColumn column in dataGridView1.Columns)
+            {
+                column.ReadOnly = true;
+            }
+
+
         }
+
         private void callSqlWheres()
         {   // Adds all the filters 
             ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
@@ -850,6 +877,53 @@ namespace SqlCollegeTranscripts
         //----------------------------------------------------------------------------------------------------------------------
         #region Events - Control Events
         //----------------------------------------------------------------------------------------------------------------------
+
+        private void dataGridView1_CellLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            if (dataGridView1.IsCurrentCellDirty)
+            {
+                dataGridView1.EndEdit();
+                MsSql.currentDA.Update(dataHelper.currentDT);
+            }
+        }
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+        }
+
+        private void dataGridView1_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+        }
+
+        private void cmbEditColumn_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cmbEditColumn.SelectedIndex > 0)
+            {
+                string strSelectedColumn = cmbEditColumn.SelectedValue.ToString();
+                DataGridViewColumn selectedColumn = dataGridView1.Columns[strSelectedColumn];
+                if (selectedColumn != null)
+                {
+                    foreach (DataGridViewColumn col in dataGridView1.Columns)
+                    {
+                        if (col == selectedColumn) { col.ReadOnly = false; }
+                        else { col.ReadOnly = true; }
+                    }
+                }
+                int colIndex = dataGridView1.Columns[strSelectedColumn].Index;
+                field fld = currentSql.myFields[colIndex];  // Trusting this is the same index as above
+                MsSql.SetUpdateCommand(fld, dataHelper.currentDT);
+            }
+            else
+            {
+                foreach (DataGridViewColumn col in dataGridView1.Columns)
+                {
+                    col.ReadOnly = true;
+                }
+            }
+        }
+
+
+
+
         #region 5 paging buttons & RecordsPerPage (RPP)
         // Paging - <<
         private void txtRecordsPerPage_Leave(object sender, EventArgs e)
@@ -945,6 +1019,155 @@ namespace SqlCollegeTranscripts
             }
         }
         #endregion
+
+        #region 5 mode radio buttons changed - view, edit, add, delete merge
+
+        private void rbView_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rbView.Checked) 
+            {
+                programMode = ProgramMode.view;
+                dataGridView1.MultiSelect = false;
+                dataGridView1.EditMode = DataGridViewEditMode.EditProgrammatically;
+                cmbEditColumn.Enabled = false;
+                btnDeleteAddMerge.Enabled = false;
+            }
+        }
+        private void rbDelete_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rbDelete.Checked)
+            {
+                programMode = ProgramMode.delete;
+                dataGridView1.MultiSelect = false;
+                dataGridView1.EditMode = DataGridViewEditMode.EditProgrammatically;
+                cmbEditColumn.Enabled = false;
+                btnDeleteAddMerge.Enabled = true;
+                btnDeleteAddMerge.Text = MultiLingual.tr("Delete row", this);
+                // Add deleteCommand
+                MsSql.SetDeleteCommand(currentSql.myTable, dataHelper.currentDT);
+                foreach (DataGridViewColumn column in dataGridView1.Columns)
+                {
+                    column.ReadOnly = true;
+                }
+            }
+        }
+        private void rbAdd_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rbAdd.Checked)
+            {
+                programMode = ProgramMode.add;
+                dataGridView1.MultiSelect = false;
+                dataGridView1.EditMode = DataGridViewEditMode.EditProgrammatically;
+                cmbEditColumn.Enabled = false;
+                btnDeleteAddMerge.Enabled = true;
+                btnDeleteAddMerge.Text = MultiLingual.tr("Add row", this);
+                foreach (DataGridViewColumn column in dataGridView1.Columns)
+                {
+                    column.ReadOnly = true;
+                }
+            }
+        }
+        private void rbEdit_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rbEdit.Checked)
+            {
+                programMode = ProgramMode.edit;
+                dataGridView1.EditMode = DataGridViewEditMode.EditOnKeystrokeOrF2;
+                dataGridView1.MultiSelect = false;
+                foreach (DataGridViewColumn column in dataGridView1.Columns)
+                {
+                    column.ReadOnly = true;
+                }
+                cmbEditColumn.Enabled = true;
+                btnDeleteAddMerge.Enabled = false;
+            }
+        }
+        private void rbMerge_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rbMerge.Checked) 
+            { 
+                programMode = ProgramMode.merge;
+                btnDeleteAddMerge.Enabled = true;
+                btnDeleteAddMerge.Text = MultiLingual.tr("Merge 2 rows", this);
+                dataGridView1.MultiSelect = true;
+                foreach (DataGridViewColumn column in dataGridView1.Columns)
+                {
+                    column.ReadOnly = true;
+                }
+            }
+        }
+
+        #endregion
+
+        private void DataGridViewForm_Resize(object sender, EventArgs e)
+        {
+            SetTableLayoutPanelHeight();
+        }
+
+
+        private void btnDeleteAddMerge_Click(object sender, EventArgs e)
+        {
+            txtMessages.Text = string.Empty;
+            if (programMode == ProgramMode.merge)
+            {
+                if (dataGridView1.SelectedRows.Count != 2)
+                {
+                    txtMessages.Text = MultiLingual.tr("Please select exactly two rows", this);
+                    return;
+                }
+                if (currentSql.DisplayFieldsDictionary.Count == 0)
+                {
+                    txtMessages.Text = MultiLingual.tr("There are no foreign keys to merge.  Just delete row you want to delete.", this);
+                    return;
+                }
+                /// Count rows and announce if one has no upper level connections - or just delete that one
+
+
+                /// Change the FK value in all Higher tables to the one with more such values.
+            }
+            else if (programMode == ProgramMode.delete)
+            {
+                if (dataGridView1.SelectedRows.Count != 1)
+                {
+                    txtMessages.Text = MultiLingual.tr("Please select row to delete", this);
+                    return;
+                }
+                // int index = dataGridView1.Rows.IndexOf(dataGridView1.SelectedRows[0]);
+                field PKfield = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
+                int colIndex = dataGridView1.Columns[PKfield.fieldName].Index;
+                if (colIndex != 0)
+                {
+                    txtMessages.Text = MultiLingual.tr("The first column must be the primary key", this);
+                    return;
+                }
+                int PKvalue = Convert.ToInt32(dataGridView1.SelectedRows[0].Cells[colIndex].Value);
+                DataRow dr = dataHelper.currentDT.Select(string.Format("{0} = {1}", PKfield.fieldName,PKvalue)).FirstOrDefault();
+                if(dr == null) 
+                {
+                    txtMessages.Text = MultiLingual.tr("Can't find underlying data row in data table", this);
+                    return;
+                }
+                dr.Delete();
+                // Only update this one row
+                DataRow[] drArray = new DataRow[1];
+                drArray[0] = dr;
+                MsSql.currentDA.Update(drArray);
+            }
+        }
+
+        private void dataGridView1_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedRows.Count > 2)
+            {
+                for (int i = 2; i < dataGridView1.SelectedRows.Count; i++)
+                {
+                    dataGridView1.SelectedRows[i].Selected = false;
+
+                }
+            }
+        }
+
+
         private void lblMainFilter_Click(object sender, EventArgs e)
         {
         }
@@ -1047,16 +1270,6 @@ namespace SqlCollegeTranscripts
             senderComboBox.DropDownWidth = width;
         }
 
-        private void tableLayoutPanel_Filters_SizeChanged(object sender, EventArgs e)
-        {
-            TableLayoutPanel senderPanel = (TableLayoutPanel)sender;
-            this.splitContainer1.SplitterDistance = senderPanel.Height + 5;
-        }
-
-        private void rbView_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
 
         private void mnuToolsDatabaseInformation_Click(object sender, EventArgs e)
         {
@@ -1125,24 +1338,6 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        private void splitContainer1_Panel1_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        private void rbEdit_CheckedChanged(object sender, EventArgs e)
-        {
-            if (rbEdit.Checked)
-            {
-                cmbEditColumn.Enabled = true;
-            }
-            else
-            {
-                cmbEditColumn.Enabled = false;
-            }
-            SetTableLayoutPanelHeight();
-        }
-
         private void dataGridView1_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             txtMessages.Text = "Cell double clicked";
@@ -1166,10 +1361,6 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        private void rbDelete_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
         private void _lblCmbFilter_7_Click(object sender, EventArgs e)
         {
 
@@ -1179,6 +1370,7 @@ namespace SqlCollegeTranscripts
         {
 
         }
+
 
         internal object convertValue(string str, DbType fieldType)
         {
@@ -1238,7 +1430,6 @@ namespace SqlCollegeTranscripts
             }
             return result;
         }
-
 
         internal bool findInCombos(string comboTable, string strID)
         {

@@ -19,11 +19,17 @@
                 formDI.job = "CourseTerms";
                 formDI.ShowDialog();
             }
-
-
+        }
+        private void btnMergeCourses_Click(object sender, EventArgs e)
+        {
+            using (frmDatabaseInfo formDI = new frmDatabaseInfo())
+            {
+                formDI.job = "Courses";
+                formDI.ShowDialog();
+            }
         }
 
-        private void label5_Click(object sender, EventArgs e)
+        private void label6_Click(object sender, EventArgs e)
         {
 
         }

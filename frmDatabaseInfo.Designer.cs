@@ -137,9 +137,9 @@
             // 
             // btnExecuteCommand
             // 
-            this.btnExecuteCommand.BackColor = System.Drawing.Color.Red;
+            this.btnExecuteCommand.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
             this.btnExecuteCommand.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnExecuteCommand.ForeColor = System.Drawing.Color.White;
+            this.btnExecuteCommand.ForeColor = System.Drawing.Color.Black;
             this.btnExecuteCommand.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnExecuteCommand.Margin = new System.Windows.Forms.Padding(0, 1, 20, 1);
             this.btnExecuteCommand.MergeAction = System.Windows.Forms.MergeAction.MatchOnly;
@@ -150,6 +150,7 @@
             // 
             // dgvMain
             // 
+            this.dgvMain.AllowUserToAddRows = false;
             this.dgvMain.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
             this.dgvMain.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
             this.dgvMain.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;

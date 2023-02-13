@@ -49,7 +49,7 @@ namespace SqlCollegeTranscripts
             this.fld = fld;
             this.table2 = table2;
             // All inner joins must be to the primary field of table2
-            this.table2PrimaryKey = dataHelper.getTablePrimaryKeyField(table2);
+            this.table2PrimaryKey = dataHelper.getTablePrimaryKeyField(table2).fieldName;
             this.table2Allias = string.Empty;
         }
     }
@@ -73,6 +73,17 @@ namespace SqlCollegeTranscripts
         fkfilter,
         cellfilter
     }
+
+    internal enum ProgramMode
+    {
+        view,
+        edit,
+        add,
+        delete,
+        merge
+    }
+
+
 
     #endregion
 
@@ -98,7 +109,7 @@ namespace SqlCollegeTranscripts
             extraDT = null;
     }
 
-    internal static string QualifiedFieldName(field fld)
+        internal static string QualifiedFieldName(field fld)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("[" + fld.table + "]");
@@ -107,72 +118,212 @@ namespace SqlCollegeTranscripts
             return sb.ToString();
         }
 
-        internal static void updateFieldsTable()  // Called once after all system fields loaded
+        #region  Get values from FieldsDT DataRow (&& overloads)
+
+        internal static string getStringValueFieldsDT(DataRow dr, string fieldToReturn)
         {
+            return Convert.ToString(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
+        }
+
+        internal static int getIntValueFieldsDT(DataRow dr, string fieldToReturn)
+        {
+            return Convert.ToInt32(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
+        }
+
+        internal static bool getBoolValueFieldsDT(DataRow dr, string fieldToReturn)
+        {
+            int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
+            return Convert.ToBoolean(dr[returnField]);
+        }
+
+        internal static field getFieldValueFieldsDT(DataRow dr)
+        {
+            string tableName = getStringValueFieldsDT(dr, "TableName");
+            string columnName = getStringValueFieldsDT(dr, "ColumnName");
+            int size = getIntValueFieldsDT(dr, "MaxLength"); ;
+            string dbType = getStringValueFieldsDT(dr, "DataType");
+            return new field(tableName, columnName, dbType, size);
+        }
+
+        internal static bool isDisplayKey(string tableName, string columnName)
+        {
+            return dataHelper.getBoolValueFieldsDT(tableName, columnName, "is_DK");
+        }
+
+
+        // Begin overloads  -- Gets DataRow and then use above methods
+
+        internal static DataRow getDataRow(string tableName, string columnName)
+        {
+            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", tableName, columnName)).FirstOrDefault();
+            return dr;
+        }
+
+        internal static field getFieldValueFieldsDT(string tableName, string columnName)
+        {
+            DataRow dr = getDataRow(tableName, columnName);
+            return getFieldValueFieldsDT(dr);
+        }
+
+        internal static string getStringValueFieldsDT(string tableName, string columnName, string columnToReturn)
+        {
+            DataRow dr = getDataRow(tableName, columnName);
+            return getStringValueFieldsDT(dr,columnToReturn);
+        }
+
+        internal static int getIntValueFieldsDT(string tableName, string columnName, string columnToReturn)
+        {
+            DataRow dr = getDataRow(tableName,columnName);
+            return getIntValueFieldsDT(dr,columnToReturn);
+        }
+
+        internal static bool getBoolValueFieldsDT(string tableName, string columnName, string columnToReturn)
+        {
+            DataRow dr = getDataRow(tableName, columnName);
+            return getBoolValueFieldsDT(dr,columnToReturn);
+        }
+
+        internal static field getFieldFromTableAndColumnName(string tableName, string columnName)
+        {
+            string dbType = getStringValueFieldsDT(tableName, columnName, "DataType");
+            int size = getIntValueFieldsDT(tableName, columnName, "MaxLength");
+            field fi = new field(tableName, columnName, dbType, size);
+            return fi;
+        }
+
+        internal static bool isTablePrimaryKeyField(field columnField)
+        {
+            return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_PK");
+        }
+        internal static bool fieldIsForeignKey(field columnField)
+        {
+            return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_FK");
+        }
+
+        internal static field getForeignKeyRefField(DataRow dr)
+        {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
+            string FkRefTable = getStringValueFieldsDT(dr, "FkRefTable");
+            string FkRefCol = getStringValueFieldsDT(dr, "FkRefCol");
+            return getFieldFromTableAndColumnName(FkRefTable,FkRefCol);
+        }
+  
+        internal static field getForeignKeyRefField(field foreignKey)
+        {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
+            DataRow dr = getDataRow(foreignKey.table,foreignKey.fieldName);
+            string FkRefTable = getStringValueFieldsDT(dr, "RefTable");
+            string FkRefCol = getStringValueFieldsDT(dr, "RefPkColumn");
+            return getFieldFromTableAndColumnName(FkRefTable, FkRefCol);
+        }
+
+        internal static field getTablePrimaryKeyField(string table)
+        {
+            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND is_PK", table)).FirstOrDefault();
+            return getFieldValueFieldsDT(dr);
+        }
+
+        #endregion
+
+        #region  Getting information from non - fieldDT (used to move it into fieldDT)
+
+        internal static void updateFieldsTable()
+        {
+            // Updates the FieldsDT from the other table.
+            // Uses "Foundational" methods to put info into FieldsDT.
+            // After calling this, we can get all information from FieldsDT
+
+            // First update is_PK and is_DK and is_FK- because these used in innerjoin call below
+            foreach (DataRow dr in fieldsDT.Rows)
+            {
+                field rowField = getFieldValueFieldsDT(dr);  // Each row in fieldsDT is a field
+
+                //Set is_PK 
+                field tablePkfield = getTablePrimaryKeyFoundational(rowField.table);
+                if (rowField.fieldName == tablePkfield.fieldName )      
+                {
+                    dr[dr.Table.Columns.IndexOf("is_PK")] = true;
+                }
+
+                // Set is_DK 
+                if (isDisplayKeyFoundational(rowField.table, rowField.fieldName))
+                {
+                    dr[dr.Table.Columns.IndexOf("is_DK")] = true;  // Only displays itself
+                }
+
+                // Set is_FK + FkRefTable + FkRefCol + 
+                if (fieldIsForeignKeyFoundational(rowField))
+                {
+                    dr[dr.Table.Columns.IndexOf("is_FK")] = true;  // Only displays itself
+                    field refField = getForeignTablePrimaryKeyFoundational(rowField);
+                    dr[dr.Table.Columns.IndexOf("RefTable")] = refField.table;  // Only displays itself
+                    dr[dr.Table.Columns.IndexOf("RefPkColumn")] = refField.fieldName;  // Only displays itself
+                }
+            }
+
+            //Do DisplayKeyDictionary
             Dictionary<string, List<field>> DisplayFieldDict = new Dictionary<string, List<field>>();
             string lastTableName = string.Empty;
             foreach (DataRow dr in fieldsDT.Rows)
             {
-                //Set is_PK 
-                string columnName = getStringValueFieldsDT(dr, "ColumnName");
-                string tableName = getStringValueFieldsDT(dr, "TableName");
-                string tablePkCol = getTablePrimaryKeyField(tableName);
-                if (columnName == tablePkCol)
+                field rowField = getFieldValueFieldsDT(dr);
+                if (rowField.table != lastTableName)  // To save time, if equal, use the last DisplayFieldDict
                 {
-                    int isPkColumn = dr.Table.Columns.IndexOf("is_PK");
-                    dr[isPkColumn] = true;
-                }
-
-                //Set DisplayFields + Set is_FK + FkRefTable + FkRefCol + is_DK
-                if (tableName != lastTableName)  // To save time, if equal, use the last DisplayFieldDict
-                {
-                    sqlFactory tempSql = new sqlFactory(tableName, 1, 200);
+                    sqlFactory tempSql = new sqlFactory(rowField.table, 1, 200);
                     DisplayFieldDict = tempSql.DisplayFieldsDictionary;
                 }
                 // Foreign key
-                if (DisplayFieldDict.ContainsKey(columnName))
+                if (DisplayFieldDict.ContainsKey(rowField.fieldName))
                 {
-                    // Set is_FK
-                    int isFkColumn = dr.Table.Columns.IndexOf("is_FK");
-                    dr[isFkColumn] = true;
-                    // Set FkRefTable + FkRefCol
-                    field fi = dataHelper.getForeignTableAndKey(tableName, columnName);
-                    int fkRefTableCol = dr.Table.Columns.IndexOf("FkRefTable");
-                    dr[fkRefTableCol] = fi.table;
-                    int fkRefColCol = dr.Table.Columns.IndexOf("FkRefCol");
-                    dr[fkRefColCol] = fi.fieldName;
                     // DisplayFields
-                    List<field> fieldList = DisplayFieldDict[columnName];
+                    List<field> fieldList = DisplayFieldDict[rowField.fieldName];
                     List<string> fieldNameList = new List<string>();
                     foreach (field f in fieldList)   // Could be done with linq
                     {
                         fieldNameList.Add(f.fieldName);
                     }
                     string displayFields = String.Join(",", fieldNameList);
-                    int displayFieldsCol = dr.Table.Columns.IndexOf("DisplayFields");
-                    dr[displayFieldsCol] = displayFields;
+                    dr[dr.Table.Columns.IndexOf("DisplayFields")] = displayFields;
                 }
-
-                // Set is_DK - used in program, and so you can update live in fieldsDT table
-                if (formLoad_isDisplayKey(tableName, columnName)) // Only use of "isDisplayField
-                {
-                    int isDisplayKey = dr.Table.Columns.IndexOf("is_DK");
-                    dr[isDisplayKey] = true;  // Only displays itself
-                }
-
-                lastTableName = tableName;  // For next time around
+                lastTableName = rowField.table;  // For next time around
             }
         }
 
-        #region  Get information from system tables
-
-        internal static bool isDisplayKey(string tableName, string columnName)
+        private static bool fieldIsForeignKeyFoundational(field fld)
         {
-            bool result = dataHelper.getBoolValueFieldsDT(tableName, columnName, "is_DK");
-            return result;
+            DataRow[] dr = dataHelper.foreignKeysDT.Select(string.Format("FkTable = '{0}' AND FkColumn = '{1}'", fld.table, fld.fieldName));
+            if (dr.Count() > 0)  // Should be 0 or 1
+            {
+                return true;
+            }
+            return false;
         }
-        internal static bool formLoad_isDisplayKey(string tableName, string fieldName)
+
+        private static field getTablePrimaryKeyFoundational(string table)
         {
+            string strSelect = "TableName = '" + table + "' AND is_PK ='True'";
+            DataRow dr = dataHelper.indexColumnsDT.Select(strSelect).FirstOrDefault();
+            if (dr == null)
+            {
+                return new field(table, "MissingPrimaryKey", "int", 4);
+            }
+            string columnName = dr[dr.Table.Columns.IndexOf("ColumnName")].ToString();
+            return getFieldValueFieldsDT(table, columnName);
+        }
+
+        private static field getForeignTablePrimaryKeyFoundational(field rowfield)
+        {
+            DataRow dr = dataHelper.foreignKeysDT.Select(string.Format("FkTable = '{0}' AND FkColumn = '{1}'", rowfield.table, rowfield.fieldName)).FirstOrDefault();
+            if (dr == null)
+            {
+                return new field("MissingRefTable", "MissingRefColumn", "int", 4);
+            }
+            string RefTable = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefTable")]);
+            string RefPkColumn = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefPkColumn")]);
+            return new field(RefTable, RefPkColumn, "int", 4);
+        }
+
+        private static bool isDisplayKeyFoundational(string tableName, string fieldName)  // Note 'private
+        {
+            // Using this for now - will later change to column in unique index that begins with DK
             if (fieldName.Contains("Name")) { return true; }
 
             switch (tableName.ToLower())
@@ -191,6 +342,7 @@ namespace SqlCollegeTranscripts
                     {
                         case "courseid":
                         case "termid":
+                        case "term":
                         case "_group":
                             return true;
                         default:
@@ -201,6 +353,14 @@ namespace SqlCollegeTranscripts
                     {
                         case "studentname":
                         case "estudentname":
+                            return true;
+                        default:
+                            return false;
+                    }
+                case "terms":
+                    switch (fieldName.ToLower())
+                    {
+                        case "term":
                             return true;
                         default:
                             return false;
@@ -217,106 +377,6 @@ namespace SqlCollegeTranscripts
                 default:
                     return false;
             }
-        }
-
-        internal static field getField(string tableName, string fieldName)
-        {
-            string dbType = getStringValueFieldsDT(tableName, fieldName, "DataType");
-            int size = getIntValueFieldsDT(tableName, fieldName, "MaxLength");
-
-            field fi = new field(tableName, fieldName, dbType, size);
-            return fi;
-        }
-
-        internal static string getTablePrimaryKeyField(string table)
-        {
-            // This should return String.Empty if there is none (Don't assume there is)
-            string strSelect = "TableName = '" + table + "' AND is_PK ='True'";
-            DataRow dr = dataHelper.indexColumnsDT.Select(strSelect).FirstOrDefault();
-            if (dr == null) { return string.Empty; }  // Required
-            int returnField = dr.Table.Columns.IndexOf("ColumnName");
-            return Convert.ToString(dr[returnField]);
-        }
-        internal static bool isTablePrimaryKeyField(string table, string fld)
-        {
-            string pk = getTablePrimaryKeyField(table);
-            if (pk != String.Empty && pk == fld) { return true; }
-            return false;
-        }
-        internal static bool fieldIsForeignKey(string table, string fld)
-        {
-            DataRow[] dr = dataHelper.foreignKeysDT.Select(string.Format("FkTable = '{0}' AND FkColumn = '{1}'", table, fld));
-            if (dr.Count() > 0)  // Should be 0 or 1
-            {
-                return true;
-            }
-            return false;
-        }
-        internal static field getForeignTableAndKey(string table1, string fld1)
-        {
-            DataRow dr = dataHelper.foreignKeysDT.Select(string.Format("FkTable = '{0}' AND FkColumn = '{1}'", table1, fld1)).FirstOrDefault();
-            if (dr == null)
-            {
-                return new field("MissingRefTable", "MissingRefColumn", "int", 4);
-            }
-            int RefTableCol = dr.Table.Columns.IndexOf("RefTable");
-            string RefTable = Convert.ToString(dr[RefTableCol]);
-            int RefPkColumnCol = dr.Table.Columns.IndexOf("RefPkColumn");
-            string RefPkColumn = Convert.ToString(dr[RefPkColumnCol]);
-            return new field(RefTable, RefPkColumn, "int", 4);
-        }
-        internal static string getSqlTrue()
-        {
-            string result = "";
-            //    if (msSql)
-            //    {
-            result = "'True'";
-            //    }
-            //    else if (msAccess)
-            //    {
-            //        result = "True";
-            //    }
-            return result;
-        }
-        internal static string getSqlFalse()
-        {
-            string result = "";
-            //    if (msSql)
-            //    {
-            result = "'False'";
-            //    }
-            //    else if (msAccess)
-            //    {
-            //        result = "False";
-            //    }
-            return result;
-            //}
-
-        }
-        internal static string getStringValueFieldsDT(string table, string field, string fieldToReturn)
-        {
-            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", table, field)).FirstOrDefault();
-            int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
-            return Convert.ToString(dr[returnField]);
-        }
-        internal static string getStringValueFieldsDT(DataRow dr, string fieldToReturn)
-        {
-            int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
-            return Convert.ToString(dr[returnField]);
-        }
-
-        internal static int getIntValueFieldsDT(string table, string field, string fieldToReturn)
-        {
-            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", table, field)).FirstOrDefault();
-            int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
-            return Convert.ToInt32(dr[fieldToReturn]);
-        }
-        internal static bool getBoolValueFieldsDT(string table, string field, string fieldToReturn)
-        {
-            bool result = false;
-            DataRow dr = dataHelper.fieldsDT.Select(string.Format("tableName = '{0}' AND ColumnName = '{1}'", table, field)).FirstOrDefault();
-            int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
-            return Convert.ToBoolean(dr[fieldToReturn]);
         }
 
         #endregion

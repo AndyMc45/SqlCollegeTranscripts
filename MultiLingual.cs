@@ -6,7 +6,7 @@ namespace SqlCollegeTranscripts
 {
     internal static class MultiLingual
     {
-        private static bool BuildingUpEnglishDatabase = true;  // Change this to false once the English Database is built up
+        private static bool BuildingUpEnglishDatabase = false;  // Change this to true to collect English values
 
         public static string tr(string strEnglish, Form form)
         {

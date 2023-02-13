@@ -76,4 +76,8 @@ b.  Add Requirements table
      that has doubles.   But I do this one by one so we can check reason for sections
 </value>
   </data>
+  <data name="label6.Text" xml:space="preserve">
+    <value>2.  Merge elements that have duplicates in the columns that will be the display key columns.  Use main grid to do this.
+     Example: courses that have same name &amp; department.  Example: students that are entered twice with same name.</value>
+  </data>
 </root>
