@@ -17,7 +17,7 @@ namespace SqlCollegeTranscripts
             
             // Put Primary key of main table in the first field of myFields
             string pk = dataHelper.getTablePrimaryKeyField(myTable).fieldName;
-            field fi = new field(myTable, pk, "int", 4);
+            field fi = new field(myTable, pk, DbType.Int32, 4);
             myFields.Add(fi);
 
             // This sets currentSql table and field strings - and these remain the same for this table.
@@ -51,20 +51,15 @@ namespace SqlCollegeTranscripts
         internal List<field> myFields = new List<field>();  // Table and field
         internal List<where> myWheres = new List<where>();
         // Fields for combos - main form constructs these from myRepresentativeColumns list for each combo
-        internal List<field>[] myFieldsCombo = new List<field>[8];  // Table and field
+        // internal List<field>[] myFieldsCombo = new List<field>[8];  // Table and field
 
         // Dictionary(field --> Field List) - foreign keys of this table mapped to fields to show in combo.  Set by innerjoin call.	
         internal Dictionary<string, List<field>> DisplayFieldsDictionary = new Dictionary<string, List<field>>();
         #endregion
 
         // The primary function of this class
+
         internal string returnSql(command cmd)
-        {
-            field emptyField = new field("None", "None", "bit", 0); 
-            string msg = returnSql(cmd, emptyField, 0);
-            return msg;
-        }
-        internal string returnSql(command cmd, field filterColumn, int ComboNumber)
         {
             // The main function of this class - used for tables and combos.
             // Logic: Set 
@@ -86,18 +81,35 @@ namespace SqlCollegeTranscripts
                     sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + sqlWhereString(false) + sqlOrderByStr(myOrderBys) + " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + myPageSize.ToString() + " ROWS ONLY";
                 }
             }
-            else if (cmd == command.fkfilter)
+            return sqlString;
+        }
+
+        internal string returnComboSql(command cmd, field fkColumn)
+        {
+            int offset = (myPage - 1) * myPageSize;
+            string sqlString = "";
+            if (cmd == command.fkfilter)
             {
                 // Get primary key of the combo table - required since this is the value feild
-                field FkTablePKField = dataHelper.getForeignKeyRefField(filterColumn);
-                // Create display field from fields  Concat_WS(x,y,z) as DisplayField
+                field FkTablePKField = dataHelper.getForeignKeyRefField(fkColumn);
+                // Create display field from fields  Concat_WS(x,y,z) as DisplayField  - should be moved to msSql
                 StringBuilder sqlFieldStringSB = new StringBuilder();
                 sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
                 sqlFieldStringSB.Append(", ");
-                sqlFieldStringSB.Append("Concat_WS(',',");
-                string fieldList = sqlFieldString(myFieldsCombo[ComboNumber]);
-                sqlFieldStringSB.Append(fieldList);
-                sqlFieldStringSB.Append(") as DisplayField");
+
+                List<field> fls = DisplayFieldsDictionary[fkColumn.fieldName];
+                string strFields = String.Empty;
+                if (fls.Count == 1)
+                {
+                    sqlFieldStringSB.Append(sqlFieldString(fls));
+                }
+                else
+                {
+                    sqlFieldStringSB.Append("Concat_WS(',',");
+                    sqlFieldStringSB.Append(sqlFieldString(fls));
+                    sqlFieldStringSB.Append(")");
+                }
+                sqlFieldStringSB.Append(" as DisplayField");
                 sqlFieldStringSB.Append(", ");
                 // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
                 sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
@@ -109,12 +121,12 @@ namespace SqlCollegeTranscripts
             {
                 // Create display field from fields  Concat_WS(x,y,z) as DisplayField
                 StringBuilder sqlFieldStringSB = new StringBuilder();
-                string fieldList = sqlFieldString(myFieldsCombo[ComboNumber]);
+                string fieldList = sqlFieldString(DisplayFieldsDictionary[fkColumn.fieldName]);
                 sqlFieldStringSB.Append(fieldList);
                 sqlFieldStringSB.Append(" as DisplayField");
                 sqlFieldStringSB.Append(", ");
                 // field myField = dataHelper.getField(myTable, filterColumn);
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(filterColumn));
+                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(fkColumn));
                 sqlFieldStringSB.Append(" as ValueField");
                 // Get string
                 sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayField";
@@ -131,7 +143,7 @@ namespace SqlCollegeTranscripts
                 StringBuilder sb = new StringBuilder();
                 sb.Append(dataHelper.QualifiedFieldName(ij.fld));
                 sb.Append("=");
-                field fld2 = new field(ij.table2, ij.table2PrimaryKey, "int", 4);
+                field fld2 = new field(ij.table2, ij.table2PrimaryKey, DbType.Int32, 4);
                 sb.Append(dataHelper.QualifiedFieldName(fld2));
                 string condition = sb.ToString();
 
@@ -163,31 +175,27 @@ namespace SqlCollegeTranscripts
                 string condition = "";
                 switch (ws.fl.dbType)
                 {
-                    case "bigint":
-                    case "numeric":
-                    case "smallint":
-                    case "decimal":
-                    case "smallmoney":
-                    case "int":
-                    case "tinyint":
-                    case "money":
-                    case "float":
-                    case "real":
-                    case "binary":
+                    case DbType.Int64:
+                    case DbType.Int32:
+                    case DbType.Int16:
+                    case DbType.Decimal:
+                    case DbType.Byte:
+                    case DbType.Double:
+                    case DbType.Single:
+                    case DbType.Binary:
                         condition = dataHelper.QualifiedFieldName(ws.fl) + " = " + ws.whereValue;
                         break;
-                    case "date":
-                    case "datetimeoffset":
-                    case "datetime2":
-                    case "smalldatetime":
-                    case "datetime":
-                    case "time":
+                    case DbType.Date:
+                    case DbType.DateTimeOffset:
+                    case DbType.DateTime:
+                    case DbType.DateTime2:
+                    case DbType.Time:
                         condition = dataHelper.QualifiedFieldName(ws.fl) + "= #" + ws.whereValue + "#";
                         break;
-                    case "char":
-                    case "varchar":
-                    case "nchar":
-                    case "nvarchar":
+                    case DbType.String:
+                    case DbType.AnsiString:
+                    case DbType.StringFixedLength:
+                    case DbType.AnsiStringFixedLength:
                         if(strict)
                         {
                             condition = dataHelper.QualifiedFieldName(ws.fl) + " '" + ws.whereValue + "'";  //Exact string
@@ -197,7 +205,7 @@ namespace SqlCollegeTranscripts
                             condition = dataHelper.QualifiedFieldName(ws.fl) + " Like '" + ws.whereValue + "%'";  //Same starting string
                         }
                         break;
-                    case "bit":
+                    case DbType.Boolean:
                         if (ws.whereValue.ToLower() == "true")
                         {
                             condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.trueString + "'";
@@ -251,7 +259,7 @@ namespace SqlCollegeTranscripts
         // Two ways to call
         private string callInnerJoins()
         {
-            field empty = new field("None", "Note", "Note", 0);
+            field empty = new field("None", "Note", DbType.String, 0);
             string msg = callInnerJoins(myTable, empty);
             return msg;
         }

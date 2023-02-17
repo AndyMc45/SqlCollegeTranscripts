@@ -65,15 +65,15 @@ namespace SqlCollegeTranscripts
 //                    sqlFact.callInnerJoins();
                     int gridColumn = dgvMain.Columns["courseID"].Index;  //Original dgvMain (groups)
                     string courseID = dgvMain.Rows[0].Cells[gridColumn].Value.ToString();
-                    field fl = new field("CourseTerms", "courseID", "int", 4);
+                    field fl = new field("CourseTerms", "courseID", DbType.Int32, 4);
                     where wh1 = new where(fl, courseID);
                     gridColumn = dgvMain.Columns["termID"].Index;
                     string termID = dgvMain.Rows[0].Cells[gridColumn].Value.ToString();
-                    fl = new field("CourseTerms", "termID", "int", 4);
+                    fl = new field("CourseTerms", "termID", DbType.Int32, 4);
                     where wh2 = new where(fl, termID);
                     gridColumn = dgvMain.Columns["graduateCourse"].Index;
                     string graduateCourse = dgvMain.Rows[0].Cells[gridColumn].Value.ToString();
-                    fl = new field("CourseTerms", "graduateCourse", "bit", 4);
+                    fl = new field("CourseTerms", "graduateCourse", DbType.Boolean, 4);
                     where wh3 = new where(fl, graduateCourse);
                     sqlFact.myWheres.Add(wh1);
                     sqlFact.myWheres.Add(wh2);

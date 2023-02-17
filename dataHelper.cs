@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace SqlCollegeTranscripts
@@ -9,10 +10,10 @@ namespace SqlCollegeTranscripts
     {
         public string fieldName { get; set; }
         public string table { get; set; }
-        public string dbType { get; set; }
+        public DbType dbType { get; set; }
         public int size { get; set; }   
 
-        public field(string table, string fieldName, string dbType, int size)
+        public field(string table, string fieldName, DbType dbType, int size)
         {
             this.table = table;
             this.fieldName = fieldName;
@@ -28,11 +29,12 @@ namespace SqlCollegeTranscripts
             this.fl = fl;
             this.whereValue = whereValue;
         }
-        public where(string table, string field, string whereValue, string dbType, int size)
+        public where(string table, string field, string whereValue, DbType dbType, int size)
         {
             this.fl = new field(table, field, dbType, size);
             this.whereValue = whereValue;
         }
+  
         public field fl { get; set; }
         public string whereValue { get; set; }
         public string displayValue { get; set; }  // Used to display where in combo
@@ -107,7 +109,7 @@ namespace SqlCollegeTranscripts
             indexesDT = null;
             indexColumnsDT = null;
             extraDT = null;
-    }
+        }
 
         internal static string QualifiedFieldName(field fld)
         {
@@ -117,6 +119,172 @@ namespace SqlCollegeTranscripts
             sb.Append("[" + fld.fieldName + "]");
             return sb.ToString();
         }
+
+        internal static DbType ConvertStringToDbType(string strVarType)
+        {
+            string strDbType = string.Empty;
+            //  strVarType is sqlDbType but could also be mySql - just need to expand cases
+            switch (strVarType.ToLower())
+            {
+                case "bigint":
+                    strDbType = "Int64";
+                    break;
+                case "bit":
+                    strDbType = "Boolean";
+                    break;
+                case "char":
+                    strDbType = "AnsiStringFixedLength";
+                    break;
+                case "float":
+                    strDbType = "Double";
+                    break;
+                case "int":
+                    strDbType = "Int32";
+                    break;
+                case "nchar":
+                    strDbType = "StringFixedLength";
+                    break;
+                case "nvarchar":
+                    strDbType = "String";
+                    break;
+                case "real":
+                    strDbType = "Single";
+                    break;
+                case "smallint":
+                    strDbType = "Int16";
+                    break;
+                case "variant":
+                    strDbType = "Object";
+                    break;
+                case "tinyint":
+                    strDbType = "Byte";
+                    break;
+                case "uniqueidentifier":
+                    strDbType = "Guid";
+                    break;
+                case "varbinary":
+                    strDbType = "Binary";
+                    break;
+                case "varchar":
+                    strDbType = "AnsiString";
+                    break;
+                default:
+                    strDbType = strVarType;   // SqlDbType and DbType have same name
+                    break;
+            }
+            DbType dbType = (DbType)Enum.Parse(typeof(DbType), strDbType, true);
+            return dbType;
+        }
+
+        internal static bool TryParseToDbType(string str, DbType dbType, Form form, out string message)
+        {
+            message = String.Empty;
+            switch(dbType)
+            {
+                case DbType.Int16:
+                case DbType.Int32:
+                case DbType.Int64:
+                case DbType.Byte:
+                    int i;
+                    if (int.TryParse(str, out i))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        message = String.Format(MultiLingual.tr("Unable to parse '{0}' as {1}.", form),str,"integer");
+                        return false;
+                    }
+                case DbType.Decimal: 
+                case DbType.Double:
+                case DbType.Single:
+                    Decimal dec;
+                    if(Decimal.TryParse(str, out dec))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        message = String.Format(MultiLingual.tr("Unable to parse {0} as {1}.", form), str, "decimal");
+                        return false;
+                    }
+                case DbType.DateTime:
+                case DbType.DateTime2:
+                case DbType.Date:
+                case DbType.Time:
+                    DateTime dt;
+                    if (DateTime.TryParse(str, out dt))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        message = String.Format(MultiLingual.tr("Unable to parse {0} as {1}.", form), str, "Date / Time");
+                        return false;
+                    }
+            }
+            return true;  // Not checking anything else
+        }
+
+        //   internal static string convertValue(string str, DbType fieldType)
+        //   {
+        //       object result = null;
+        //       string errorMsg = "";
+        //       try
+        //       {
+        //           if (fieldType == DbType.Int16)
+        //           {
+        //               errorMsg = "integer";
+        //               return Convert.ToInt32(Double.Parse(str));
+        //           }
+        //           else if (fieldType == DbType.Boolean)
+        //           {
+        //               errorMsg = "boolean";
+        //               bool tempBool = false;
+        //               return (Boolean.TryParse(str, out tempBool)) ? tempBool : Convert.ToBoolean(Double.Parse(str));
+        //           }
+        //           else if (fieldType == DbType.Int32)
+        //           {
+        //               errorMsg = "long integer";
+        //               return Convert.ToInt32(Double.Parse(str));
+        //           }
+        //           else if (fieldType == DbType.Single)
+        //           {
+        //               errorMsg = "small real number";
+        //               return Single.Parse(str);
+        //           }
+        //           else if (fieldType == DbType.Double)
+        //           {
+        //               errorMsg = "real number";
+        //               return Double.Parse(str);
+        //           }
+        //           else if (fieldType == DbType.DateTime)
+        //           {
+        //               errorMsg = "legal date";
+        //               return DateTime.Parse(str);
+        //           }
+        //           else if (fieldType == DbType.Currency)
+        //           {
+        //               errorMsg = "currency";
+        //               return Decimal.Parse(str, NumberStyles.Currency | NumberStyles.AllowExponent);
+        //           }
+        //           else if (fieldType == DbType.Decimal)
+        //           {
+        //               errorMsg = "decimal";
+        //               return Decimal.Parse(str, NumberStyles.Currency | NumberStyles.AllowExponent);
+        //           }
+        //           else
+        //           { //strings adVarChar, adVarWChar, adWChar, adChar, adLongVarChar, adLongVarWChar
+        //               return str;
+        //           }
+        //       }
+        //       catch
+        //       {
+        //           // result = "ERROR! " + translation.tr("TheValueIsNotA", str, errorMsg, "");
+        //       }
+        //       return result;
+        //   }
+
 
         #region  Get values from FieldsDT DataRow (&& overloads)
 
@@ -141,7 +309,8 @@ namespace SqlCollegeTranscripts
             string tableName = getStringValueFieldsDT(dr, "TableName");
             string columnName = getStringValueFieldsDT(dr, "ColumnName");
             int size = getIntValueFieldsDT(dr, "MaxLength"); ;
-            string dbType = getStringValueFieldsDT(dr, "DataType");
+            string strDbType = getStringValueFieldsDT(dr, "DataType");
+            DbType dbType = dataHelper.ConvertStringToDbType(strDbType);
             return new field(tableName, columnName, dbType, size);
         }
 
@@ -185,7 +354,8 @@ namespace SqlCollegeTranscripts
 
         internal static field getFieldFromTableAndColumnName(string tableName, string columnName)
         {
-            string dbType = getStringValueFieldsDT(tableName, columnName, "DataType");
+            string strDbType = getStringValueFieldsDT(tableName, columnName, "DataType");
+            DbType dbType = dataHelper.ConvertStringToDbType(strDbType);
             int size = getIntValueFieldsDT(tableName, columnName, "MaxLength");
             field fi = new field(tableName, columnName, dbType, size);
             return fi;
@@ -303,7 +473,7 @@ namespace SqlCollegeTranscripts
             DataRow dr = dataHelper.indexColumnsDT.Select(strSelect).FirstOrDefault();
             if (dr == null)
             {
-                return new field(table, "MissingPrimaryKey", "int", 4);
+                return new field(table, "MissingPrimaryKey", DbType.Int32, 4);
             }
             string columnName = dr[dr.Table.Columns.IndexOf("ColumnName")].ToString();
             return getFieldValueFieldsDT(table, columnName);
@@ -314,11 +484,11 @@ namespace SqlCollegeTranscripts
             DataRow dr = dataHelper.foreignKeysDT.Select(string.Format("FkTable = '{0}' AND FkColumn = '{1}'", rowfield.table, rowfield.fieldName)).FirstOrDefault();
             if (dr == null)
             {
-                return new field("MissingRefTable", "MissingRefColumn", "int", 4);
+                return new field("MissingRefTable", "MissingRefColumn", DbType.Int32, 4);
             }
             string RefTable = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefTable")]);
             string RefPkColumn = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefPkColumn")]);
-            return new field(RefTable, RefPkColumn, "int", 4);
+            return new field(RefTable, RefPkColumn, DbType.Int32, 4);
         }
 
         private static bool isDisplayKeyFoundational(string tableName, string fieldName)  // Note 'private

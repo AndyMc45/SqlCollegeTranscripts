@@ -38,21 +38,20 @@ namespace SqlCollegeTranscripts
 
         // Set update command - only one set field and the where is for PK=@PK - i.e. only one row
         internal static void SetUpdateCommand(field fieldToSet, DataTable dataTable)
-        {
+        { 
             // Do this once in the program
             string msg = string.Empty;
             // Get data adapter
             SqlDataAdapter da = GetDataAdaptor(dataTable);
             string tableName = fieldToSet.table;
             string fieldName = fieldToSet.fieldName;
-            string dbType = fieldToSet.dbType;
-            SqlDbType sqlDBType = (SqlDbType)Enum.Parse(typeof(SqlDbType), dbType, true);
+            SqlDbType sqlDbType = GetSqlDbType(fieldToSet.dbType);
             int size = fieldToSet.size;
             string PK = dataHelper.getTablePrimaryKeyField(tableName).fieldName;
             string sqlUpdate =  String.Format("UPDATE {0} SET {1} = {2} WHERE {3} = {4}", 
                     tableName, fieldName, "@" + fieldName, PK, "@" + PK);
             SqlCommand sqlCmd = new SqlCommand(sqlUpdate, MsSql.cn);
-            sqlCmd.Parameters.Add("@" + fieldName, sqlDBType , size, fieldName);
+            sqlCmd.Parameters.Add("@" + fieldName, sqlDbType, size, fieldName);
             sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, size, PK);
             da.UpdateCommand = sqlCmd;
         }
@@ -68,6 +67,62 @@ namespace SqlCollegeTranscripts
             SqlCommand sqlCmd = new SqlCommand(sqlUpdate, MsSql.cn);
             sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, 4, PK);
             da.DeleteCommand = sqlCmd;
+        }
+
+        internal static SqlDbType GetSqlDbType(DbType dbType)
+        {
+            string strDbType = dbType.ToString();
+            string strSqlDbType = string.Empty;
+            switch (strDbType.ToLower())
+            {
+                case "int64" : 
+                    strSqlDbType = "BigInt";
+                    break;
+                case "boolean" :
+                    strSqlDbType = "Bit";
+                    break;
+                case "ansistringfixedlength" :
+                    strSqlDbType = "Char";
+                    break;
+                case "double" :
+                    strSqlDbType = "Float";
+                    break;
+                case "int32" :
+                    strSqlDbType = "Int";
+                    break;
+                case "stringfixedlength" :
+                    strSqlDbType = "NChar";
+                    break;
+                case "string" :
+                    strSqlDbType = "NVarChar";
+                    break;
+                case "single" :
+                    strSqlDbType = "Real";
+                    break;
+                case "int16" :
+                    strSqlDbType = "SmallInt";
+                    break;
+                case "object" :
+                    strSqlDbType = "Variant";
+                    break;
+                case "byte" :
+                    strSqlDbType = "TinyInt";
+                    break;
+                case "guid" :
+                    strSqlDbType = "UniqueIdentifier";
+                    break;
+                case "binary" :
+                    strSqlDbType = "VarBinary";
+                    break;
+                case "ansistring" :
+                    strSqlDbType = "VarChar";
+                    break;
+                default:
+                    strSqlDbType = strDbType;
+                    break;
+            }
+            SqlDbType sqlDbType = (SqlDbType)Enum.Parse(typeof(SqlDbType), strSqlDbType, true);
+            return sqlDbType;
         }
 
         internal static List<string> defaultConnectionString()
