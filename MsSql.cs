@@ -148,6 +148,7 @@ namespace SqlCollegeTranscripts
 
         internal static void FillDataTable(DataTable dt, string sqlString)
         {
+            dt.Rows.Clear();
             SqlDataAdapter da = GetDataAdaptor(dt);
             da = new SqlDataAdapter();  //I guess
             SqlCommand sqlCmd = new SqlCommand(sqlString, cn);

@@ -39,6 +39,7 @@
             this.btnLoadCommand = new System.Windows.Forms.ToolStripButton();
             this.btnExecuteCommand = new System.Windows.Forms.ToolStripButton();
             this.dgvMain = new System.Windows.Forms.DataGridView();
+            this.btnExit = new System.Windows.Forms.ToolStripButton();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvMain)).BeginInit();
             this.SuspendLayout();
@@ -55,7 +56,8 @@
             this.cmdExtraDT,
             this.toolStripLabel1,
             this.btnLoadCommand,
-            this.btnExecuteCommand});
+            this.btnExecuteCommand,
+            this.btnExit});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(1182, 27);
@@ -163,6 +165,15 @@
             this.dgvMain.Size = new System.Drawing.Size(1182, 333);
             this.dgvMain.TabIndex = 1;
             // 
+            // btnExit
+            // 
+            this.btnExit.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnExit.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnExit.Name = "btnExit";
+            this.btnExit.Size = new System.Drawing.Size(37, 24);
+            this.btnExit.Text = "Exit";
+            this.btnExit.Click += new System.EventHandler(this.btnExit_Click);
+            // 
             // frmDatabaseInfo
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -196,5 +207,6 @@
         private ToolStripButton cmdExtraDT;
         private ToolStripButton btnExecuteCommand;
         private ToolStripButton btnLoadCommand;
+        private ToolStripButton btnExit;
     }
 }

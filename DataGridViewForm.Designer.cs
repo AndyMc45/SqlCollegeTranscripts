@@ -60,6 +60,7 @@
             this.mnuAddressBookEmails = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuAddressBookGetEmails = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuTools = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuDatabaseInfo = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuPrintCurrentTable = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuAdministration = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuToolsDatabaseInformation = new System.Windows.Forms.ToolStripMenuItem();
@@ -350,16 +351,24 @@
             // mnuTools
             // 
             this.mnuTools.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuDatabaseInfo,
             this.mnuPrintCurrentTable,
             this.mnuAdministration});
             this.mnuTools.Name = "mnuTools";
             this.mnuTools.Size = new System.Drawing.Size(58, 24);
             this.mnuTools.Text = "Tools";
             // 
+            // mnuDatabaseInfo
+            // 
+            this.mnuDatabaseInfo.Name = "mnuDatabaseInfo";
+            this.mnuDatabaseInfo.Size = new System.Drawing.Size(237, 26);
+            this.mnuDatabaseInfo.Text = "Database Information";
+            this.mnuDatabaseInfo.Click += new System.EventHandler(this.mnuToolsDatabaseInformation_Click);
+            // 
             // mnuPrintCurrentTable
             // 
             this.mnuPrintCurrentTable.Name = "mnuPrintCurrentTable";
-            this.mnuPrintCurrentTable.Size = new System.Drawing.Size(190, 26);
+            this.mnuPrintCurrentTable.Size = new System.Drawing.Size(237, 26);
             this.mnuPrintCurrentTable.Text = "Print Selection";
             // 
             // mnuAdministration
@@ -371,7 +380,7 @@
             this.mnuViewLog,
             this.mnuUpdateDatabase});
             this.mnuAdministration.Name = "mnuAdministration";
-            this.mnuAdministration.Size = new System.Drawing.Size(190, 26);
+            this.mnuAdministration.Size = new System.Drawing.Size(237, 26);
             this.mnuAdministration.Text = "Administration";
             // 
             // mnuToolsDatabaseInformation
@@ -912,7 +921,7 @@
             // 
             this._cmbFilter_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this._cmbFilter_0.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
+            this._cmbFilter_0.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
             this._cmbFilter_0.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.tableLayoutPanel.SetColumnSpan(this._cmbFilter_0, 3);
             this._cmbFilter_0.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -1201,5 +1210,6 @@
         public ToolStripMenuItem mnuFindID;
         public ToolStripMenuItem mnuUpdateDatabase;
         private Button btnDeleteAddMerge;
+        private ToolStripMenuItem mnuDatabaseInfo;
     }
 }

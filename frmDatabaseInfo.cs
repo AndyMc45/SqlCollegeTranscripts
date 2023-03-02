@@ -20,9 +20,16 @@ namespace SqlCollegeTranscripts
         {
             btnLoadCommand.Enabled = true;
             btnExecuteCommand.Enabled = false;
-            PrepareForLoadCommand();
+            if (String.IsNullOrEmpty(job))
+            {
+                if (dataHelper.fieldsDT != null) { dgvMain.DataSource = dataHelper.fieldsDT; }
+            }
+            else
+            { 
+                PrepareForLoadCommand(); 
+            }
             // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            // MultiLingual.InsertEnglishIntoDatabase(this);
+            MultiLingual.InsertEnglishIntoDatabase(this);
         }
 
         private void PrepareForLoadCommand()
@@ -148,6 +155,10 @@ namespace SqlCollegeTranscripts
         {
             dgvMain.DataSource = null;
         }
-        
+
+        private void btnExit_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
     }
 }

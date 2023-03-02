@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,12 +10,10 @@ namespace SqlCollegeTranscripts
 {
     public class FkComboColumn : DataGridViewColumn
     {
-        public FkComboColumn() : base(new FkComboCell())
-        {
-        }
-
+        public FkComboColumn() : base(new FkComboCell())  {   }
+       
         public override DataGridViewCell CellTemplate
-        {
+        {  
             get
             {
                 return base.CellTemplate;
@@ -43,20 +42,30 @@ namespace SqlCollegeTranscripts
         }
 
         public DataTable dataTable { get; set; }
+ 
+        public override object Clone()
+        {
+            var clone = (FkComboCell)base.Clone();
+            // clone.dataTable = dt;
+            return clone;
+        }
 
         public override void InitializeEditingControl(int rowIndex, object
             initialFormattedValue, DataGridViewCellStyle dataGridViewCellStyle)
         {
             // Set the value of the editing control to the current cell value.
             base.InitializeEditingControl(rowIndex, initialFormattedValue, dataGridViewCellStyle);
-            DataGridViewComboBoxEditingControl ctl = DataGridView.EditingControl as DataGridViewComboBoxEditingControl;
-
-            // Use the default row value when Value property is null.
-            if (this.dataTable != null)
-            {
+            FkComboBoxEditingControl ctl = DataGridView.EditingControl as FkComboBoxEditingControl;
+            if (ctl != null) { 
+                // Fill the combo.
+                ctl.DataSource = null;   
+                ctl.Items.Clear(); // ? if needed
                 ctl.ValueMember = "ValueField";
                 ctl.DisplayMember = "DisplayField";
-                ctl.DataSource = this.dataTable;
+                ctl.DataSource = dataTable;
+                // Other combo settings
+                ctl.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                ctl.AutoCompleteSource = AutoCompleteSource.ListItems;
             }
         }
 
@@ -65,7 +74,7 @@ namespace SqlCollegeTranscripts
             get
             {
                 // Return the type of the editing control that CalendarCell uses.
-                return typeof(DataGridViewComboBoxEditingControl);
+                return typeof(FkComboBoxEditingControl);
             }
         }
 
@@ -85,6 +94,24 @@ namespace SqlCollegeTranscripts
             {
                 // Use the current date and time as the default value.
                 return 0;
+            }
+        }
+    }
+
+    public class FkComboBoxEditingControl : DataGridViewComboBoxEditingControl
+    {
+
+        public override object GetEditingControlFormattedValue(DataGridViewDataErrorContexts context)
+        {
+            return this.SelectedValue;
+        }
+
+        public DataTable dataTable { 
+            set 
+            {
+                this.ValueMember = "ValueField";
+                this.DisplayMember = "DisplayField";
+                this.DataSource = value;
             }
         }
     }
