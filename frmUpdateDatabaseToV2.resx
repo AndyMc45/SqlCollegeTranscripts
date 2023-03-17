@@ -69,15 +69,14 @@ b.  Add Requirements table
 </value>
   </data>
   <data name="label5.Text" xml:space="preserve">
-    <value>Next we need to make column indexes unique.
+    <value>Next we need to make column indexes unique and add some constraints.
 1.  Courses-Terms:  Unique multi-column index - "courseID, termID, graduateCourse, section". 
      So, first, In SSMS add a "section, int, Not Null - default 1" column to "CoursesTerms"
-     And then run the "Add Section" command below - it adds sections  for every Course_Term 
-     that has doubles.   But I do this one by one so we can check reason for sections
+     Use DK - find duplicates command (Tools--&gt; Admin--&gt;Fix) to fix all doubles
+     Add display key in SSMS
+    Add constraint that same section (i.e. DK) must have same credits and faculty 
+ 2.  Merge duplicates in all other tables
+     Add DK in SSMS
 </value>
-  </data>
-  <data name="label6.Text" xml:space="preserve">
-    <value>2.  Merge elements that have duplicates in the columns that will be the display key columns.  Use main grid to do this.
-     Example: courses that have same name &amp; department.  Example: students that are entered twice with same name.</value>
   </data>
 </root>

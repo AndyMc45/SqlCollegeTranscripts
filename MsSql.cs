@@ -13,10 +13,12 @@ namespace SqlCollegeTranscripts
         internal static string trueString = "True";
         internal static string falseString = "False";
         internal static SqlConnection cn { get; set; }
+        internal static SqlConnection noDatabaseConnection { get; set; }
         internal static SqlDataAdapter currentDA { get; set; }
         internal static SqlDataAdapter extraDA { get; set; }  // Might update, delete so can not reuse until grid closed
         internal static SqlDataAdapter readOnlyDA { get; set; }  // No update of table and so no need to keep adaptar, etc.
-       
+
+
         private static SqlDataAdapter GetDataAdaptor(DataTable dataTable)
         {
             if(dataTable == dataHelper.currentDT)
@@ -136,7 +138,7 @@ namespace SqlCollegeTranscripts
 
         internal static void openConnection(string connectionString)
         {
-            if (cn == null)   // ? always true since cn has been closed ?
+            if (cn == null)   // may be false if using frmConnection
             {
                 cn = new SqlConnection(connectionString);
             }
@@ -145,10 +147,22 @@ namespace SqlCollegeTranscripts
                 cn.Open();
             }
         }
+        internal static void openNoDatabaseConnection(string connectionString)
+        {
+            if (noDatabaseConnection == null)   // may be false if using frmConnection
+            {
+                noDatabaseConnection = new SqlConnection(connectionString);
+            }
+            if (noDatabaseConnection.State != ConnectionState.Open)
+            {
+                noDatabaseConnection.Open();
+            }
+        }
 
         internal static void FillDataTable(DataTable dt, string sqlString)
         {
-            dt.Rows.Clear();
+            // dt.Rows.Clear();
+            //dt.Columns.Clear();
             SqlDataAdapter da = GetDataAdaptor(dt);
             da = new SqlDataAdapter();  //I guess
             SqlCommand sqlCmd = new SqlCommand(sqlString, cn);
@@ -169,6 +183,18 @@ namespace SqlCollegeTranscripts
                 }
             }
             cn = null;
+        }
+
+        internal static void CloseNoDatabaseConnection()
+        {
+            if (noDatabaseConnection != null)
+            {
+                if (noDatabaseConnection.State == ConnectionState.Open)
+                {
+                    noDatabaseConnection.Close();
+                }
+            }
+            noDatabaseConnection = null;
         }
 
         internal static int GetRecordCount(string strSql)
@@ -193,7 +219,6 @@ namespace SqlCollegeTranscripts
             sb.Append("ON sfk.OBJECT_ID = sfkc.constraint_object_id ");
             sb.Append("INNER JOIN sys.tables t ON t.OBJECT_ID = sfkc.referenced_object_id");
             string sqlForeignKeys = sb.ToString();
-            dataHelper.foreignKeysDT = new DataTable("foreighKeysDT");
             readOnlyDA = new SqlDataAdapter(sqlForeignKeys, cn);
             readOnlyDA.Fill(dataHelper.foreignKeysDT);
 
@@ -208,7 +233,6 @@ namespace SqlCollegeTranscripts
             sb.Append("where so.is_ms_shipped <> 1 AND so.type = 'U' AND si.index_id > 0 ");
             sb.Append("order by TableName ");
             string sqlIndexes = sb.ToString();
-            dataHelper.indexesDT = new DataTable("indexesDT");
             readOnlyDA = new SqlDataAdapter(sqlIndexes, cn);
             readOnlyDA.Fill(dataHelper.indexesDT);
 
@@ -222,7 +246,6 @@ namespace SqlCollegeTranscripts
             sb.Append("WHERE so.is_ms_shipped <> 1 and so.type = 'U' AND si.index_id > 0 ");
             sb.Append("ORDER BY TableName, is_PK desc, IndexName ");
             string sqlIndexColumns = sb.ToString();
-            dataHelper.indexColumnsDT = new DataTable("indexColumnsDT");
             readOnlyDA = new SqlDataAdapter(sqlIndexColumns, cn);
             readOnlyDA.Fill(dataHelper.indexColumnsDT);
 
@@ -236,7 +259,6 @@ namespace SqlCollegeTranscripts
             sb.Append("WHERE so.is_ms_shipped <> 1 AND so.type = 'U' and st.lob_data_space_id = 0 ");
             sb.Append("ORDER BY TableName ");
             string sqlTables = sb.ToString();
-            dataHelper.tablesDT = new DataTable("tablesDT");
             readOnlyDA = new SqlDataAdapter(sqlTables, cn);
             readOnlyDA.Fill(dataHelper.tablesDT);
 
@@ -256,10 +278,31 @@ namespace SqlCollegeTranscripts
             sb.Append("inner join sys.tables st on so.object_id = st.object_id ");
             sb.Append("WHERE so.is_ms_shipped <> 1 AND so.type = 'U' and st.lob_data_space_id = 0 ");
             string sqlFields = sb.ToString();
-            dataHelper.fieldsDT = new DataTable("fieldsDT");
             readOnlyDA = new SqlDataAdapter(sqlFields, cn);
             readOnlyDA.Fill(dataHelper.fieldsDT);
             dataHelper.updateFieldsTable();
         }
+
+        // Copied from web.  Point: SqlParameter implements this conversion
+        internal static DbType GetDbType(Type runtimeType)
+        {
+            var nonNullableType = Nullable.GetUnderlyingType(runtimeType);
+            if (nonNullableType != null)
+            {
+                runtimeType = nonNullableType;
+            }
+
+            var templateValue = (Object)null;
+            if (runtimeType.IsClass == false)
+            {
+                templateValue = Activator.CreateInstance(runtimeType);
+            }
+
+            var sqlParamter = new SqlParameter(parameterName: String.Empty, value: templateValue);
+
+            return sqlParamter.DbType;
+        }
+
+
     }
 }

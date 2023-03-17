@@ -39,12 +39,12 @@ namespace SqlCollegeTranscripts
         //    dataGridView1.Height = this.ClientSize.Height - (dataGridView1.Top + 70);
 
         //    //Hide cmbFilter controls - all at top
-        //    int tempForEndVar = lblcmbFilter.ControlCount() - 1;
+        //    int tempForEndVar = lblcmbFkFilter.ControlCount() - 1;
         //    for (int i = 0; i <= tempForEndVar; i++)
         //    {
-        //        lblcmbFilter[i].Top = 3;
-        //        lblcmbFilter[i].Visible = false;
-        //        lblcmbFilter[i].Height = 17;
+        //        lblcmbFkFilter[i].Top = 3;
+        //        lblcmbFkFilter[i].Visible = false;
+        //        lblcmbFkFilter[i].Height = 17;
         //        cmbFilter[i].Top = 19;
         //        cmbFilter[i].Visible = false;
         //        cmbFilterBackup[i].Visible = false;
@@ -138,18 +138,18 @@ namespace SqlCollegeTranscripts
         //                int tempForEndVar2 = cmbFilter.ControlCount() - 1;
         //                for (int i = Index; i <= tempForEndVar2; i++)
         //                {
-        //                    lblcmbFilter[i].Top = lblcmbFilter[i].Top + 19 + 22; //move over label and cmbFilter
+        //                    lblcmbFkFilter[i].Top = lblcmbFkFilter[i].Top + 19 + 22; //move over label and cmbFilter
         //                    cmbFilter[i].Top = cmbFilter[i].Top + 19 + 22;
         //                }
         //                dataGridView1.Top = dataGridView1.Top + 19 + 24;
         //                dataGridView1.Height = this.ClientSize.Height - (dataGridView1.Top + 70);
         //            }
         //            //Position and set label and box
-        //            lblcmbFilter[Index].Left = (nextleft + 50) / 15;
-        //            lblcmbFilter[Index].Width = width / 15;
-        //            lblcmbFilter[Index].Text = son + ":";
-        //            lblcmbFilter[Index].Visible = true;
-        //            lblcmbFilter[Index].Font = lblcmbFilter[Index].Font.Change(bold: true);
+        //            lblcmbFkFilter[Index].Left = (nextleft + 50) / 15;
+        //            lblcmbFkFilter[Index].Width = width / 15;
+        //            lblcmbFkFilter[Index].Text = son + ":";
+        //            lblcmbFkFilter[Index].Visible = true;
+        //            lblcmbFkFilter[Index].Font = lblcmbFkFilter[Index].Font.Change(bold: true);
         //            cmbFilter[Index].Left = nextleft / 15;
         //            cmbFilter[Index].Width = width / 15;
         //            cmbFilter[Index].Tag = fld; //tag is the foreign key of the son (the table in combo)
@@ -201,9 +201,9 @@ namespace SqlCollegeTranscripts
         //        if (sqlCurrentTableFilterTable == comboTable)
         //        {
         //            //Note this in label
-        //            if ((lblcmbFilter[Index].Text.IndexOf(" (F)") + 1) == 0)
+        //            if ((lblcmbFkFilter[Index].Text.IndexOf(" (F)") + 1) == 0)
         //            {
-        //                lblcmbFilter[Index].Text = lblcmbFilter[Index].Text + " (F)";
+        //                lblcmbFkFilter[Index].Text = lblcmbFkFilter[Index].Text + " (F)";
         //            }
         //        }
         //        else
@@ -217,7 +217,7 @@ namespace SqlCollegeTranscripts
         //                sqlClass.higherInnerJoin(currentSql.myTable, sqlCurrentTableFilterTable);
         //            }
         //            //Update the label
-        //            lblcmbFilter[Index].Text = StringsHelper.Replace(lblcmbFilter[Index].Text, " (F)", "", 1, -1, CompareMethod.Binary);
+        //            lblcmbFkFilter[Index].Text = StringsHelper.Replace(lblcmbFkFilter[Index].Text, " (F)", "", 1, -1, CompareMethod.Binary);
         //        }
         //    }
         //    ComboBox[] cmbFilterBackup = { _cmbFilterBackup_0, _cmbFilterBackup_1, _cmbFilterBackup_2, _cmbFilterBackup_3, _cmbFilterBackup_4, _cmbFilterBackup_5, _cmbFilterBackup_6, _cmbFilterBackup_7, _cmbFilterBackup_8 };
@@ -272,8 +272,8 @@ namespace SqlCollegeTranscripts
         //        {
         //            comboPage = Convert.ToInt32(Double.Parse(captionsForm.selectedCaption));
         //        }
-        //        //Note page in lblcmbFilter
-        //        lblcmbFilter[Index].Text = comboTable + ":" + "(" + comboPage.ToString() + ")";
+        //        //Note page in lblcmbFkFilter
+        //        lblcmbFkFilter[Index].Text = comboTable + ":" + "(" + comboPage.ToString() + ")";
         //        captionsForm = null;
         //    }
 
@@ -435,23 +435,23 @@ namespace SqlCollegeTranscripts
         //    bool tempRefParam = true;
         //    writeGrid(ref tempRefParam);
         //}
-        //private void lblcmbFilter_DoubleClick(Object eventSender, EventArgs eventArgs)
+        //private void lblcmbFkFilter_DoubleClick(Object eventSender, EventArgs eventArgs)
         //{
-        //    int Index = Array.IndexOf(this.lblcmbFilter, eventSender);
+        //    int Index = Array.IndexOf(this.lblcmbFkFilter, eventSender);
         //    //Sets content of cmbFilter(Index) to ""
         //    if (cmbFilter[Index].SelectedIndex > 0)
         //    {
         //        cmbFilter[Index].SelectedIndex = 0;
         //    }
         //}
-        //private void lblcmbFilter_Click(Object eventSender, EventArgs eventArgs)
+        //private void lblcmbFkFilter_Click(Object eventSender, EventArgs eventArgs)
         //{
-        //    int Index = Array.IndexOf(this.lblcmbFilter, eventSender);
+        //    int Index = Array.IndexOf(this.lblcmbFkFilter, eventSender);
         //    msgSB(cmbFilter[Index].Text);
         //}
-        //private void lblcmbFilter_MouseDown(Object eventSender, MouseEventArgs eventArgs)
+        //private void lblcmbFkFilter_MouseDown(Object eventSender, MouseEventArgs eventArgs)
         //{
-        //    int Index = Array.IndexOf(this.lblcmbFilter, eventSender);
+        //    int Index = Array.IndexOf(this.lblcmbFkFilter, eventSender);
         //    int Button = (eventArgs.Button == MouseButtons.Left) ? 1 : ((eventArgs.Button == MouseButtons.Right) ? 2 : 4);
         //    int Shift = ((int)Control.ModifierKeys) / 65536;
         //    float x = eventArgs.X * 15;
@@ -459,9 +459,9 @@ namespace SqlCollegeTranscripts
         //    changeCol = Index;
         //    changeColwidth = x;
         //}
-        //private void lblcmbFilter_MouseUp(Object eventSender, MouseEventArgs eventArgs)
+        //private void lblcmbFkFilter_MouseUp(Object eventSender, MouseEventArgs eventArgs)
         //{
-        //    int Index = Array.IndexOf(this.lblcmbFilter, eventSender);
+        //    int Index = Array.IndexOf(this.lblcmbFkFilter, eventSender);
         //    int Button = (eventArgs.Button == MouseButtons.Left) ? 1 : ((eventArgs.Button == MouseButtons.Right) ? 2 : 4);
         //    int Shift = ((int)Control.ModifierKeys) / 65536;
         //    float x = eventArgs.X * 15;

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using Windows.ApplicationModel.Email;
+using Windows.ApplicationModel.VoiceCommands;
 using Windows.Media.Playback;
 using Windows.UI.Core.AnimationMetrics;
 using Windows.UI.Popups;
@@ -38,12 +39,14 @@ namespace SqlCollegeTranscripts
     internal partial class DataGridViewForm : Form
     {
         #region Variables
-        internal ProgramMode programMode = ProgramMode.view;
+        internal ProgramMode programMode = ProgramMode.none;
         internal bool mySql = false, msSql = false;  // currently only using msSql
         internal sqlFactory? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
         private int pageSize = 0;
         private string logFileName = "";
-        internal bool updating = false; //updating means changes is cmbFilter or cmbText are by me not the user
+        internal bool updating = false; //updating means changes is cmbFkFilter or cmbText are by me not the user
+        internal bool fixingDatabase = false;   // Used when fixing keys on database
+        internal string strFixDatabaseSql = String.Empty; 
         private bool readOnly = false;
         private where? mainFilter;   //Stores main filter
         internal BindingList<where>? pastFilters;  // Use this to fill in past main filters in combo box
@@ -69,14 +72,15 @@ namespace SqlCollegeTranscripts
 
             // 0.  Main filter datasource and 'last' element never changes
             where wh = new where("none", "none", "0", DbType.Int32, 4);
-            wh.displayValue = "Select Row";
-            updating = true; // following calls _cmbMainFilter changeindex event. "Updating" cancels that event.
+            wh.displayValue = "Select Research object";
+            updating = true; // following calls cmbMainFilter changeindex event. "Updating" cancels that event.
             pastFilters = new BindingList<where>();
             pastFilters.Add(wh);
-            _cmbMainFilter.DisplayMember = "displayValue";
-            _cmbMainFilter.ValueMember = "whereValue";
-            _cmbMainFilter.DataSource = pastFilters;
-            lblMainFilter.Text = "Row Filter:";
+            cmbMainFilter.DisplayMember = "displayValue";
+            cmbMainFilter.ValueMember = "whereValue";
+            cmbMainFilter.DataSource = pastFilters;
+            lblMainFilter.Text = "Research:";
+            cmbMainFilter.Enabled = false;  // Enable when anything added and leave enabled
             updating = false;
 
             // 1. Set language
@@ -95,7 +99,7 @@ namespace SqlCollegeTranscripts
 
             // 3. Menu options from last save
             // 4. Set font size
-            SetFontSizeEtcForAllControls();
+            SetControlsOnFormLoad();
 
             // 5. Load Database List (in files menu)
             load_mnuDatabaseList();
@@ -105,10 +109,9 @@ namespace SqlCollegeTranscripts
 
             // 7. Open last connection 
             string msg = openConnection();
-            if (msg != string.Empty) { txtMessages.Text = msg; }
+            if (msg != string.Empty) { msgText(msg); txtMessages.ForeColor = Color.Red; }
 
             // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            dataHelper.extraDT = new DataTable();  // extraDT used to insert English Into Database, and for other non-permenant things
             MultiLingual.InsertEnglishIntoDatabase(this);
         }
 
@@ -125,38 +128,54 @@ namespace SqlCollegeTranscripts
             catch { }
         }
 
-        private void SetFontSizeEtcForAllControls()
+        private void SetControlsOnFormLoad()
         {
+            // Translations
+            lblComboFilter.Text = MultiLingual.tr("Combo Filters:", this);
+            lblGridFilter.Text = MultiLingual.tr("Grid Filters:", this);
+
+
             // Control arrays - can't make array in design mode in .net
-            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
-            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            TextBox[] txtCellFilter = { txtCellFilter_1, txtCellFilter_2 };
-            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            ComboBox[] cmbFkFilter = { cmbFkFilter_0, cmbFkFilter_1, cmbFkFilter_2};
+            Label[] lblcmbFkFilter = { lblCmbFkFilter_0, lblCmbFkFilter_1, lblCmbFkFilter_2 };
+
+            ComboBox[] cmbColumnFilterFields = { cmbColumnFilterFields_0, cmbColumnFilterFields_1, cmbColumnFilterFields_2 };
+            TextBox[] txtColumnFilter = { txtColumnFilter_0, txtColumnFilter_1, txtColumnFilter_2 };
+
+            ComboBox[] cmbComboFilterFields = { cmbComboFilterFields_0, cmbComboFilterFields_1, cmbComboFilterFields_2 };
+            TextBox[]  txtComboFilter = { txtComboFilter_0, txtComboFilter_1, txtComboFilter_2 };
             RadioButton[] radioButtons = { rbView, rbEdit, rbDelete, rbAdd, rbMerge };
 
-            //Get size from registry
+            //Get size from registry and define "font"
             int size = 8;  // default
-            try { size = Convert.ToInt32(Interaction.GetSetting("AccessFreeData", "Options", "FontSize", "9")); }
-            catch { }
-            // Set font
+            try { size = Convert.ToInt32(Interaction.GetSetting("AccessFreeData", "Options", "FontSize", "9")); }catch { }
             System.Drawing.Font font = new System.Drawing.Font("Arial", size, FontStyle.Regular);
-            // Set all controls - (count simply iterate over all controls!)
+
+            // Set font of all single controls - 
             dataGridView1.Font = font;
             lblMainFilter.Font = font;
-            for (int i = 0; i <= lblcmbFilter.Count() - 1; i++) { lblcmbFilter[i].Font = font; }
-            for (int i = 0; i <= cmbFilter.Count() - 1; i++) { 
-                cmbFilter[i].Font = font; 
-                cmbFilter[i].AutoCompleteSource = AutoCompleteSource.ListItems;
-                cmbFilter[i].AutoCompleteMode = AutoCompleteMode.Suggest;
+            cmbMainFilter.Font = font; 
+            // Set font of 3 x 2 control arrays - 
+            for (int i = 0; i <= lblcmbFkFilter.Count() - 1; i++) { 
+                lblcmbFkFilter[i].Font = font;  
+                cmbFkFilter[i].Font = font; 
+                cmbFkFilter[i].AutoCompleteSource = AutoCompleteSource.ListItems;
+                cmbFkFilter[i].AutoCompleteMode = AutoCompleteMode.Suggest;
             }
-            for (int i = 0; i <= txtCellFilter.Count() - 1; i++) { txtCellFilter[i].Font = font; }
-            for (int i = 0; i <= cmbCellFields.Count() - 1; i++) { 
-                cmbCellFields[i].Font = font;
-                cmbCellFields[i].Font = font;
-                cmbCellFields[i].AutoCompleteSource = AutoCompleteSource.ListItems;
-                cmbCellFields[i].AutoCompleteMode = AutoCompleteMode.Suggest;
+            for (int i = 0; i <= cmbColumnFilterFields.Count() - 1; i++) {
+                txtComboFilter[i].Font = font;
+                cmbColumnFilterFields[i].Font = font;
+                cmbColumnFilterFields[i].AutoCompleteSource = AutoCompleteSource.ListItems;
+                cmbColumnFilterFields[i].AutoCompleteMode = AutoCompleteMode.Suggest;
+            }
+            for (int i = 0; i <= cmbComboFilterFields.Count() - 1; i++)
+            {
+                txtColumnFilter[i].Font = font;
+                cmbComboFilterFields[i].Font = font;
+                cmbComboFilterFields[i].AutoCompleteSource = AutoCompleteSource.ListItems;
+                cmbComboFilterFields[i].AutoCompleteMode = AutoCompleteMode.Suggest;
+            }
 
-            }
             for (int i = 0; i <= radioButtons.Count() - 1; i++) { radioButtons[i].Font = font; }
             cmbEditColumn.Font = font;
             cmbEditColumn.AutoCompleteSource = AutoCompleteSource.ListItems;
@@ -281,10 +300,13 @@ namespace SqlCollegeTranscripts
                     // 5. Open connection
                     MsSql.openConnection(cs);
 
-                    //6. Fill Information Datatables
+                    // 6. Initialize datatables
+                    dataHelper.initializeDataTables();
+
+                    // 7. Fill Information Datatables
                     MsSql.initializeDatabaseInformationTables();
                     
-                    // 7.  Load Table mainmenu
+                    // 8.  Load Table mainmenu
                     foreach (DataRow row in dataHelper.tablesDT.Rows)
                     {
                         ToolStripItem tsi = new ToolStripMenuItem();
@@ -296,7 +318,9 @@ namespace SqlCollegeTranscripts
                             mnuOpenTables.DropDownItems.Add(tsi);
                         }
                     }
-                    programMode = ProgramMode.view;
+                    programMode = ProgramMode.none;  // Sets panel height to 2.
+                    msgText("Recommend: First select object to research.  Example: choose student from student table (or whatever), right click, select 'Find / research object in higher tables'.");
+                    msgColor(Color.Navy);
                 }
             }
             catch (System.Exception excep)
@@ -317,38 +341,51 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        private void resetComboAndCellFilters()
+        private void resetComboAndCellFiltersOnTableClose()
         {
-            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
-            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
-            TextBox[] txtCellFilter = { txtCellFilter_1, txtCellFilter_2 };
+            Label[] lblcmbFkFilter = {lblCmbFkFilter_0, lblCmbFkFilter_1, lblCmbFkFilter_2 };
+            ComboBox[] cmbFkFilter = { cmbFkFilter_0, cmbFkFilter_1, cmbFkFilter_2 };
+            ComboBox[] cmbColumnFilterFields = { cmbColumnFilterFields_0, cmbColumnFilterFields_1, cmbColumnFilterFields_2 };
+            TextBox[] txtColumnFilter = { txtColumnFilter_0, txtColumnFilter_1, txtColumnFilter_2 };
+            ComboBox[] cmbComboFilterFields = { cmbComboFilterFields_0, cmbComboFilterFields_1, cmbComboFilterFields_2 };
+            TextBox[] txtComboFilter = { txtComboFilter_0, txtComboFilter_1, txtComboFilter_2 };
 
-            rbView.Checked = true;
             cmbEditColumn.Enabled = false;
-            _cmbMainFilter.Enabled = false;  // Sets panel height to 2
 
-            // Hide, disable and clear all the cmbCellFilters and cmbCellFields 
-            for (int i = 0; i <= cmbCellFields.Count() - 1; i++)
+            // Reset all 3 lblcmbFkFilters and cmbFkFilters
+            for (int i = 0; i <= lblcmbFkFilter.Count() - 1; i++)
             {
-                txtCellFilter[i].Visible = true;
-                txtCellFilter[i].Text = string.Empty;
-                txtCellFilter[i].Enabled = false;
-                txtCellFilter[i].PlaceholderText = "Column Filter";
-                cmbCellFields[i].Visible = true;
-                cmbCellFields[i].Enabled = false;
-                cmbCellFields[i].DataSource = null;
+                lblcmbFkFilter[i].Text = "FK filter:";
+                lblcmbFkFilter[i].Visible = false;
+                cmbFkFilter[i].Visible = false;
+                cmbFkFilter[i].Enabled = false;
+                cmbFkFilter[i].DataSource = null;
             }
-            // Disable all the cmbFilters and lblCmbFilters
-            for (int i = 0; i <= lblcmbFilter.Count() - 1; i++)
+
+            // Reset 3 cmbColumnFilterFields and txtColumnFilter 
+            for (int i = 0; i <= cmbColumnFilterFields.Count() - 1; i++)
             {
-                lblcmbFilter[i].Text = "FK filter:";
-                lblcmbFilter[i].Visible = true;
-                cmbFilter[i].Visible = true;
-                cmbFilter[i].Enabled = false;
-                cmbFilter[i].DataSource = null;
-                cmbFilter[i].Items.Clear();
+                cmbColumnFilterFields[i].Visible = true;
+                cmbColumnFilterFields[i].Enabled = false;
+                cmbColumnFilterFields[i].DataSource = null;  // Clear datasource
+                txtColumnFilter[i].Visible = true;
+                txtColumnFilter[i].Text = string.Empty;
+                txtColumnFilter[i].Enabled = false;
+                txtColumnFilter[i].PlaceholderText = "Filter Value";
             }
+            // Reset 3 cmbComboFilterFields and txtComboFilter 
+            for (int i = 0; i <= cmbColumnFilterFields.Count() - 1; i++)
+            {
+                cmbComboFilterFields[i].Visible = true;
+                cmbComboFilterFields[i].Enabled = false;
+                cmbComboFilterFields[i].DataSource = null;  // Clear datasource
+                txtComboFilter[i].Visible = true;
+                txtComboFilter[i].Text = string.Empty;
+                txtComboFilter[i].Enabled = false;
+                txtComboFilter[i].PlaceholderText = "Filter Value";
+            }
+
+
             // Set height of TableLayoutPanel - which will also move the splitContainer splitter.
             SetTableLayoutPanelHeight();
         }
@@ -356,22 +393,23 @@ namespace SqlCollegeTranscripts
         private void SetTableLayoutPanelHeight()
         {
             int height = 2;
-            if (_cmbMainFilter.Enabled)  // 1st row
+            if (programMode != ProgramMode.none)  // First two row unless "none"
             {
-                height = _cmbMainFilter.Top + _cmbMainFilter.Height + 2;
+                height = cmbFkFilter_0.Top + cmbFkFilter_0.Height + 2;
             }
-            if (_cmbFilter_0.Enabled || rbEdit.Checked)  // 2nd row
+            if (cmbColumnFilterFields_0.Enabled)  // 3rd row
             {
-                height = _cmbFilter_0.Top + _cmbFilter_0.Height + 2;
+                height = cmbColumnFilterFields_0.Top + cmbColumnFilterFields_0.Height + 2;
             }
-            if (_cmbFilter_3.Enabled)  // 3rd row
+            if (cmbComboFilterFields_0.Enabled)  // 3rd row
             {
-                height = _cmbFilter_3.Top + _cmbFilter_3.Height + 2;
+                height = cmbComboFilterFields_0.Top + cmbComboFilterFields_0.Height + 2;
             }
-            if (_cmbFilter_5.Enabled)  // 4th row
+            if (cmbFkFilter_0.Enabled)  // 5th row
             {
-                height = _cmbFilter_5.Top + _cmbFilter_5.Height + 2;
+                height = cmbFkFilter_0.Top + cmbFkFilter_0.Height + 2;
             }
+
             tableLayoutPanel.Height = height;
             // Reposition the splitter
             if (splitContainer1.Width > 0)  // trying to catch error: "Splitterdistance must be between panel1minsize and width and pan2minsize.
@@ -403,7 +441,8 @@ namespace SqlCollegeTranscripts
             // Format and hide various controls
             resetMainFilter();
             updating = true;
-            resetComboAndCellFilters();
+            resetComboAndCellFiltersOnTableClose();
+            programMode = ProgramMode.none;
             updating = false;
         }
 
@@ -416,71 +455,86 @@ namespace SqlCollegeTranscripts
         // Set initial state and things that don't change for this table here 
         private void writeGrid_NewTable(string table)
         {
-            //          var watch = Stopwatch.StartNew();
+            ComboBox[] cmbFkFilter = {cmbFkFilter_0, cmbFkFilter_1, cmbFkFilter_2 };
+            Label[] lblcmbFkFilter = {lblCmbFkFilter_0, lblCmbFkFilter_1, lblCmbFkFilter_2 };
+            ComboBox[] cmbColumnFilterFields = { cmbColumnFilterFields_0, cmbColumnFilterFields_1, cmbColumnFilterFields_2 };
+            ComboBox[] cmbComboFilterFields = { cmbComboFilterFields_0, cmbComboFilterFields_1, cmbComboFilterFields_2 };
+
+            // var watch = Stopwatch.StartNew();
+
+            // Reset variables and control properties;
+            fixingDatabase = false;
+            strFixDatabaseSql = String.Empty;
+            programMode = ProgramMode.view;
+            updating = true;
+            rbView.Checked = true;
             dataGridView1.ColumnHeadersDefaultCellStyle.BackColor = Color.Yellow;
             dataGridView1.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.Yellow;
-            toolStripMsg.Text = table;
-            rbView.Checked = true;
-            updating = true;
-            resetComboAndCellFilters();
+            resetComboAndCellFiltersOnTableClose();
 
             // Create currentSql - same currentSql used until new table is loaded
             currentSql = new sqlFactory(table, 1, pageSize);
-
-            //// Put Primary key of main table in the first field of myFields
-            //string pk = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
-            //field fi = new field(currentSql.myTable, pk, "int", 4);
-            //currentSql.myFields.Add(fi);
-
-            //// This sets currentSql table and field strings - and these remain the same for this table.
-            //// This also sets DisplayFieldDicitionary each foreign table key in main table
-            //string msg = currentSql.callInnerJoins();
-            if (!String.IsNullOrEmpty(currentSql.errorMsg)) { toolStripBottom.Text = currentSql.errorMsg; }
-
-            // Set up 8 cmbFilter labels and boxes - BUT don't bind them yet - 9 milliseconds
-            _cmbMainFilter.Enabled = true;
-            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
-            int i = 0;
-            // one combo box for each foreignKey
-            foreach (string key in currentSql.DisplayFieldsDictionary.Keys)
+            // Above may produce error message
+            if (!String.IsNullOrEmpty(currentSql.errorMsg))
             {
-                field FK = dataHelper.getFieldValueFieldsDT(currentSql.myTable, key);
-                field RefPK = dataHelper.getForeignKeyRefField(FK);
-                lblcmbFilter[i].Text = RefPK.table; // Can be translated or changed
-                cmbFilter[i].Enabled = true;
-                cmbFilter[i].Tag = key;  // Used in program and so don't translate or change
-                i++;
+                msgColor(Color.Red);
+                msgText(currentSql.errorMsg); 
+            }
+            else
+            {
+                msgColor(Color.Red);
+                msgText(currentSql.myTable);
             }
 
-            // Set up the 2 cmbCellFieldFilter "labels" - 8 milliseconds
-            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
-            for (int j = 0; j < cmbCellFields.Length; j++)
+            // Set up 3 cmbFkFilter labels and cmbBoxes - 1 for each DKFK - BUT don't bind them yet - 9 milliseconds
+            //int i = 0;  // Counting foreign keys
+            //foreach (string key in currentSql.DisplayFieldsDictionary.Keys)
+            //{
+            //    field FK = dataHelper.getFieldFromFieldsDT(currentSql.myTable, key);
+            //    field RefPK = dataHelper.getForeignKeyRefField(FK);
+            //    if (dataHelper.isDisplayKey(currentSql.myTable, key))
+            //    {
+            //        lblcmbFkFilter[i].Text = "DKFK:" + RefPK.table; // Can be translated or changed
+            //    }
+            //    else
+            //    {
+            //        lblcmbFkFilter[i].Text = "FK:" + RefPK.table; // Can be translated or changed
+            //    }
+            //    lblcmbFkFilter[i].Visible = true;
+            //    cmbFkFilter[i].Visible = true;
+            //    cmbFkFilter[i].Enabled = true;
+            //    cmbFkFilter[i].Tag = key;  // Used in program and so don't translate or change
+            //    i++;
+            //}
+            //int numberOfForeignKeys = i;
+
+            // Bind the cmbColumnFilterFields with fields for user to select
+            BindingList<field> filterFields = new BindingList<field>();
+            field fi = new field("_none", "_none", DbType.Int32, 4); // "_none", "_none" used in code to spot pseudo field
+            fi.displayMember = "Select Column";
+            filterFields.Add(fi);
+            foreach (field fl in currentSql.myFields)
             {
-                DataView viewFieldsDT = new DataView(dataHelper.fieldsDT);
-                viewFieldsDT.RowFilter = String.Format("TableName = '{0}' AND is_PK = 'false' AND is_FK = 'false'", currentSql.myTable);
-                DataTable dt2 = new DataTable();
-                dt2.Columns.Add("DisplayName", Type.GetType("System.String"));
-                dt2.Columns.Add("ColumnName", Type.GetType("System.String"));
-                DataRow dataRow2 = dt2.NewRow();
-                dataRow2[0] = "Select Column";
-                dataRow2[1] = "0";
-                dt2.Rows.Add(dataRow2);
-                foreach (DataRowView drv in viewFieldsDT)
-                {
-                    int colNameCol = drv.Row.Table.Columns.IndexOf("ColumnName");
-                    DataRow dr = dt2.NewRow();
-                    dr[0] = drv[colNameCol].ToString();
-                    dr[1] = drv[colNameCol].ToString();
-                    dt2.Rows.Add(dr);
-                }
-                cmbCellFields[j].DisplayMember = "DisplayName";
-                cmbCellFields[j].ValueMember = "ColumnName";
-                cmbCellFields[j].DataSource = dt2;
-                cmbCellFields[j].Enabled = true;
+                filterFields.Add(fl);
+                // Skip the DKs in current table - unless they are FK, because these have their own DK filter
+                //if (fl.table == currentSql.myTable && dataHelper.isDisplayKey(currentSql.myTable, fl.fieldName) 
+                //    && !dataHelper.fieldIsForeignKey(fl)) { }
+                //else { filterFields.Add(fl); }
             }
 
-            // Set up the edit columns
+            // Loop through and bind 3 Grid filters dropdown fields.
+            for (int j2 = 0; j2 < cmbColumnFilterFields.Length; j2++)
+            {
+                cmbColumnFilterFields[j2].BindingContext = new BindingContext();  // Required to change 1 by 1.
+                cmbColumnFilterFields[j2].DisplayMember = "DisplayMember";
+                cmbColumnFilterFields[j2].ValueMember = "ValueMember";
+                updating = true;
+                cmbColumnFilterFields[j2].DataSource = filterFields;
+                updating = false;
+                cmbColumnFilterFields[j2].Enabled = true;  //Always visible so no need to make visible
+            }
+
+            // Fill edit columns combo
             DataView viewFieldsDT2 = new DataView(dataHelper.fieldsDT);
             viewFieldsDT2.RowFilter = String.Format("TableName = '{0}' AND is_PK = 'false' AND is_DK = 'false'", currentSql.myTable);
             //Create 2 column datatable to bind to the drop down
@@ -499,7 +553,7 @@ namespace SqlCollegeTranscripts
                 dr[1] = drv[colNameCol].ToString();
                 dt.Rows.Add(dr);
             }
-            //bind do drop down
+            //bind to drop down
             cmbEditColumn.DisplayMember = "DisplayName";
             cmbEditColumn.ValueMember = "ColumnName";
             cmbEditColumn.DataSource = dt;
@@ -516,36 +570,21 @@ namespace SqlCollegeTranscripts
         internal async Task writeGrid_NewMainFilter()
         {
             updating = true;
-            ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
+            ComboBox[] cmbFkFilters = {cmbFkFilter_0, cmbFkFilter_1, cmbFkFilter_2 };
             List<string> keys = currentSql.DisplayFieldsDictionary.Keys.ToList();
             int i = 0;
             var getTasks = new List<Task>();
-            //Fill Combos
-            foreach (string key in keys)
-            {
-                field FK = dataHelper.getFieldValueFieldsDT(currentSql.myTable, key);
-                string strSql = currentSql.returnComboSql(command.fkfilter, FK);
-                getTasks.Add(CmbFkFilter_FillOneFromDatabaseAsync(cmbFilters[i], strSql));
-                i++;
-            }
+            //Fill Fk Combos
+            //foreach (string key in keys)
+            //{
+            //    field FKfield = dataHelper.getFieldFromFieldsDT(currentSql.myTable, key);
+            //    string strSql = currentSql.returnComboSql(FKfield);
+            //    getTasks.Add(CmbFkFilter_FillOneFromDatabaseAsync(cmbFkFilters[i], strSql));
+            //    i++;
+            //}
             updating = false;
             getTasks.Add(writeGrid_NewFilter());
             await Task.WhenAll(getTasks);
-        }
-
-        internal async Task CmbFkFilter_FillOneFromDatabaseAsync(ComboBox cmb, string strSql)
-        {
-            DataTable dataTable = new System.Data.DataTable();
-            MsSql.FillDataTable(dataTable, strSql);
-            // Add "No filter" as first row
-            DataRow dr = dataTable.NewRow();
-            dr["DisplayField"] = "No Filter";
-            dr["ValueField"] = 0;// Some ID
-            dataTable.Rows.InsertAt(dr, 0);
-            cmb.DisplayMember = "DisplayField";
-            cmb.ValueMember = "ValueField";
-            cmb.DataSource = dataTable;
-            cmb.Enabled = true;
         }
 
         internal async Task writeGrid_NewFilter()
@@ -570,17 +609,50 @@ namespace SqlCollegeTranscripts
             writeGrid_NewPage();
         }
 
+        internal async Task CmbFkFilter_FillOneFromDatabaseAsync(ComboBox cmb, string strSql)
+        {
+            DataTable dataTable = new DataTable();
+            MsSql.FillDataTable(dataTable, strSql);
+            // Add "No filter" as first row, or "-1" or dateTime if this display field is integer or datetime.
+            DataRow dr = dataTable.NewRow();
+            dr["ValueField"] = 0;// Some ID
+            //Set display field - depends on type of field
+            Type systemType = dataTable.Columns["DisplayField"].DataType;
+            DbType dbType = MsSql.GetDbType(systemType);
+            DbTypeType dbTypeType = dataHelper.GetDbTypeType(dbType);
+            if (dbTypeType == DbTypeType.isString)
+            {
+                dr["DisplayField"] = "No Filter";
+            }
+            else if (dbTypeType == DbTypeType.isInteger || dbTypeType == DbTypeType.isDecimal)
+            {
+                dr["DisplayField"] = "-1";
+            }
+            else if (dbTypeType == DbTypeType.isInteger || dbTypeType == DbTypeType.isDateTime)
+            {
+                dr["DisplayField"] = "1900-01-01";
+            }
+            dataTable.Rows.InsertAt(dr, 0);
+            cmb.DisplayMember = "DisplayField";
+            cmb.ValueMember = "ValueField";
+            cmb.DataSource = dataTable;
+            cmb.Enabled = true;
+        }
+
+
         #endregion 
 
         #region writeGrid_NewPage
 
         internal void writeGrid_NewPage()
         {
-            ComboBox[] cmbFilter = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            Label[] lblcmbFilter = { _lblCmbFilter_0, _lblCmbFilter_1, _lblCmbFilter_2, _lblCmbFilter_3, _lblCmbFilter_4, _lblCmbFilter_5, _lblCmbFilter_6, _lblCmbFilter_7 };
-
+            updating = true;
             // CENTRAL USE OF sqlCurrent IN PROGRAM
             string strSql = currentSql.returnSql(command.select);
+            if (fixingDatabase)
+            {
+                strSql = currentSql.returnFixDatabaseSql(strFixDatabaseSql);
+            }
 
             //Clear the grid - try deleting this because may not be necessary
             if (dataGridView1.DataSource != null)
@@ -592,7 +664,7 @@ namespace SqlCollegeTranscripts
             dataGridView1.AutoGenerateColumns = true;
 
             // Bind database
-            dataHelper.currentDT = new System.Data.DataTable("currentDT");
+            dataHelper.currentDT = new DataTable();
             MsSql.FillDataTable(dataHelper.currentDT, strSql);
             dataGridView1.DataSource = dataHelper.currentDT;
 
@@ -684,13 +756,18 @@ namespace SqlCollegeTranscripts
             {
                 cmbEditColumn_SelectedIndexChangeContent();
             }
+
+            updating = false;
         }
 
         private void callSqlWheres()
-        {   // Adds all the filters 
-            ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            TextBox[] txtCellFilters = { txtCellFilter_1, txtCellFilter_2 };
-            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+        {   // Adds all the filters - FK, DK, non-Key and MainFilter
+            ComboBox[] cmbFkFilters = {cmbFkFilter_0, cmbFkFilter_1, cmbFkFilter_2 };
+            TextBox[] txtColumnFilter = { txtColumnFilter_0, txtColumnFilter_1, txtColumnFilter_2 };
+            ComboBox[] cmbColumnFilterFields = {cmbColumnFilterFields_0, cmbColumnFilterFields_1, cmbColumnFilterFields_2 };
+            ComboBox[] cmbComboFilterFields = { cmbComboFilterFields_0, cmbComboFilterFields_1, cmbComboFilterFields_2 };
+            TextBox[] txtComboFilter = { txtComboFilter_0, txtComboFilter_1, txtComboFilter_2 };
+
 
             // Clear any old filters from currentSql
             currentSql.myWheres.Clear();
@@ -708,36 +785,39 @@ namespace SqlCollegeTranscripts
                 }
             }
             // Foreign key filters
-            for (int i = 0; i < cmbFilters.Length; i++)
+            for (int i = 0; i < cmbFkFilters.Length; i++)
             {
-                if (cmbFilters[i].Enabled)
+                if (cmbFkFilters[i].Enabled)
                 {
-                    if (cmbFilters[i].SelectedIndex != -1)
+                    if (cmbFkFilters[i].SelectedIndex != -1)
                     {
-                        string selectedValue = cmbFilters[i].GetItemText(cmbFilters[i].SelectedValue);
+                        string selectedValue = cmbFkFilters[i].GetItemText(cmbFkFilters[i].SelectedValue);
                         if (Convert.ToInt32(selectedValue) > 0)
                         {
-                            where wh = new where(currentSql.myTable, cmbFilters[i].Tag.ToString(), selectedValue, DbType.Int32, 4);
+                            where wh = new where(currentSql.myTable, cmbFkFilters[i].Tag.ToString(), selectedValue, DbType.Int32, 4);
                             currentSql.myWheres.Add(wh);
                         }
                     }
                 }
             }
-            // Cell filters
-            for (int i = 0; i < txtCellFilters.Length; i++)
+            // cmbColumnFilterFields  (1 only)
+            for (int i = 0; i < txtColumnFilter.Length; i++)
             {
-                if (txtCellFilters[i].Enabled)
+                if (txtColumnFilter[i].Enabled)
                 {
-                    if (txtCellFilters[i].Text != string.Empty)
+                    if (txtColumnFilter[i].Text != string.Empty) // Will be empty if pseudo item choosen in dropdown
                     {
-                        string selectedValue = txtCellFilters[i].Text;
-                        string fieldName = cmbCellFields[i].GetItemText(cmbCellFields[i].SelectedValue);
-                        string strDataType = dataHelper.getStringValueFieldsDT(currentSql.myTable, fieldName, "DataType");
-                        DbType dbType = dataHelper.ConvertStringToDbType(strDataType);
-                        int size = dataHelper.getIntValueFieldsDT(currentSql.myTable, fieldName, "MaxLength");
-                        field fi = new field(currentSql.myTable, fieldName, dbType, size);
-                        where wh = new where(fi, selectedValue);
+                        string txtBoxText = txtColumnFilter[i].Text;
+                        field selectedField = (field)cmbColumnFilterFields[i].SelectedItem;
+                        if(selectedField.fieldName != "none")  //Just to be sure
+                        { 
+                        //    string strDataType = dataHelper.getStringValueFieldsDT(selectedField.table, fieldName, "DataType");
+                        //DbType dbType = dataHelper.ConvertStringToDbType(strDataType);
+                        //int size = dataHelper.getIntValueFieldsDT(currentSql.myTable, fieldName, "MaxLength");
+                        //field fi = new field(currentSql.myTable, fieldName, dbType, size);
+                        where wh = new where(selectedField, txtBoxText);
                         currentSql.myWheres.Add(wh);
+                        }
                     }
 
                 }
@@ -758,11 +838,67 @@ namespace SqlCollegeTranscripts
 
         private void mnuDeleteDatabase_Click(object sender, EventArgs e)
         {
-            //frmDeleteDatabase used to show databases
-            frmListDatabases databaseListForm = new frmListDatabases();
+            List<connectionString> csList = AppData.GetConnectionStringList();
+            List<string> strCsList = new List<string>();
+            foreach (connectionString cs in csList)
+            {
+                strCsList.Add(cs.comboString);
+            }
+            frmListItems databaseListForm = new frmListItems();
+            databaseListForm.myList = strCsList;
+            databaseListForm.myJob = frmListItems.job.DeleteConnections;
             databaseListForm.ShowDialog();
+            string returnString = databaseListForm.returnString;
             databaseListForm = null;
+            if (returnString != null)
+            {
+                foreach (connectionString cs in csList)
+                { 
+                    if(cs.comboString == returnString)
+                    {
+                        csList.Remove(cs);
+                        break;   // Only remove the first one - should never be more than 1
+                    }
+                }
+                AppData.storeConnectionStringList(csList);
+            }
         }
+
+        private void GridContextMenu_FindInHigherTable_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                // 0. Get the table they want to go to.
+
+                // 1. Define mainFilter (Type: where).
+                // 1a. This assumes the first column in row is the Primary Key and it is an integer
+                string value = dataGridView1.SelectedRows[0].Cells[0].Value.ToString(); //Integer
+                // 2b. Set DisplayValue to string with all non-empty cells from selected row (may shorten later)                
+                List<String> displayValueList = new List<String>();
+                foreach (DataGridViewCell cell in dataGridView1.SelectedRows[0].Cells)
+                {
+                    if (cell.Value != null)
+                    {
+                        if (!String.IsNullOrEmpty(cell.Value.ToString()))
+                        {
+                            field fi = currentSql.myFields[cell.ColumnIndex];
+                            if (dataHelper.isDisplayKey(fi.table, fi.fieldName))
+                            {
+                                displayValueList.Add(Convert.ToString(cell.Value));
+                            }
+                        }
+                    }
+                }
+                //1c. Get mainfilter
+                string displayValue = String.Join(", ", displayValueList);
+                mainFilter = new where(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, value, DbType.Int32, 4);
+                mainFilter.displayValue = displayValue; // WhereValue set in constructor
+                //1d. Update pastFilters list
+                pastFilters.Insert(0, mainFilter);
+                cmbMainFilter.SelectedIndex = 0;
+            }
+        }
+
 
         private void contextMenu_MainFilter_Click(object sender, EventArgs e)
         {
@@ -792,29 +928,30 @@ namespace SqlCollegeTranscripts
                 mainFilter.displayValue = displayValue;
                 //Update pastFilters list
                 pastFilters.Insert(0, mainFilter);
-                _cmbMainFilter.SelectedIndex = 0;
+                cmbMainFilter.SelectedIndex = 0;
             }
         }
 
-        private void _cmbMainFilter_SelectedIndexChanged(object sender, EventArgs e)
+        private void cmbMainFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (!updating)
             {
-                int i = _cmbMainFilter.SelectedIndex;
+                int i = cmbMainFilter.SelectedIndex;
                 if (i != -1)  // Always true (I suspect)
                 {
                     //Last element means "no filter".
-                    if (_cmbMainFilter.SelectedIndex == _cmbMainFilter.Items.Count - 1)
+                    if (cmbMainFilter.SelectedIndex == cmbMainFilter.Items.Count - 1)
                     {
                         mainFilter = null;
-                        lblMainFilter.Text = "No Filter";
+                        lblMainFilter.Text = "Research: ";
                     }
                     else
                     {
-                        mainFilter = pastFilters[i];   // pastFilters is a "where" list that is used to bind _cmbMainFilter
-                        lblMainFilter.Text = mainFilter.fl.table;
+                        mainFilter = pastFilters[i];   // pastFilters is a "where" list that is used to bind cmbMainFilter
+                        lblMainFilter.Text = "Object: " + mainFilter.fl.table;
                     }
                 }
+                cmbMainFilter.Enabled = true;
                 writeGrid_NewMainFilter();
             }
         }
@@ -830,6 +967,7 @@ namespace SqlCollegeTranscripts
 
         private void mnuDatabaseList_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
+            // Get index clicked
             ToolStripItem clickedItem = e.ClickedItem;
             int index = 0;
             ToolStripMenuItem? fatherItem = sender as ToolStripMenuItem;
@@ -846,17 +984,19 @@ namespace SqlCollegeTranscripts
 
             string readOnly = "", connectionString = "", str = "", tye = "", sd = "";
             //1. Change clicked link to index 0 - index 0 used to open connection
-            //No need to change if already 0
-            if (index > 0)
+            if (index > 0)  //No need to change if already 0
             {
                 List<connectionString> csList = AppData.GetConnectionStringList();
                 connectionString cs = csList[index];   // Assumes list in dropdown matches csList
-                AppData.storeConnectionString(cs);
-
-                //2. Open connection - this reads the index 0 settings.  Main use of openConnection
-                string msg = openConnection();
-                if (msg != string.Empty) { txtMessages.Text = msg; }
+                csList.Remove(cs);
+                csList.Insert(0, cs);
+                AppData.storeConnectionStringList(csList);
             }
+            //2. Open connection - this reads the index 0 settings.  Main use of openConnection
+            string msg = openConnection();
+            msgColor(Color.Red);
+            if (msg != string.Empty) { msgText(msg); }
+
         }
 
         // Add Database - frmConnection
@@ -872,7 +1012,8 @@ namespace SqlCollegeTranscripts
             {
                 load_mnuDatabaseList();
                 string msg = openConnection();
-                if (msg != string.Empty) { txtMessages.Text = msg; }
+                msgColor(Color.Red);
+                if (msg != string.Empty) { msgText(msg); }
             }
         }
 
@@ -914,12 +1055,6 @@ namespace SqlCollegeTranscripts
             }
         }
 
-
-        private void dataGridView1_ColumnAdded(object sender, DataGridViewColumnEventArgs e)
-        {
-            
-        }
-
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
         }
@@ -936,7 +1071,9 @@ namespace SqlCollegeTranscripts
         }
 
         private void dataGridView1_CurrentCellChanged(object sender, EventArgs e)
-        {
+        { if (!updating)
+            {
+            }
         }
 
         private void dataGridView1_CellBeginEdit(object sender, DataGridViewCellCancelEventArgs e)
@@ -949,6 +1086,10 @@ namespace SqlCollegeTranscripts
 
         private void dataGridView1_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
+            // Update grid - to get new display keys for edtied FK
+            // "End edit" comese after "leave cell"
+            // writeGrid_NewPage();
+
             // Change colors
             DataGridViewCellStyle cs = new DataGridViewCellStyle();
             cs.BackColor = DefaultBackColor;
@@ -957,6 +1098,7 @@ namespace SqlCollegeTranscripts
 
         private void dataGridView1_CellLeave(object sender, DataGridViewCellEventArgs e)
         {   // Push the change down to the database.
+
             if (dataGridView1.IsCurrentCellDirty)
             {
                 field PKfield = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
@@ -968,7 +1110,6 @@ namespace SqlCollegeTranscripts
                 string colName = dataGridView1.Columns[e.ColumnIndex].Name;
                 int drColIndex = dataHelper.currentDT.Columns[colName].Ordinal;
                 field drColField = currentSql.myFields[drColIndex];
-                //string strCellValidated = dataHelper
                 string message;
                 bool boolTryParse = dataHelper.TryParseToDbType(strCell, drColField.dbType, this, out message);
                 if (boolTryParse)
@@ -984,14 +1125,16 @@ namespace SqlCollegeTranscripts
                         DataRow[] drArray = new DataRow[1];
                         drArray[0] = dr;
                         int i = MsSql.currentDA.Update(drArray);
-                        txtMessages.Text = MultiLingual.tr("Rows Modified: " + i.ToString(), this);
+                        msgColor(Color.Navy);
+                        msgText("Rows Modified: ");
+                        msgTextAdd(i.ToString());
                     }
                 }
                 else
                 {
                     dataGridView1.EditingControl.Text = strOrg;
-                    txtMessages.Text = message;
-
+                    msgColor(Color.Red);
+                    msgText(message);
                 }
             }
         }
@@ -1048,7 +1191,7 @@ namespace SqlCollegeTranscripts
         }
         private void cmbEditColumn_SelectedIndexChangeContent()
         {
-            if (cmbEditColumn.SelectedIndex > 0)
+            if (cmbEditColumn.SelectedIndex > 0)  // 0 is the "Select column" choice
             {
                 string strSelectedColumn = cmbEditColumn.SelectedValue.ToString();
                 DataGridViewColumn selectedColumn = dataGridView1.Columns[strSelectedColumn];
@@ -1056,14 +1199,16 @@ namespace SqlCollegeTranscripts
                 {
                     foreach (DataGridViewColumn col in dataGridView1.Columns)
                     {
+                        // Fill drop down combo for the selected foreign key row
                         if (col == selectedColumn) 
                         { 
                             col.ReadOnly = false;
                             FkComboColumn Fkcol = col as FkComboColumn;
-                            if (Fkcol != null)
-                            {  // Assign Datatable to each cell 
-                                field fk = new field(currentSql.myTable, col.Name, DbType.Int32, 4);
-                                string strSql = currentSql.returnComboSql(command.fkfilter, fk);
+                            if (Fkcol != null)  // Will be null for non-foreign key row
+                            {   // Assign datatable to each cell in FK column
+                                field fkField = new field(currentSql.myTable, col.Name, DbType.Int32, 4);
+                                string strSql = currentSql.returnComboSql(fkField);
+                                dataHelper.extraDT = new DataTable();
                                 MsSql.FillDataTable(dataHelper.extraDT, strSql);
                                 int index = dataHelper.currentDT.Columns.IndexOf(col.Name);
                                 for (int j = 0; j < dataHelper.currentDT.Rows.Count; j++)
@@ -1079,6 +1224,8 @@ namespace SqlCollegeTranscripts
                 int colIndex = dataGridView1.Columns[strSelectedColumn].Index;
                 field fld = currentSql.myFields[colIndex];  // Trusting this is the same index as above
                 MsSql.SetUpdateCommand(fld, dataHelper.currentDT);
+                // Set up combo filter fields
+                cmbComboFilterFields_0.Enabled = true;
             }
             else
             {
@@ -1086,8 +1233,9 @@ namespace SqlCollegeTranscripts
                 {
                     col.ReadOnly = true;
                 }
+                cmbComboFilterFields_0.Enabled = false;
             }
-
+            SetTableLayoutPanelHeight();
         }
 
         #region 5 paging buttons & RecordsPerPage (RPP)
@@ -1230,6 +1378,43 @@ namespace SqlCollegeTranscripts
                 {
                     column.ReadOnly = true;
                 }
+
+                //// Get display rows and put in cellFilters
+                //TextBox[] txtDkFilter = { txtDkFilter_0, txtDkFilter_1, txtDkFilter_2, txtDkFilter_3, txtDkFilter_4, txtDkFilter_5, txtDkFilter_6 };
+                //TextBox[] txtCmbColumnFilter = { txtCmbColumnFilter_0 };
+                //ComboBox[] cmbColumnFilterFields = { cmbColumnFilterFields_0};
+                //int cellFilter = 0;
+                //foreach (DataGridViewColumn col in dataGridView1.Columns)
+                //{
+                //    field fi = currentSql.myFields[col.Index];
+                //    if (fi.table == currentSql.myTable && dataHelper.isDisplayKey(fi.table, fi.fieldName))
+                //    {
+                //        if (!dataHelper.fieldIsForeignKey(fi) && !dataHelper.isTablePrimaryKeyField(fi))
+                //        {
+                //            updating = true;
+                //            cmbColumnFilterFields[cellFilter].Enabled = true;
+                //            string strValueMember = cmbColumnFilterFields[cellFilter].ValueMember;
+                //            string filterExpression = String.Format("{0} = '{1}'",strValueMember,fi.fieldName);
+                //            DataTable dt = (DataTable)cmbColumnFilterFields[cellFilter].DataSource;
+                //            DataRow dr = dt.Select(filterExpression).First(); 
+                //            cmbColumnFilterFields[cellFilter].SelectedValue = dr;
+                //            // cmbColumnFilterFields[cellFilter].Text = fi.fieldName;  // Set value ??? or this is enough?
+                //            txtDkFilters[cellFilter].Enabled = true;
+                //            txtDkFilters[cellFilter].Text = String.Empty;  // Or set to current row?
+
+                //            cellFilter = cellFilter + 1;
+                //        }
+                //    }
+                //}
+                //// Disable the rest
+                //while (cellFilter < cmbColumnFilterFields.Length)
+                //{
+                //    cmbColumnFilterFields[cellFilter].Enabled = false;
+                //    txtDkFilters[cellFilter].Enabled = false;
+                //    txtDkFilters[cellFilter].Text = String.Empty;
+                //    cellFilter= cellFilter + 1; 
+                //}
+                //SetTableLayoutPanelHeight();
             }
         }
         private void rbEdit_CheckedChanged(object sender, EventArgs e)
@@ -1278,7 +1463,8 @@ namespace SqlCollegeTranscripts
             {
                 if (dataGridView1.SelectedRows.Count != 2)
                 {
-                    txtMessages.Text = MultiLingual.tr("Please select exactly two rows", this);
+                    msgColor(Color.Red);
+                    msgText("Please select exactly two rows");
                     return;
                 }
                 // Get two PK values
@@ -1316,7 +1502,7 @@ namespace SqlCollegeTranscripts
                     {
                         field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
                         DataRow dr = dataHelper.currentDT.Select(string.Format("{0} = {1}", PKField.fieldName, PkToDelete)).FirstOrDefault();
-                        deleteOneDataRow(dr);
+                        DeleteOneDataRowFromCurrentDT(dr);
                     }
                 }
                 else 
@@ -1334,6 +1520,7 @@ namespace SqlCollegeTranscripts
                             field fld = new field(TableWithFK,FKColumnName, DbType.Int32,4);
                             // 1. Put the rows to be updated into extraDT  (i.e. select rows where FK value in firstPK)
                             string sqlString = String.Format("Select * from {0} where {1} = '{2}'", TableWithFK, FKColumnName, firstPK);
+                            dataHelper.extraDT = new DataTable();
                             MsSql.FillDataTable(dataHelper.extraDT, sqlString);
                             txtMessages.Text = txtMessages.Text + "; " + dataHelper.extraDT.Rows.Count;
                             // 2. Update these rows in extraDT - loop through these rows and change the FK column)
@@ -1347,14 +1534,9 @@ namespace SqlCollegeTranscripts
                             MsSql.extraDA.Update(dataHelper.extraDT);
                         }
                         // 4.  Delete merged row from currentDT
-                        string PKfield = currentSql.myFields[0].fieldName;
-                        string PKfield2 = dataHelper.getTablePrimaryKeyField(currentSql.myTable).fieldName;
-
-                        dataHelper.currentDT.Select()
-
-
-
-
+                        field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
+                        DataRow dr3 = dataHelper.currentDT.Select(String.Format("{0} = {1}", PKField.fieldName, firstPK)).FirstOrDefault();
+                        DeleteOneDataRowFromCurrentDT(dr3);
                     }
                 
                 }
@@ -1367,7 +1549,8 @@ namespace SqlCollegeTranscripts
             {
                 if (dataGridView1.SelectedRows.Count != 1)
                 {
-                    txtMessages.Text = MultiLingual.tr("Please select row to delete", this);
+                    msgColor(Color.Red);
+                    msgText("Please select row to delete");
                     return;
                 }
                 // int index = dataGridView1.Rows.IndexOf(dataGridView1.SelectedRows[0]);
@@ -1375,20 +1558,22 @@ namespace SqlCollegeTranscripts
                 int colIndex = dataGridView1.Columns[PKfield.fieldName].Index;
                 if (colIndex != 0)
                 {
-                    txtMessages.Text = MultiLingual.tr("The first column must be the primary key", this);
+                    msgColor(Color.Red);
+                    msgText("The first column must be the primary key.");
                     return;
                 }
                 int PKvalue = Convert.ToInt32(dataGridView1.SelectedRows[0].Cells[colIndex].Value);
                 DataRow dr = dataHelper.currentDT.Select(string.Format("{0} = {1}", PKfield.fieldName,PKvalue)).FirstOrDefault();
-                deleteOneDataRow(dr);
+                DeleteOneDataRowFromCurrentDT(dr);
             }
         }
 
-        private void deleteOneDataRow(DataRow dr)
+        private void DeleteOneDataRowFromCurrentDT(DataRow dr)
         {
             if (dr == null)
             {
-                txtMessages.Text = MultiLingual.tr("Can't find underlying data row in data table", this);
+                msgColor(Color.Red);
+                msgText("Can't find underlying data row in data table");
                 return;
             }
             dr.Delete();
@@ -1398,11 +1583,7 @@ namespace SqlCollegeTranscripts
             MsSql.currentDA.Update(drArray);
         }
 
-        private void lblMainFilter_Click(object sender, EventArgs e)
-        {
-        }
-
-        private void txtCellFilterTextChanged(object sender, EventArgs e)
+        private void txtColumnFilter_TextChanged(object sender, EventArgs e)
         {
             if (updating == false)
             {
@@ -1410,32 +1591,65 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        public void cmbCellFieldsSelectedIndexChanged(object sender, EventArgs e)
+        private void txtComboFilter_TextChanged(object sender, EventArgs e)
         {
+            if (updating == false)
+            {
+
+            }
+        }
+
+        public void cmbColumnFilterFields_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            TextBox[] txtColumnFilter = { txtColumnFilter_0, txtColumnFilter_1, txtColumnFilter_2 };
+            ComboBox[] cmbColumnFilterFields = {cmbColumnFilterFields_0, cmbColumnFilterFields_1, cmbColumnFilterFields_2 };
             if (!updating)
-            { // Clear txtCellFilter which will call "WriteGrid_NewFilter"
-                TextBox[] txtCellFilters = { txtCellFilter_1, txtCellFilter_2 };
-                ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            { // Clear txtColumnFilter which will call "WriteGrid_NewFilter"
                 ComboBox cmb = (ComboBox)sender;
-                for (int i = 0; i < cmbCellFields.Count(); i++)
+                for (int i = 0; i < cmbColumnFilterFields.Count(); i++)
                 {
-                    if (cmb == cmbCellFields[i])
+                    if (cmb == cmbColumnFilterFields[i])
                     {
-                        txtCellFilters[i].Text = string.Empty;
+                        txtColumnFilter[i].Text = string.Empty;
                         if (cmb.SelectedIndex < 1)
                         {
-                            txtCellFilters[i].Enabled = false;
+                            txtColumnFilter[i].Enabled = false;
                         }
                         else
                         {
-                            txtCellFilters[i].Enabled = true;
+                            txtColumnFilter[i].Enabled = true;
                         }
                     }
                 }
             }
         }
 
-        private void _cmbFilter_SelectedIndexChanged(object sender, EventArgs e)
+        public void cmbComboFilterFields_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ComboBox[] cmbComboFilterFields = { cmbComboFilterFields_0, cmbComboFilterFields_1, cmbComboFilterFields_2 };
+            TextBox[] txtComboFilter = { txtComboFilter_0, txtComboFilter_1, txtComboFilter_2 };
+            if (!updating)
+            { // Clear txtColumnFilter which will call "WriteGrid_NewFilter"
+                ComboBox cmb = (ComboBox)sender;
+                for (int i = 0; i < cmbComboFilterFields.Count(); i++)
+                {
+                    if (cmb == cmbComboFilterFields[i])
+                    {
+                        txtComboFilter[i].Text = string.Empty;
+                        if (cmb.SelectedIndex < 1)
+                        {
+                            txtComboFilter[i].Enabled = false;
+                        }
+                        else
+                        {
+                            txtComboFilter[i].Enabled = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void _cmbFkFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (!updating)
             {
@@ -1451,13 +1665,12 @@ namespace SqlCollegeTranscripts
         // Adjusts the width of all the items shown when combobox dropped down to longest item
         private void AdjustWidthComboBox_DropDown(object sender, EventArgs e)
         {
-            // Bound with a "DataView" and DisplayMember column is "DisplayFields"
-            ComboBox[] cmbCellFields = { cmbCellFields_1, cmbCellFields_2 };
+            // Bound with BindingList<field> and DisplayMember is the fields DisplayMember
+            ComboBox[] cmbColumnFilterFields = {cmbColumnFilterFields_0, cmbColumnFilterFields_1, cmbColumnFilterFields_2 };
             // Bound with a "DataTable" and DisplayMember column is "DisplayFields"
-            ComboBox[] cmbFilters = { _cmbFilter_0, _cmbFilter_1, _cmbFilter_2, _cmbFilter_3, _cmbFilter_4, _cmbFilter_5, _cmbFilter_6, _cmbFilter_7 };
-            TextBox[] cmbCellFilters = { txtCellFilter_1, txtCellFilter_2 };
+            ComboBox[] cmbFkFilters = {cmbFkFilter_0, cmbFkFilter_1, cmbFkFilter_2 };
             // Bound with "BindingList<where>" and DisplayMember is "where" class property "DisplayValue"
-            ComboBox[] cmbMainFilters = { _cmbMainFilter };
+            ComboBox[] cmbMainFilters = { cmbMainFilter };
 
             // A. Get list of display strings in ComboBox
             var senderComboBox = (System.Windows.Forms.ComboBox)sender;
@@ -1471,16 +1684,19 @@ namespace SqlCollegeTranscripts
                     displayValueList.Add(drv.Row.ItemArray[index].ToString());
                 }
             }
-            else if (cmbCellFields.Contains(senderComboBox))
+            else if (cmbColumnFilterFields.Contains(senderComboBox))
             {
-                var itemsList = senderComboBox.Items.Cast<DataRowView>();
-                foreach (DataRowView drv in itemsList)
-                {
-                    int index = drv.Row.Table.Columns.IndexOf("DisplayName");
-                    displayValueList.Add(drv.Row.ItemArray[index].ToString());
-                }
+                var itemsList = senderComboBox.Items.Cast<field>();
+                foreach (field fl in itemsList) { displayValueList.Add(fl.displayMember); }
+
+                //var itemsList = senderComboBox.Items.Cast<DataRowView>();
+                //foreach (DataRowView drv in itemsList)
+                //{
+                //    int index = drv.Row.Table.Columns.IndexOf("DisplayName");
+                //    displayValueList.Add(drv.Row.ItemArray[index].ToString());
+                //}
             }
-            else if (cmbFilters.Contains(senderComboBox))
+            else if (cmbFkFilters.Contains(senderComboBox))
             {
                 var itemsList = senderComboBox.Items.Cast<DataRowView>();
                 foreach (DataRowView drv in itemsList)
@@ -1552,6 +1768,25 @@ namespace SqlCollegeTranscripts
         #region New Various functions and methods
         //----------------------------------------------------------------------------------------------------------------------
 
+        private void msgColor(Color color)
+        {
+            txtMessages.ForeColor = color;
+            toolStripMsg.ForeColor = color; 
+        }
+        private void msgText(string text)
+        {
+            string msg = MultiLingual.tr(text, this);
+            txtMessages.Text = msg;
+            toolStripMsg.Text = msg;
+        }
+        private void msgTextAdd(string text)
+        {
+            string msg = MultiLingual.tr(text, this);
+            txtMessages.Text += msg;
+            toolStripMsg.Text += msg;
+        }
+
+
         // Add a "0" to i if it is less than 10.
         private string fileNumber(int i)
         {
@@ -1565,10 +1800,49 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        private void _lblCmbFilter_7_Click(object sender, EventArgs e)
+        private void tableLayoutPanel_Paint(object sender, PaintEventArgs e)
         {
 
         }
+                
+        private void mnuToolDuplicateDisplayKeys_Click(object sender, EventArgs e)
+        {
+            // Get display key list of strings from fields table
+            if (currentSql == null) { return; }
+            String filter = String.Format("TableName = '{0}' and is_DK = 'true'", currentSql.myTable);
+            DataRow[] drs = dataHelper.fieldsDT.Select(filter);
+
+            if (drs.Count() == 0) { msgText("No display keys!"); return; }
+
+            List<String> dkFields = new List<String>();
+            foreach (DataRow row in drs) {
+                dkFields.Add(row["ColumnName"].ToString());
+            }
+            string fields = String.Join(",", dkFields);
+            string fields2 = fields + ", Count(*)";
+            String sql1 = String.Format("Select {0} From {1} Group By {2} Having Count(*) > 1", fields2, currentSql.myTable, fields);
+            dataHelper.extraDT = new DataTable();
+            MsSql.FillDataTable(dataHelper.extraDT, sql1);
+            if (dataHelper.extraDT.Rows.Count == 0) { msgText("Everything O.K. No duplicates!"); return; }
+            msgColor(Color.Navy);
+            List<String> andConditions = new List<String>();
+            foreach (DataRow row in dataHelper.extraDT.Rows)
+            {
+                List<String> atomicStatements = new List<String>();
+                foreach (string dkField in dkFields)
+                {
+                    field fl = new field(currentSql.myTable, dkField,DbType.String, 0);
+                    String atomicStatement = String.Format("{0} = '{1}'",  dataHelper.QualifiedFieldName(fl), row[dkField].ToString());
+                    atomicStatements.Add(atomicStatement);
+                }
+                andConditions.Add("(" + String.Join(" AND ", atomicStatements) + ")");
+            }
+            string whereCondition = String.Join(" OR ", andConditions);
+            fixingDatabase = true;
+            strFixDatabaseSql = whereCondition;
+            writeGrid_NewPage();
+        }
+
 
 
          #endregion

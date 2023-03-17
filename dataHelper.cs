@@ -19,7 +19,12 @@ namespace SqlCollegeTranscripts
             this.fieldName = fieldName;
             this.dbType = dbType;
             this.size = size;
+            this.displayMember = fieldName;
         }
+        public field valueMember { get { return this; }}
+        public string displayMember { get; set; }  // Used to display where in combo
+
+
     }
 
     public class where
@@ -71,18 +76,24 @@ namespace SqlCollegeTranscripts
     internal enum command
     {
         select,
-        count,
-        fkfilter,
-        cellfilter
+        count
     }
 
     internal enum ProgramMode
     {
+        none,
         view,
         edit,
         add,
         delete,
         merge
+    }
+    internal enum DbTypeType
+    {
+        isString,
+        isDecimal,
+        isInteger,
+        isDateTime
     }
 
 
@@ -92,13 +103,13 @@ namespace SqlCollegeTranscripts
     public static class dataHelper
     {
         // Variables
-        public static DataTable? currentDT = null;   //Data Table that is bound to the datagrid
-        public static DataTable? tablesDT = null;
-        public static DataTable? fieldsDT = null;
-        public static DataTable? foreignKeysDT = null;
-        public static DataTable? indexesDT = null;
-        public static DataTable? indexColumnsDT = null;
-        public static DataTable? extraDT = null;
+        public static DataTable currentDT { get; set; }   //Data Table that is bound to the datagrid
+        public static DataTable tablesDT { get; set; }
+        public static DataTable fieldsDT { get; set; }
+        public static DataTable foreignKeysDT { get; set; }
+        public static DataTable indexesDT { get; set; }
+        public static DataTable indexColumnsDT { get; set; }
+        public static DataTable extraDT { get; set; }
 
         internal static void clearDataTables()
         {
@@ -109,6 +120,16 @@ namespace SqlCollegeTranscripts
             indexesDT = null;
             indexColumnsDT = null;
             extraDT = null;
+        }
+        internal static void initializeDataTables()
+        {
+            currentDT = new DataTable("currentDT");  // Never use the names, but helpful in debugging
+            tablesDT = new DataTable("tablesDT");
+            fieldsDT = new DataTable("fieldsDT");
+            foreignKeysDT = new DataTable("foreighKeysDT");
+            indexesDT = new DataTable("indexesDT");
+            indexColumnsDT = new DataTable("indexColumnsDT");
+            extraDT = new DataTable("extraDT");
         }
 
         internal static string QualifiedFieldName(field fld)
@@ -176,6 +197,28 @@ namespace SqlCollegeTranscripts
             return dbType;
         }
 
+        internal static DbTypeType GetDbTypeType(DbType dbType)
+        {
+            switch (dbType)
+            {
+                case DbType.Int16:
+                case DbType.Int32:
+                case DbType.Int64:
+                case DbType.Byte:
+                    return DbTypeType.isInteger;
+                case DbType.Decimal:
+                case DbType.Double:
+                case DbType.Single:
+                    return DbTypeType.isDecimal;
+                case DbType.DateTime:
+                case DbType.DateTime2:
+                case DbType.Date:
+                case DbType.Time:
+                    return DbTypeType.isDateTime;
+            }
+            return DbTypeType.isString;  // Not checking anything else
+        }
+
         internal static bool TryParseToDbType(string str, DbType dbType, Form form, out string message)
         {
             message = String.Empty;
@@ -226,92 +269,24 @@ namespace SqlCollegeTranscripts
             return true;  // Not checking anything else
         }
 
-        //   internal static string convertValue(string str, DbType fieldType)
-        //   {
-        //       object result = null;
-        //       string errorMsg = "";
-        //       try
-        //       {
-        //           if (fieldType == DbType.Int16)
-        //           {
-        //               errorMsg = "integer";
-        //               return Convert.ToInt32(Double.Parse(str));
-        //           }
-        //           else if (fieldType == DbType.Boolean)
-        //           {
-        //               errorMsg = "boolean";
-        //               bool tempBool = false;
-        //               return (Boolean.TryParse(str, out tempBool)) ? tempBool : Convert.ToBoolean(Double.Parse(str));
-        //           }
-        //           else if (fieldType == DbType.Int32)
-        //           {
-        //               errorMsg = "long integer";
-        //               return Convert.ToInt32(Double.Parse(str));
-        //           }
-        //           else if (fieldType == DbType.Single)
-        //           {
-        //               errorMsg = "small real number";
-        //               return Single.Parse(str);
-        //           }
-        //           else if (fieldType == DbType.Double)
-        //           {
-        //               errorMsg = "real number";
-        //               return Double.Parse(str);
-        //           }
-        //           else if (fieldType == DbType.DateTime)
-        //           {
-        //               errorMsg = "legal date";
-        //               return DateTime.Parse(str);
-        //           }
-        //           else if (fieldType == DbType.Currency)
-        //           {
-        //               errorMsg = "currency";
-        //               return Decimal.Parse(str, NumberStyles.Currency | NumberStyles.AllowExponent);
-        //           }
-        //           else if (fieldType == DbType.Decimal)
-        //           {
-        //               errorMsg = "decimal";
-        //               return Decimal.Parse(str, NumberStyles.Currency | NumberStyles.AllowExponent);
-        //           }
-        //           else
-        //           { //strings adVarChar, adVarWChar, adWChar, adChar, adLongVarChar, adLongVarWChar
-        //               return str;
-        //           }
-        //       }
-        //       catch
-        //       {
-        //           // result = "ERROR! " + translation.tr("TheValueIsNotA", str, errorMsg, "");
-        //       }
-        //       return result;
-        //   }
 
 
         #region  Get values from FieldsDT DataRow (&& overloads)
 
-        internal static string getStringValueFieldsDT(DataRow dr, string fieldToReturn)
+        internal static string getStringValueFromFieldsDT(DataRow dr, string fieldToReturn)
         {
             return Convert.ToString(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
         }
 
-        internal static int getIntValueFieldsDT(DataRow dr, string fieldToReturn)
+        internal static int getIntValueFromFieldsDT(DataRow dr, string fieldToReturn)
         {
             return Convert.ToInt32(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
         }
 
-        internal static bool getBoolValueFieldsDT(DataRow dr, string fieldToReturn)
+        internal static bool getBoolValueFromFieldsDT(DataRow dr, string fieldToReturn)
         {
             int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
             return Convert.ToBoolean(dr[returnField]);
-        }
-
-        internal static field getFieldValueFieldsDT(DataRow dr)
-        {
-            string tableName = getStringValueFieldsDT(dr, "TableName");
-            string columnName = getStringValueFieldsDT(dr, "ColumnName");
-            int size = getIntValueFieldsDT(dr, "MaxLength"); ;
-            string strDbType = getStringValueFieldsDT(dr, "DataType");
-            DbType dbType = dataHelper.ConvertStringToDbType(strDbType);
-            return new field(tableName, columnName, dbType, size);
         }
 
         internal static bool isDisplayKey(string tableName, string columnName)
@@ -322,34 +297,44 @@ namespace SqlCollegeTranscripts
 
         // Begin overloads  -- Gets DataRow and then use above methods
 
-        internal static DataRow getDataRow(string tableName, string columnName)
+        internal static DataRow getDataRowFromFieldsDT(string tableName, string columnName)
         {
             DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", tableName, columnName)).FirstOrDefault();
             return dr;
         }
 
-        internal static field getFieldValueFieldsDT(string tableName, string columnName)
+        internal static field getFieldFromFieldsDT(string tableName, string columnName)
         {
-            DataRow dr = getDataRow(tableName, columnName);
-            return getFieldValueFieldsDT(dr);
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            return getFieldFromFieldsDT(dr);
         }
+        internal static field getFieldFromFieldsDT(DataRow dr)
+        {
+            string tableName = getStringValueFromFieldsDT(dr, "TableName");
+            string columnName = getStringValueFromFieldsDT(dr, "ColumnName");
+            int size = getIntValueFromFieldsDT(dr, "MaxLength"); ;
+            string strDbType = getStringValueFromFieldsDT(dr, "DataType");
+            DbType dbType = dataHelper.ConvertStringToDbType(strDbType);
+            return new field(tableName, columnName, dbType, size);
+        }
+
 
         internal static string getStringValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRow(tableName, columnName);
-            return getStringValueFieldsDT(dr,columnToReturn);
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            return getStringValueFromFieldsDT(dr,columnToReturn);
         }
 
         internal static int getIntValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRow(tableName,columnName);
-            return getIntValueFieldsDT(dr,columnToReturn);
+            DataRow dr = getDataRowFromFieldsDT(tableName,columnName);
+            return getIntValueFromFieldsDT(dr,columnToReturn);
         }
-
+ 
         internal static bool getBoolValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRow(tableName, columnName);
-            return getBoolValueFieldsDT(dr,columnToReturn);
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            return getBoolValueFromFieldsDT(dr,columnToReturn);
         }
 
         internal static field getFieldFromTableAndColumnName(string tableName, string columnName)
@@ -372,23 +357,23 @@ namespace SqlCollegeTranscripts
 
         internal static field getForeignKeyRefField(DataRow dr)
         {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
-            string FkRefTable = getStringValueFieldsDT(dr, "FkRefTable");
-            string FkRefCol = getStringValueFieldsDT(dr, "FkRefCol");
+            string FkRefTable = getStringValueFromFieldsDT(dr, "FkRefTable");
+            string FkRefCol = getStringValueFromFieldsDT(dr, "FkRefCol");
             return getFieldFromTableAndColumnName(FkRefTable,FkRefCol);
         }
   
         internal static field getForeignKeyRefField(field foreignKey)
         {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
-            DataRow dr = getDataRow(foreignKey.table,foreignKey.fieldName);
-            string FkRefTable = getStringValueFieldsDT(dr, "RefTable");
-            string FkRefCol = getStringValueFieldsDT(dr, "RefPkColumn");
+            DataRow dr = getDataRowFromFieldsDT(foreignKey.table,foreignKey.fieldName);
+            string FkRefTable = getStringValueFromFieldsDT(dr, "RefTable");
+            string FkRefCol = getStringValueFromFieldsDT(dr, "RefPkColumn");
             return getFieldFromTableAndColumnName(FkRefTable, FkRefCol);
         }
 
         internal static field getTablePrimaryKeyField(string table)
         {
             DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND is_PK", table)).FirstOrDefault();
-            return getFieldValueFieldsDT(dr);
+            return getFieldFromFieldsDT(dr);
         }
 
         #endregion
@@ -404,7 +389,7 @@ namespace SqlCollegeTranscripts
             // First update is_PK and is_DK and is_FK- because these used in innerjoin call below
             foreach (DataRow dr in fieldsDT.Rows)
             {
-                field rowField = getFieldValueFieldsDT(dr);  // Each row in fieldsDT is a field
+                field rowField = getFieldFromFieldsDT(dr);  // Each row in fieldsDT is a field
 
                 //Set is_PK 
                 field tablePkfield = getTablePrimaryKeyFoundational(rowField.table);
@@ -434,7 +419,7 @@ namespace SqlCollegeTranscripts
             string lastTableName = string.Empty;
             foreach (DataRow dr in fieldsDT.Rows)
             {
-                field rowField = getFieldValueFieldsDT(dr);
+                field rowField = getFieldFromFieldsDT(dr);
                 if (rowField.table != lastTableName)  // To save time, if equal, use the last DisplayFieldDict
                 {
                     sqlFactory tempSql = new sqlFactory(rowField.table, 1, 200);
@@ -476,7 +461,7 @@ namespace SqlCollegeTranscripts
                 return new field(table, "MissingPrimaryKey", DbType.Int32, 4);
             }
             string columnName = dr[dr.Table.Columns.IndexOf("ColumnName")].ToString();
-            return getFieldValueFieldsDT(table, columnName);
+            return getFieldFromFieldsDT(table, columnName);
         }
 
         private static field getForeignTablePrimaryKeyFoundational(field rowfield)
@@ -493,11 +478,17 @@ namespace SqlCollegeTranscripts
 
         private static bool isDisplayKeyFoundational(string tableName, string fieldName)  // Note 'private
         {
-            // Using this for now - will later change to column in unique index that begins with DK
-            if (fieldName.Contains("Name")) { return true; }
-
             switch (tableName.ToLower())
             {
+                case "courses":
+                    switch(fieldName.ToLower()) 
+                    {
+                        case "departmentid":
+                        case "coursename":
+                            return true;
+                        default: 
+                            return false;
+                    }
                 case "transcript":
                     switch (fieldName.ToLower())
                     {
@@ -540,6 +531,15 @@ namespace SqlCollegeTranscripts
                     {
                         case "studentid":
                         case "degreeid":
+                            return true;
+                        default:
+                            return false;
+                    }
+                case "faculty":
+                    switch (fieldName.ToLower())
+                    {
+                        case "facultyname":
+                        case "efacultyname":
                             return true;
                         default:
                             return false;

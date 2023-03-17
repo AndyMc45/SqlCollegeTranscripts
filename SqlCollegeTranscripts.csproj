@@ -52,6 +52,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="VariousFiles\" />
+  </ItemGroup>
+
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
     <Exec Command="(if exist &quot;$(TargetDir)*old.dll&quot; del &quot;$(TargetDir)*old.dll&quot;) &amp; (if exist &quot;$(TargetDir)*.dll&quot; ren &quot;$(TargetDir)*.dll&quot; *.old.dll)" />
   </Target>

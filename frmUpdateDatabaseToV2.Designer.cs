@@ -35,8 +35,8 @@
             this.label4 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
-            this.cmdAddSectionsToCT = new System.Windows.Forms.Button();
             this.label6 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -51,8 +51,8 @@
             this.tableLayoutPanel1.Controls.Add(this.label4, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.label5, 1, 2);
-            this.tableLayoutPanel1.Controls.Add(this.cmdAddSectionsToCT, 2, 2);
             this.tableLayoutPanel1.Controls.Add(this.label6, 1, 3);
+            this.tableLayoutPanel1.Controls.Add(this.label7, 0, 3);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
@@ -126,31 +126,31 @@
             this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label5.MinimumSize = new System.Drawing.Size(400, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(626, 100);
+            this.label5.Size = new System.Drawing.Size(625, 160);
             this.label5.TabIndex = 4;
             this.label5.Text = resources.GetString("label5.Text");
-            // 
-            // cmdAddSectionsToCT
-            // 
-            this.cmdAddSectionsToCT.AutoSize = true;
-            this.cmdAddSectionsToCT.Location = new System.Drawing.Point(1008, 182);
-            this.cmdAddSectionsToCT.Margin = new System.Windows.Forms.Padding(2);
-            this.cmdAddSectionsToCT.Name = "cmdAddSectionsToCT";
-            this.cmdAddSectionsToCT.Size = new System.Drawing.Size(104, 30);
-            this.cmdAddSectionsToCT.TabIndex = 5;
-            this.cmdAddSectionsToCT.Text = "Add sections";
-            this.cmdAddSectionsToCT.UseVisualStyleBackColor = true;
-            this.cmdAddSectionsToCT.Click += new System.EventHandler(this.cmdAddSectionsToCT_Click);
+            this.label5.Click += new System.EventHandler(this.label5_Click);
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(35, 280);
+            this.label6.Location = new System.Drawing.Point(35, 340);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(784, 40);
+            this.label6.Size = new System.Drawing.Size(367, 51);
             this.label6.TabIndex = 7;
-            this.label6.Text = resources.GetString("label6.Text");
+            this.label6.Text = "For foreign keys, must check integrety - Do this in SMS\r\nWe have a sql file with " +
+    "relevant command\r\n  ";
             this.label6.Click += new System.EventHandler(this.label6_Click);
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(2, 340);
+            this.label7.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(17, 20);
+            this.label7.TabIndex = 8;
+            this.label7.Text = "3";
             // 
             // frmUpdateDatabaseToV2
             // 
@@ -175,7 +175,7 @@
         internal Label label3;
         private Label label4;
         internal Label label5;
-        private Button cmdAddSectionsToCT;
         private Label label6;
+        private Label label7;
     }
 }

@@ -67,6 +67,7 @@ namespace SqlCollegeTranscripts
                 ctl.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                 ctl.AutoCompleteSource = AutoCompleteSource.ListItems;
             }
+
         }
 
         public override Type EditType

@@ -36,10 +36,8 @@
             this.cmdIndexColumns = new System.Windows.Forms.ToolStripButton();
             this.cmdExtraDT = new System.Windows.Forms.ToolStripButton();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
-            this.btnLoadCommand = new System.Windows.Forms.ToolStripButton();
-            this.btnExecuteCommand = new System.Windows.Forms.ToolStripButton();
-            this.dgvMain = new System.Windows.Forms.DataGridView();
             this.btnExit = new System.Windows.Forms.ToolStripButton();
+            this.dgvMain = new System.Windows.Forms.DataGridView();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvMain)).BeginInit();
             this.SuspendLayout();
@@ -55,8 +53,6 @@
             this.cmdIndexColumns,
             this.cmdExtraDT,
             this.toolStripLabel1,
-            this.btnLoadCommand,
-            this.btnExecuteCommand,
             this.btnExit});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
@@ -125,30 +121,14 @@
             this.toolStripLabel1.Size = new System.Drawing.Size(84, 24);
             this.toolStripLabel1.Text = "lblMessage";
             // 
-            // btnLoadCommand
+            // btnExit
             // 
-            this.btnLoadCommand.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.btnLoadCommand.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnLoadCommand.ImageAlign = System.Drawing.ContentAlignment.TopLeft;
-            this.btnLoadCommand.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnLoadCommand.Margin = new System.Windows.Forms.Padding(20, 1, 20, 2);
-            this.btnLoadCommand.Name = "btnLoadCommand";
-            this.btnLoadCommand.Size = new System.Drawing.Size(119, 24);
-            this.btnLoadCommand.Text = "Load_command";
-            this.btnLoadCommand.Click += new System.EventHandler(this.btnLoadCommand_Click);
-            // 
-            // btnExecuteCommand
-            // 
-            this.btnExecuteCommand.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.btnExecuteCommand.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnExecuteCommand.ForeColor = System.Drawing.Color.Black;
-            this.btnExecuteCommand.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnExecuteCommand.Margin = new System.Windows.Forms.Padding(0, 1, 20, 1);
-            this.btnExecuteCommand.MergeAction = System.Windows.Forms.MergeAction.MatchOnly;
-            this.btnExecuteCommand.Name = "btnExecuteCommand";
-            this.btnExecuteCommand.Size = new System.Drawing.Size(137, 25);
-            this.btnExecuteCommand.Text = "Execute_command";
-            this.btnExecuteCommand.Click += new System.EventHandler(this.btnExecuteCommand_Click);
+            this.btnExit.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnExit.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnExit.Name = "btnExit";
+            this.btnExit.Size = new System.Drawing.Size(37, 24);
+            this.btnExit.Text = "Exit";
+            this.btnExit.Click += new System.EventHandler(this.btnExit_Click);
             // 
             // dgvMain
             // 
@@ -164,15 +144,6 @@
             this.dgvMain.RowTemplate.Height = 33;
             this.dgvMain.Size = new System.Drawing.Size(1182, 333);
             this.dgvMain.TabIndex = 1;
-            // 
-            // btnExit
-            // 
-            this.btnExit.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnExit.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnExit.Name = "btnExit";
-            this.btnExit.Size = new System.Drawing.Size(37, 24);
-            this.btnExit.Text = "Exit";
-            this.btnExit.Click += new System.EventHandler(this.btnExit_Click);
             // 
             // frmDatabaseInfo
             // 
@@ -205,8 +176,6 @@
         private ToolStripButton cmdIndexColumns;
         private ToolStripLabel toolStripLabel1;
         private ToolStripButton cmdExtraDT;
-        private ToolStripButton btnExecuteCommand;
-        private ToolStripButton btnLoadCommand;
         private ToolStripButton btnExit;
     }
 }

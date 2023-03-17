@@ -28,11 +28,10 @@ namespace SqlCollegeTranscripts
         #region Variables
         //The table and job for this sql - myJob will by "" or "combo"
         internal string errorMsg = String.Empty;
-        internal bool formLoading;
         internal string myTable = "";
         internal int myPage = 0;  // Asks for all records, 1 is first page
-        internal int myPageSize = 1;
-        internal int TotalPages { get; set; }
+        internal int myPageSize;  // Set by constructor
+        internal int TotalPages { get; set; } // Set when you set record count
         private int recordCount = 0;
         internal int RecordCount
         {
@@ -84,53 +83,39 @@ namespace SqlCollegeTranscripts
             return sqlString;
         }
 
-        internal string returnComboSql(command cmd, field fkColumn)
+        internal string returnFixDatabaseSql(string strWhere) // Where string passed to this function
         {
-            int offset = (myPage - 1) * myPageSize;
-            string sqlString = "";
-            if (cmd == command.fkfilter)
-            {
-                // Get primary key of the combo table - required since this is the value feild
-                field FkTablePKField = dataHelper.getForeignKeyRefField(fkColumn);
-                // Create display field from fields  Concat_WS(x,y,z) as DisplayField  - should be moved to msSql
-                StringBuilder sqlFieldStringSB = new StringBuilder();
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
-                sqlFieldStringSB.Append(", ");
+            return "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " WHERE " + strWhere + " " + sqlOrderByStr(myOrderBys) + " ";
+        }
 
-                List<field> fls = DisplayFieldsDictionary[fkColumn.fieldName];
-                string strFields = String.Empty;
-                if (fls.Count == 1)
-                {
-                    sqlFieldStringSB.Append(sqlFieldString(fls));
-                }
-                else
-                {
-                    sqlFieldStringSB.Append("Concat_WS(',',");
-                    sqlFieldStringSB.Append(sqlFieldString(fls));
-                    sqlFieldStringSB.Append(")");
-                }
-                sqlFieldStringSB.Append(" as DisplayField");
-                sqlFieldStringSB.Append(", ");
-                // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
-                sqlFieldStringSB.Append(" as ValueField");
-                // Get string
-                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayField";
-            }
-            else if (cmd == command.cellfilter)
+        internal string returnComboSql(field fkColumn)
+        {
+            string sqlString = "";
+            StringBuilder sqlFieldStringSB = new StringBuilder();
+            // Get primary key of the combo table - required since this is the value feild
+            field FkTablePKField = dataHelper.getForeignKeyRefField(fkColumn);
+            // Create display field from fields  Concat_WS(x,y,z) as DisplayField  - should be moved to msSql
+            sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
+            sqlFieldStringSB.Append(", ");
+
+            List<field> fls = DisplayFieldsDictionary[fkColumn.fieldName];
+            string strFields = String.Empty;
+            if (fls.Count == 1)
             {
-                // Create display field from fields  Concat_WS(x,y,z) as DisplayField
-                StringBuilder sqlFieldStringSB = new StringBuilder();
-                string fieldList = sqlFieldString(DisplayFieldsDictionary[fkColumn.fieldName]);
-                sqlFieldStringSB.Append(fieldList);
-                sqlFieldStringSB.Append(" as DisplayField");
-                sqlFieldStringSB.Append(", ");
-                // field myField = dataHelper.getField(myTable, filterColumn);
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(fkColumn));
-                sqlFieldStringSB.Append(" as ValueField");
-                // Get string
-                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayField";
+                sqlFieldStringSB.Append(sqlFieldString(fls));
             }
+            else
+            {
+                sqlFieldStringSB.Append("Concat_WS(',',");
+                sqlFieldStringSB.Append(sqlFieldString(fls));
+                sqlFieldStringSB.Append(")");
+            }
+            sqlFieldStringSB.Append(" as DisplayField");
+            sqlFieldStringSB.Append(", ");
+            // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
+            sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
+            sqlFieldStringSB.Append(" as ValueField");
+            sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayField";
             return sqlString;
         }
 
@@ -269,21 +254,21 @@ namespace SqlCollegeTranscripts
             // - i.e. a map from top table FK's to all displaykeys that come from it including grandson tables)
       
             StringBuilder MsgStr = new StringBuilder();
-            // string field1 = "", table2 = "";
             DataRow[] drs = dataHelper.fieldsDT.Select("TableName = '" + currentTable + "'");
             // Loop through fields in table - adding to innerjoins and fields lists
             foreach (DataRow dr in drs)
             {
                 // Get the field for this row - containing table, fieldName, DataType, Size
-                field drField = dataHelper.getFieldValueFieldsDT(dr);
+                field drField = dataHelper.getFieldFromFieldsDT(dr);
 
-                //Primary Key - program assumes this will be the first field
+                //if Primary Key - program assumes this will be the first field
                 if (dataHelper.isTablePrimaryKeyField(drField))
                 {
                     // Don't add primary key to fields - but primary key of myTable added in DataGridViewForm.cs call
+                    // Also foreign keys are added - so no need to add primary key of son tables
                 }
 
-                // Foreign Key
+                // if Foreign Key
                 else if (dataHelper.fieldIsForeignKey(drField))  // Inner join
                 {
                     field RefTableField = dataHelper.getForeignKeyRefField(drField);

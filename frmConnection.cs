@@ -1,6 +1,7 @@
 using Microsoft.VisualBasic;
 // using System.Data.SqlClient;
 using System.Text;
+using System.Data;
 
 namespace SqlCollegeTranscripts
 {
@@ -8,15 +9,15 @@ namespace SqlCollegeTranscripts
         : System.Windows.Forms.Form
     {
 
-        public frmConnection()
-            : base()
+        public frmConnection() : base()
         {
             InitializeComponent();
         }
 
         public bool success = false;
-        List<connectionString> pastConnectionStrings;
+        List<connectionString> csList { get; set; }
         private string password = string.Empty;
+
         private void frmConnection_Load(object sender, EventArgs e)
         {
             string msg = "";
@@ -31,8 +32,8 @@ namespace SqlCollegeTranscripts
             cmdOK.Enabled = false;
 
             // Get past successful connections and put in combobox
-            pastConnectionStrings = AppData.GetConnectionStringList();
-            foreach (connectionString conString in pastConnectionStrings)
+            csList = AppData.GetConnectionStringList();
+            foreach (connectionString conString in csList)
             {
                 cmbStrings.Items.Add(conString.comboString);
             }
@@ -57,10 +58,6 @@ namespace SqlCollegeTranscripts
             {
                 sb.AppendLine("You must enter a Server name");
             }
-            if (cmbStrings.Text.IndexOf("{1}") > -1)
-            {
-                sb.AppendLine("Delete the database and {1} from connection string");
-            }
             if (cmbStrings.Text.IndexOf("{2}") > -1 && this.txtUserId.Text == string.Empty)
             {
                 sb.AppendLine("Enter a user name or choose a connection string without {2}.");
@@ -72,7 +69,17 @@ namespace SqlCollegeTranscripts
             else
             {
                 string conStr = cmbStrings.Text;
-                conStr = String.Format(conStr, txtServer.Text, txtDatabase.Text, txtUserId.Text);
+
+                // Remove {1} from conStr
+                int one = conStr.IndexOf("{1}");
+                if (one > -1)
+                {
+                    int nextSemi = conStr.IndexOf(";", one);
+                    int lastSemi = conStr.Substring(0, one).LastIndexOf(";");
+                    conStr = conStr.Substring(0,lastSemi + 1) + conStr.Substring(nextSemi+1);
+                }
+
+                conStr = String.Format(conStr, txtServer.Text, "none", txtUserId.Text);
                 if (conStr.IndexOf("{3}") > -1)
                 {
                     frmLogin passwordForm = new frmLogin();
@@ -81,17 +88,45 @@ namespace SqlCollegeTranscripts
                     passwordForm = null;
                     conStr.Replace("{3}", password);
                 }
-                //frmDeleteDatabase used to show databases
-                frmListDatabases databaseListForm = new frmListDatabases();
-                databaseListForm.serverOnlyConnectionString = conStr;
-                databaseListForm.ShowDialog();
-                if (databaseListForm.databaseName != string.Empty)
-                {
-                    this.txtDatabase.Text = databaseListForm.databaseName;
+                List<string> databaseList = getSqlDatabaseList(conStr);
+                if (databaseList.Count > 0)
+                { 
+                    //frmDeleteDatabase used to show databases
+                    frmListItems databaseListForm = new frmListItems();
+                    databaseListForm.myList = databaseList;
+                    databaseListForm.formCaption = "Hello";
+                    databaseListForm.myJob = frmListItems.job.SelectString;
+                    databaseListForm.ShowDialog();
+                    if (databaseListForm.returnString != string.Empty)
+                    {
+                        this.txtDatabase.Text = databaseListForm.returnString;
+                    }
+                    databaseListForm = null;
                 }
-                databaseListForm = null;
             }
         }
+
+        private List<string> getSqlDatabaseList(string cs)
+        {
+            List<string> strList = new List<string>();
+            try
+            {
+                MsSql.openNoDatabaseConnection(cs);
+                DataTable databases = MsSql.noDatabaseConnection.GetSchema("Databases");
+                foreach (DataRow database in databases.Rows)
+                {
+                    strList.Add(database.Field<String>("database_name"));
+                }
+                MsSql.CloseNoDatabaseConnection();
+            }
+            catch (Exception exc)
+            {
+                MessageBox.Show("Error opening connection: " + exc.Message);
+            }
+            return strList;
+        }
+
+
 
         private void cmdCancel_Click(Object eventSender, EventArgs eventArgs)
         {
@@ -149,15 +184,21 @@ namespace SqlCollegeTranscripts
 
         private void cmdOK_Click(Object eventSender, EventArgs eventArgs)
         {
-            // 1.  Save Application Data.
-            string cs = cmbStrings.Text;
-            cs = String.Format(cs, this.txtServer.Text, this.txtDatabase.Text, this.txtUserId.Text, password);
+            string strCS = cmbStrings.Text;
+            strCS = String.Format(strCS, this.txtServer.Text, this.txtDatabase.Text, this.txtUserId.Text, password);
             bool readOnly = this.chkReadOnly.Checked;
             connectionString conString = new connectionString(cmbStrings.Text, this.txtServer.Text, this.txtUserId.Text,
                         this.txtDatabase.Text, MsSql.databaseType, readOnly);
-            AppData.storeConnectionString(conString);
-
-            // 2.
+            foreach (connectionString cs in csList)
+            {
+                if (AppData.areEqual(cs, conString))
+                {
+                    csList.Remove(cs);
+                    break;  // only remove one
+                }
+            }
+            csList.Insert(0,conString);
+            AppData.storeConnectionStringList(csList);
             this.Close();
         }
 
@@ -166,11 +207,11 @@ namespace SqlCollegeTranscripts
             if (cmbStrings.SelectedIndex > -1)
             {
                 // Condition required because a default may have been selected
-                if (pastConnectionStrings.Count > cmbStrings.SelectedIndex)
+                if (csList.Count > cmbStrings.SelectedIndex)
                 {
-                    txtServer.Text = pastConnectionStrings[cmbStrings.SelectedIndex].server;
-                    txtUserId.Text = pastConnectionStrings[cmbStrings.SelectedIndex].user;
-                    txtDatabase.Text = pastConnectionStrings[cmbStrings.SelectedIndex].databaseName;
+                    txtServer.Text = csList[cmbStrings.SelectedIndex].server;
+                    txtUserId.Text = csList[cmbStrings.SelectedIndex].user;
+                    txtDatabase.Text = csList[cmbStrings.SelectedIndex].databaseName;
                 }
             }
         }

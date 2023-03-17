@@ -6,6 +6,7 @@ namespace SqlCollegeTranscripts
 {
     internal static class MultiLingual
     {
+        // Note: Not yet saving anything to database - need to either have own datatable or save everytime extraDT updated
         private static bool BuildingUpEnglishDatabase = false;  // Change this to true to collect English values
 
         public static string tr(string strEnglish, Form form)
@@ -35,6 +36,7 @@ namespace SqlCollegeTranscripts
 
             //Load zMultilingual into dtExtra
             string strSql = "Select zMultilingualID, Form, Control, Property, en from zMultilingual";
+            dataHelper.extraDT = new DataTable();
             MsSql.FillDataTable(dataHelper.extraDT, strSql);
             List<Control> listA = GetChildList(form);
             foreach (Control cnt in listA)

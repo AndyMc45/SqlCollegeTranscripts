@@ -25,15 +25,22 @@ namespace SqlCollegeTranscripts
 
     public static class AppData
     {
-        public static void storeConnectionString(connectionString csObject)
+        private static string appName = "SqlCollegeTranscripts";
+
+        public static void storeConnectionStringList(List<connectionString> csList)
         {
-            string jsonString = JsonSerializer.Serialize<connectionString>(csObject);
-            regitPushOntoList("ConnectionList", jsonString, 9);
+            // Create List
+            List<string> strCsList = new List<string>();
+            foreach(connectionString cs in csList) 
+            {
+                strCsList.Add(JsonSerializer.Serialize<connectionString>(cs));
+            }
+            // Store list - this first deletes old list and stores new list
+            regitStoreList(strCsList, "ConnectionList");
         }
 
         public static connectionString? GetFirstConnectionStringOrNull()
         {
-            string appName = "SqlCollegeTranscripts";
             string jsonString = Interaction.GetSetting(appName, "ConnectionList", 0.ToString(), "_end");
             if (jsonString == "_end")
             {
@@ -55,61 +62,29 @@ namespace SqlCollegeTranscripts
             return csList;
         }
 
-        public static void DeleteConnectionStringFromList(int i)
+        public static bool areEqual(connectionString value1, connectionString value2)
         {
-            string appName = "SqlCollegeTranscripts";
-            regitDeleteFromList("ConnectionList", i);
+            string v1 = JsonSerializer.Serialize<connectionString>(value1);
+            string v2 = JsonSerializer.Serialize<connectionString>(value2);
+            if (v1 == v2) { return true; }
+            return false;
         }
+
+
 
         public static void SaveKeyValue(string key, string keyValue)
         {
-            string appName = "SqlCollegeTranscripts";
             Interaction.SaveSetting(appName, "SingleValue", key, keyValue);
         }
 
         public static string GetKeyValue(string key)
         {
-            string appName = "SqlCollegeTranscripts";
             return Interaction.GetSetting(appName, "SingleValue", key, string.Empty);
         }
 
-        // Push first_value onto the stack and push all others down 1 upto max.
-        private static void regitPushOntoList(string section, string firstValue, int max)
-        {
-            string appName = "SqlCollegeTranscripts";
-            // Push everything done 1 spot
-            int i = 0;
-            string originalValueI = string.Empty;
-            string newValueI = firstValue;
-            while (newValueI != "_end" && i < max)
-            {
-                originalValueI = Interaction.GetSetting(appName, section, i.ToString(), "_end");
-                Interaction.SaveSetting(appName, section, i.ToString(), newValueI);
-                i++;
-                newValueI = originalValueI;
-            }
-        }
-
-        //Delete the ith key from the register and move all others forward
-        private static void regitDeleteFromList(string section, int i)
-        {
-            string appName = "SqlCollegeTranscripts";
-            //Interaction.DeleteSetting(appName, section, i.ToString());
-            i++;
-            string currentValue = Interaction.GetSetting(appName, section, i.ToString(), "_end");
-            while (currentValue != "_end")
-            {
-                Interaction.SaveSetting(appName, section, (i - 1).ToString(), currentValue);
-                i++;
-                currentValue = Interaction.GetSetting(appName, section, i.ToString(), "_end");
-            }
-            Interaction.DeleteSetting(appName, section, (i - 1).ToString());
-
-        }
         private static List<string> regitGetList(string section)
         {
             List<string> strList = new List<string>();
-            string appName = "SqlCollegeTranscripts";
             int i = 0;
             string currentValue = Interaction.GetSetting(appName, section, 0.ToString(), "_end");
             while (currentValue != "_end")
@@ -121,5 +96,30 @@ namespace SqlCollegeTranscripts
             return strList;
         }
 
+        private static void regitStoreList(List<string> strList, string section)
+        { 
+            //Delete old list
+            regitDeleteList(section);
+            //Store the new list
+            int i = 0;
+            foreach (string str in strList) 
+            {
+                Interaction.SaveSetting(appName, section, i.ToString(), str);
+                i++;
+            }
+        }
+
+        private static void regitDeleteList(string section)
+        {
+            //Interaction.DeleteSetting(appName, section, i.ToString());
+            int i = 0;
+            string currentValue = string.Empty;
+            while (currentValue != "_end")
+            {
+                currentValue = Interaction.GetSetting(appName, section, i.ToString(), "_end");
+                if (currentValue != "_end") { Interaction.DeleteSetting(appName, section, i.ToString()); }
+                i++;
+            }
+        }
     }
 }
