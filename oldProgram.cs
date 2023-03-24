@@ -9,6 +9,12 @@ namespace SqlCollegeTranscripts
     internal class oldProgram
     {
         // OLD PROGRAM
+        // var getTasks = new List<Task>();
+        // List<string> keys = currentSql.DisplayFieldsDictionary.Keys.ToList();
+        // getTasks.Add(writeGrid_NewFilter());
+        // await Task.WhenAll(getTasks);
+
+
 
         #region OLD Connection - open and close and related functions
         ////---------------------------------------------------------------------------------------------------------------------------------------------

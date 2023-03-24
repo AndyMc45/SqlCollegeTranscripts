@@ -31,7 +31,9 @@ namespace SqlCollegeTranscripts
         internal string myTable = "";
         internal int myPage = 0;  // Asks for all records, 1 is first page
         internal int myPageSize;  // Set by constructor
+
         internal int TotalPages { get; set; } // Set when you set record count
+
         private int recordCount = 0;
         internal int RecordCount
         {
@@ -39,7 +41,10 @@ namespace SqlCollegeTranscripts
             set
             {
                 recordCount = value;
-                TotalPages = (int)Math.Ceiling((decimal)recordCount / myPageSize);
+                if (myPageSize > 0)
+                { 
+                    TotalPages = (int)Math.Ceiling((decimal)recordCount / myPageSize);
+                }
             }
         }
 
@@ -54,6 +59,9 @@ namespace SqlCollegeTranscripts
 
         // Dictionary(field --> Field List) - foreign keys of this table mapped to fields to show in combo.  Set by innerjoin call.	
         internal Dictionary<string, List<field>> DisplayFieldsDictionary = new Dictionary<string, List<field>>();
+        internal List<field> PrimaryKeyDisplayFields = new List<field>();
+
+
         #endregion
 
         // The primary function of this class
@@ -83,40 +91,51 @@ namespace SqlCollegeTranscripts
             return sqlString;
         }
 
-        internal string returnFixDatabaseSql(string strWhere) // Where string passed to this function
-        {
-            return "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " WHERE " + strWhere + " " + sqlOrderByStr(myOrderBys) + " ";
-        }
 
-        internal string returnComboSql(field fkColumn)
+        internal string returnComboSql(field colField)
         {
+            // For primary key, return the grid dropdown - also used in combo box for primary key
+            // For non-Keys return distinct values - used in combo boxes 
             string sqlString = "";
             StringBuilder sqlFieldStringSB = new StringBuilder();
-            // Get primary key of the combo table - required since this is the value feild
-            field FkTablePKField = dataHelper.getForeignKeyRefField(fkColumn);
-            // Create display field from fields  Concat_WS(x,y,z) as DisplayField  - should be moved to msSql
-            sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
-            sqlFieldStringSB.Append(", ");
-
-            List<field> fls = DisplayFieldsDictionary[fkColumn.fieldName];
-            string strFields = String.Empty;
-            if (fls.Count == 1)
+            if (dataHelper.isTablePrimaryKeyField(colField))
             {
-                sqlFieldStringSB.Append(sqlFieldString(fls));
+                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
+                sqlFieldStringSB.Append(", ");
+                List<field> fls = PrimaryKeyDisplayFields;
+                string strFields = String.Empty;
+                if (fls.Count == 1)
+                {
+                    sqlFieldStringSB.Append(sqlFieldString(fls));
+                }
+                else
+                {
+                    sqlFieldStringSB.Append("Concat_WS(',',");
+                    sqlFieldStringSB.Append(sqlFieldString(fls));  // function converts fls to list of fields seperated by comma
+                    sqlFieldStringSB.Append(")");
+                }
+                sqlFieldStringSB.Append(" as DisplayMember");
+                sqlFieldStringSB.Append(", ");
+                // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
+                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
+                sqlFieldStringSB.Append(" as ValueMember");
             }
             else
             {
-                sqlFieldStringSB.Append("Concat_WS(',',");
-                sqlFieldStringSB.Append(sqlFieldString(fls));
-                sqlFieldStringSB.Append(")");
+                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
+                sqlFieldStringSB.Append(" as DisplayMember");
+                sqlFieldStringSB.Append(", ");
+                // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
+                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
+                sqlFieldStringSB.Append(" as ValueMember");
             }
-            sqlFieldStringSB.Append(" as DisplayField");
-            sqlFieldStringSB.Append(", ");
-            // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
-            sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(FkTablePKField));
-            sqlFieldStringSB.Append(" as ValueField");
-            sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayField";
+            sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayMember";
             return sqlString;
+        }
+
+        internal string returnFixDatabaseSql(string strWhere) // Where string passed to this function
+        {
+            return "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " WHERE " + strWhere + " " + sqlOrderByStr(myOrderBys) + " ";
         }
 
         private string sqlTableString()
@@ -320,13 +339,15 @@ namespace SqlCollegeTranscripts
                         }
                     }
                 }
-
-                // A non-Key (Only these are added to myFields)
                 else  // A none key field
                 {
                     if (currentTable == myTable)  // In My Table
                     {
                         myFields.Add(drField);
+                        if (dataHelper.isDisplayKey(currentTable, drField.fieldName))
+                        {
+                            PrimaryKeyDisplayFields.Add(drField);  // Used in returnComboSql
+                        }
                     }
                     else if (dataHelper.isDisplayKey(currentTable, drField.fieldName))  // looping through a son of myTable
                     {
@@ -339,6 +360,8 @@ namespace SqlCollegeTranscripts
                         }
                         fieldList.Add(drField);
                         DisplayFieldsDictionary[myTableInnerJoinField.fieldName] = fieldList;
+                        // Add to PrimaryKeyDisplayFields
+                        PrimaryKeyDisplayFields.Add(drField);
                     }
                 }
 

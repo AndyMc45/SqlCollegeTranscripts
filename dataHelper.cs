@@ -19,12 +19,10 @@ namespace SqlCollegeTranscripts
             this.fieldName = fieldName;
             this.dbType = dbType;
             this.size = size;
-            this.displayMember = fieldName;
+            this.DisplayMember = fieldName;
         }
-        public field valueMember { get { return this; }}
-        public string displayMember { get; set; }  // Used to display where in combo
-
-
+        public field ValueMember { get { return this; }}  //Field itself
+        public string DisplayMember { get; set; }  // Used to display where in combo
     }
 
     public class where
@@ -502,9 +500,7 @@ namespace SqlCollegeTranscripts
                     switch (fieldName.ToLower())
                     {
                         case "courseid":
-                        case "termid":
-                        case "term":
-                        case "_group":
+                        // case "termid":
                             return true;
                         default:
                             return false;
@@ -540,6 +536,14 @@ namespace SqlCollegeTranscripts
                     {
                         case "facultyname":
                         case "efacultyname":
+                            return true;
+                        default:
+                            return false;
+                    }
+                case "departments":
+                    switch (fieldName.ToLower())
+                    {
+                        case "departmentname":
                             return true;
                         default:
                             return false;

@@ -20,7 +20,7 @@ namespace SqlCollegeTranscripts
             }
             set
             {
-                // Ensure that the cell used for the template is a CalendarCell.
+                // Ensure that the cell used for the template is a FkComboCell.
                 if (value != null &&
                     !value.GetType().IsAssignableFrom(typeof(FkComboCell)))
                 {
@@ -37,8 +37,8 @@ namespace SqlCollegeTranscripts
 
         public FkComboCell() : base()
         {
-            // Use the short date format.
-            // this.Style.Format = "d";
+            // Format the cell (not the editing control) here.  Example
+            // this.Style.ForeColor = Color.Purple;
         }
 
         public DataTable dataTable { get; set; }
@@ -46,7 +46,6 @@ namespace SqlCollegeTranscripts
         public override object Clone()
         {
             var clone = (FkComboCell)base.Clone();
-            // clone.dataTable = dt;
             return clone;
         }
 
@@ -55,26 +54,25 @@ namespace SqlCollegeTranscripts
         {
             // Set the value of the editing control to the current cell value.
             base.InitializeEditingControl(rowIndex, initialFormattedValue, dataGridViewCellStyle);
+
             FkComboBoxEditingControl ctl = DataGridView.EditingControl as FkComboBoxEditingControl;
+            
             if (ctl != null) { 
                 // Fill the combo.
                 ctl.DataSource = null;   
                 ctl.Items.Clear(); // ? if needed
-                ctl.ValueMember = "ValueField";
-                ctl.DisplayMember = "DisplayField";
+                ctl.ValueMember = "ValueMember";
+                ctl.DisplayMember = "DisplayMember";
                 ctl.DataSource = dataTable;
                 // Other combo settings
-                ctl.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-                ctl.AutoCompleteSource = AutoCompleteSource.ListItems;
+                ctl.AutoCompleteMode = AutoCompleteMode.None;  // Confusing otherwise
             }
-
         }
 
         public override Type EditType
         {
             get
             {
-                // Return the type of the editing control that CalendarCell uses.
                 return typeof(FkComboBoxEditingControl);
             }
         }
@@ -83,8 +81,6 @@ namespace SqlCollegeTranscripts
         {
             get
             {
-                // Return the type of the value that CalendarCell contains.
-
                 return typeof(Int32);
             }
         }
@@ -93,7 +89,6 @@ namespace SqlCollegeTranscripts
         {
             get
             {
-                // Use the current date and time as the default value.
                 return 0;
             }
         }
@@ -101,19 +96,36 @@ namespace SqlCollegeTranscripts
 
     public class FkComboBoxEditingControl : DataGridViewComboBoxEditingControl
     {
-
-        public override object GetEditingControlFormattedValue(DataGridViewDataErrorContexts context)
+        //public override object GetEditingControlFormattedValue(DataGridViewDataErrorContexts context)
+        //{
+        //    return this.SelectedValue;
+        //}
+        public override void ApplyCellStyleToEditingControl(DataGridViewCellStyle dataGridViewCellStyle)
         {
-            return this.SelectedValue;
+            this.BackColor = Color.Aqua;
         }
 
-        public DataTable dataTable { 
-            set 
-            {
-                this.ValueMember = "ValueField";
-                this.DisplayMember = "DisplayField";
-                this.DataSource = value;
-            }
-        }
+
+        //public override object EditingControlFormattedValue
+        //{
+        //    get
+        //    {
+        //        return GetEditingControlFormattedValue(DataGridViewDataErrorContexts.Formatting);
+        //    }
+        //    set
+        //    {
+        //        this.SelectedValue.ToString();
+        //        //if (value is string valueStr)
+        //        //{
+        //        //    Text = valueStr;
+        //        //    //if (string.Compare(valueStr, Text, true, CultureInfo.CurrentCulture) != 0)
+        //        //    //{
+        //        //    //    SelectedIndex = -1;
+        //        //    //}
+        //        //}
+        //    }
+        //}
+
+
     }
 }
