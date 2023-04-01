@@ -81,38 +81,41 @@
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.comboBox2 = new System.Windows.Forms.ComboBox();
-            this.comboBox1 = new System.Windows.Forms.ComboBox();
-            this.cmbColumnFilterFields_0 = new System.Windows.Forms.ComboBox();
-            this.rbMerge = new System.Windows.Forms.RadioButton();
-            this.btnDeleteAddMerge = new System.Windows.Forms.Button();
-            this.GridContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.GridContextMenu_FindInHigherTable = new System.Windows.Forms.ToolStripMenuItem();
-            this.rbAdd = new System.Windows.Forms.RadioButton();
-            this.rbDelete = new System.Windows.Forms.RadioButton();
+            this.cmbGridFilterValue_0 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterFields_3 = new System.Windows.Forms.ComboBox();
             this.rbEdit = new System.Windows.Forms.RadioButton();
             this.rbView = new System.Windows.Forms.RadioButton();
             this.cmbMainFilter = new System.Windows.Forms.ComboBox();
-            this.txtColumnFilter_0 = new System.Windows.Forms.TextBox();
-            this.cmbEditColumn = new System.Windows.Forms.ComboBox();
-            this.cmbColumnFilterFields_1 = new System.Windows.Forms.ComboBox();
-            this.txtColumnFilter_1 = new System.Windows.Forms.TextBox();
-            this.cmbColumnFilterFields_2 = new System.Windows.Forms.ComboBox();
-            this.txtColumnFilter_2 = new System.Windows.Forms.TextBox();
-            this.lblGridFilter = new System.Windows.Forms.Label();
-            this.cmbComboFilter_2 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilter_5 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilterFields_2 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilterFields_5 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilter_1 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilter_4 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilterFields_1 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilterFields_4 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilter_0 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilter_3 = new System.Windows.Forms.ComboBox();
-            this.cmbComboFilterFields_0 = new System.Windows.Forms.ComboBox();
+            this.rbDelete = new System.Windows.Forms.RadioButton();
+            this.rbAdd = new System.Windows.Forms.RadioButton();
+            this.btnDeleteAddMerge = new System.Windows.Forms.Button();
+            this.GridContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.GridContextMenu_FindInHigherTable = new System.Windows.Forms.ToolStripMenuItem();
+            this.rbMerge = new System.Windows.Forms.RadioButton();
             this.cmbComboFilterFields_3 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterFields_0 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterValue_3 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterFields_4 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterValue_4 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterFields_5 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterValue_5 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterValue_0 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterFields_1 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterValue_1 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterFields_2 = new System.Windows.Forms.ComboBox();
+            this.cmbComboFilterValue_2 = new System.Windows.Forms.ComboBox();
             this.lblComboFilter = new System.Windows.Forms.Label();
+            this.lblGridFilter = new System.Windows.Forms.Label();
+            this.cmbGridFilterFields_0 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterFields_1 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterValue_3 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterFields_4 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterValue_4 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterFields_5 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterValue_1 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterValue_5 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterValue_2 = new System.Windows.Forms.ComboBox();
+            this.cmbGridFilterFields_2 = new System.Windows.Forms.ComboBox();
             this.txtMessages = new System.Windows.Forms.TextBox();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.MainMenu1.SuspendLayout();
@@ -597,169 +600,82 @@
             this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 50F));
             this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 50F));
             this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.tableLayoutPanel.Controls.Add(this.comboBox2, 0, 3);
-            this.tableLayoutPanel.Controls.Add(this.comboBox1, 0, 0);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterValue_0, 8, 1);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterFields_3, 4, 2);
             this.tableLayoutPanel.Controls.Add(this.lblMainFilter, 1, 0);
-            this.tableLayoutPanel.Controls.Add(this.cmbColumnFilterFields_0, 4, 1);
-            this.tableLayoutPanel.Controls.Add(this.rbMerge, 23, 0);
-            this.tableLayoutPanel.Controls.Add(this.btnDeleteAddMerge, 21, 0);
-            this.tableLayoutPanel.Controls.Add(this.rbAdd, 19, 0);
-            this.tableLayoutPanel.Controls.Add(this.rbDelete, 17, 0);
             this.tableLayoutPanel.Controls.Add(this.rbEdit, 11, 0);
             this.tableLayoutPanel.Controls.Add(this.rbView, 9, 0);
             this.tableLayoutPanel.Controls.Add(this.cmbMainFilter, 4, 0);
-            this.tableLayoutPanel.Controls.Add(this.txtColumnFilter_0, 7, 1);
-            this.tableLayoutPanel.Controls.Add(this.cmbEditColumn, 13, 0);
-            this.tableLayoutPanel.Controls.Add(this.cmbColumnFilterFields_1, 10, 1);
-            this.tableLayoutPanel.Controls.Add(this.txtColumnFilter_1, 13, 1);
-            this.tableLayoutPanel.Controls.Add(this.cmbColumnFilterFields_2, 16, 1);
-            this.tableLayoutPanel.Controls.Add(this.txtColumnFilter_2, 19, 1);
+            this.tableLayoutPanel.Controls.Add(this.rbDelete, 13, 0);
+            this.tableLayoutPanel.Controls.Add(this.rbAdd, 15, 0);
+            this.tableLayoutPanel.Controls.Add(this.btnDeleteAddMerge, 17, 0);
+            this.tableLayoutPanel.Controls.Add(this.rbMerge, 19, 0);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_3, 4, 4);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_0, 4, 3);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterValue_3, 8, 4);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_4, 11, 4);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterValue_4, 15, 4);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_5, 18, 4);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterValue_5, 22, 4);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterValue_0, 8, 3);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_1, 11, 3);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterValue_1, 15, 3);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_2, 18, 3);
+            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterValue_2, 22, 3);
+            this.tableLayoutPanel.Controls.Add(this.lblComboFilter, 1, 3);
             this.tableLayoutPanel.Controls.Add(this.lblGridFilter, 1, 1);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilter_2, 22, 2);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilter_5, 22, 3);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_2, 18, 2);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_5, 18, 3);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilter_1, 15, 2);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilter_4, 15, 3);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_1, 11, 2);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_4, 11, 3);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilter_0, 8, 2);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilter_3, 8, 3);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_0, 4, 2);
-            this.tableLayoutPanel.Controls.Add(this.cmbComboFilterFields_3, 4, 3);
-            this.tableLayoutPanel.Controls.Add(this.lblComboFilter, 1, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterFields_0, 4, 1);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterFields_1, 11, 1);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterValue_3, 8, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterFields_4, 11, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterValue_4, 15, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterFields_5, 18, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterValue_1, 15, 1);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterValue_5, 22, 2);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterValue_2, 22, 1);
+            this.tableLayoutPanel.Controls.Add(this.cmbGridFilterFields_2, 18, 1);
             this.tableLayoutPanel.Location = new System.Drawing.Point(0, 27);
             this.tableLayoutPanel.Name = "tableLayoutPanel";
-            this.tableLayoutPanel.RowCount = 5;
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel.RowCount = 6;
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel.Size = new System.Drawing.Size(1362, 200);
             this.tableLayoutPanel.TabIndex = 108;
             // 
-            // comboBox2
+            // cmbGridFilterValue_0
             // 
-            this.comboBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.cmbGridFilterValue_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBox2.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.comboBox2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.comboBox2.BackColor = System.Drawing.Color.White;
-            this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox2.ForeColor = System.Drawing.Color.Black;
-            this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(3, 123);
-            this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(1, 28);
-            this.comboBox2.TabIndex = 125;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterValue_0, 3);
+            this.cmbGridFilterValue_0.FormattingEnabled = true;
+            this.cmbGridFilterValue_0.Location = new System.Drawing.Point(357, 43);
+            this.cmbGridFilterValue_0.Name = "cmbGridFilterValue_0";
+            this.cmbGridFilterValue_0.Size = new System.Drawing.Size(144, 28);
+            this.cmbGridFilterValue_0.TabIndex = 160;
+            this.cmbGridFilterValue_0.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterValue_0.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterValue_SelectedIndexChanged);
+            this.cmbGridFilterValue_0.TextChanged += new System.EventHandler(this.cmbGridFilterValue_TextChanged);
             // 
-            // comboBox1
+            // cmbGridFilterFields_3
             // 
-            this.comboBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.cmbGridFilterFields_3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.comboBox1.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.comboBox1.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBox1.ForeColor = System.Drawing.Color.Red;
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(3, 3);
-            this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(1, 28);
-            this.comboBox1.TabIndex = 122;
-            // 
-            // cmbColumnFilterFields_0
-            // 
-            this.cmbColumnFilterFields_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbColumnFilterFields_0.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbColumnFilterFields_0.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbColumnFilterFields_0.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbColumnFilterFields_0, 4);
-            this.cmbColumnFilterFields_0.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbColumnFilterFields_0.ForeColor = System.Drawing.Color.Black;
-            this.cmbColumnFilterFields_0.FormattingEnabled = true;
-            this.cmbColumnFilterFields_0.Location = new System.Drawing.Point(157, 43);
-            this.cmbColumnFilterFields_0.Name = "cmbColumnFilterFields_0";
-            this.cmbColumnFilterFields_0.Size = new System.Drawing.Size(194, 28);
-            this.cmbColumnFilterFields_0.TabIndex = 129;
-            this.cmbColumnFilterFields_0.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbColumnFilterFields_0.SelectedIndexChanged += new System.EventHandler(this.cmbColumnFilterFields_SelectedIndexChanged);
-            // 
-            // rbMerge
-            // 
-            this.rbMerge.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.rbMerge.AutoSize = true;
-            this.tableLayoutPanel.SetColumnSpan(this.rbMerge, 2);
-            this.rbMerge.Location = new System.Drawing.Point(1117, 2);
-            this.rbMerge.Margin = new System.Windows.Forms.Padding(2);
-            this.rbMerge.Name = "rbMerge";
-            this.rbMerge.Size = new System.Drawing.Size(73, 24);
-            this.rbMerge.TabIndex = 121;
-            this.rbMerge.Text = "Merge";
-            this.rbMerge.UseVisualStyleBackColor = true;
-            this.rbMerge.CheckedChanged += new System.EventHandler(this.rbMerge_CheckedChanged);
-            // 
-            // btnDeleteAddMerge
-            // 
-            this.btnDeleteAddMerge.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.btnDeleteAddMerge.AutoSize = true;
-            this.tableLayoutPanel.SetColumnSpan(this.btnDeleteAddMerge, 2);
-            this.btnDeleteAddMerge.ContextMenuStrip = this.GridContextMenu;
-            this.btnDeleteAddMerge.Enabled = false;
-            this.btnDeleteAddMerge.ForeColor = System.Drawing.Color.Black;
-            this.btnDeleteAddMerge.Location = new System.Drawing.Point(1007, 3);
-            this.btnDeleteAddMerge.Name = "btnDeleteAddMerge";
-            this.btnDeleteAddMerge.Size = new System.Drawing.Size(94, 30);
-            this.btnDeleteAddMerge.TabIndex = 127;
-            this.btnDeleteAddMerge.Text = "Merge rows";
-            this.btnDeleteAddMerge.UseVisualStyleBackColor = true;
-            this.btnDeleteAddMerge.Click += new System.EventHandler(this.btnDeleteAddMerge_Click);
-            // 
-            // GridContextMenu
-            // 
-            this.GridContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.GridContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.GridContextMenu_FindInHigherTable});
-            this.GridContextMenu.Name = "contextMenuStrip1";
-            this.GridContextMenu.Size = new System.Drawing.Size(190, 28);
-            // 
-            // GridContextMenu_FindInHigherTable
-            // 
-            this.GridContextMenu_FindInHigherTable.Name = "GridContextMenu_FindInHigherTable";
-            this.GridContextMenu_FindInHigherTable.Size = new System.Drawing.Size(189, 24);
-            this.GridContextMenu_FindInHigherTable.Text = "Set as main filter";
-            this.GridContextMenu_FindInHigherTable.Click += new System.EventHandler(this.GridContextMenu_FindInHigherTable_Click);
-            // 
-            // rbAdd
-            // 
-            this.rbAdd.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.rbAdd.AutoSize = true;
-            this.tableLayoutPanel.SetColumnSpan(this.rbAdd, 2);
-            this.rbAdd.Location = new System.Drawing.Point(925, 2);
-            this.rbAdd.Margin = new System.Windows.Forms.Padding(2);
-            this.rbAdd.Name = "rbAdd";
-            this.rbAdd.Size = new System.Drawing.Size(58, 24);
-            this.rbAdd.TabIndex = 119;
-            this.rbAdd.Text = "Add";
-            this.rbAdd.UseVisualStyleBackColor = true;
-            this.rbAdd.CheckedChanged += new System.EventHandler(this.rbAdd_CheckedChanged);
-            // 
-            // rbDelete
-            // 
-            this.rbDelete.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.rbDelete.AutoSize = true;
-            this.tableLayoutPanel.SetColumnSpan(this.rbDelete, 2);
-            this.rbDelete.Location = new System.Drawing.Point(817, 2);
-            this.rbDelete.Margin = new System.Windows.Forms.Padding(2);
-            this.rbDelete.Name = "rbDelete";
-            this.rbDelete.Size = new System.Drawing.Size(74, 24);
-            this.rbDelete.TabIndex = 120;
-            this.rbDelete.Text = "Delete";
-            this.rbDelete.UseVisualStyleBackColor = true;
-            this.rbDelete.CheckedChanged += new System.EventHandler(this.rbDelete_CheckedChanged);
+            this.cmbGridFilterFields_3.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbGridFilterFields_3.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterFields_3, 4);
+            this.cmbGridFilterFields_3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbGridFilterFields_3.ForeColor = System.Drawing.Color.Black;
+            this.cmbGridFilterFields_3.FormattingEnabled = true;
+            this.cmbGridFilterFields_3.Location = new System.Drawing.Point(157, 77);
+            this.cmbGridFilterFields_3.Name = "cmbGridFilterFields_3";
+            this.cmbGridFilterFields_3.Size = new System.Drawing.Size(194, 28);
+            this.cmbGridFilterFields_3.TabIndex = 154;
+            this.cmbGridFilterFields_3.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterFields_3.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterFields_SelectedIndexChanged);
             // 
             // rbEdit
             // 
@@ -805,294 +721,433 @@
             this.cmbMainFilter.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
             this.cmbMainFilter.SelectedIndexChanged += new System.EventHandler(this.cmbMainFilter_SelectedIndexChanged);
             // 
-            // txtColumnFilter_0
+            // rbDelete
             // 
-            this.txtColumnFilter_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel.SetColumnSpan(this.txtColumnFilter_0, 3);
-            this.txtColumnFilter_0.Location = new System.Drawing.Point(356, 42);
-            this.txtColumnFilter_0.Margin = new System.Windows.Forms.Padding(2);
-            this.txtColumnFilter_0.Name = "txtColumnFilter_0";
-            this.txtColumnFilter_0.PlaceholderText = "txtColumnFilter_0";
-            this.txtColumnFilter_0.Size = new System.Drawing.Size(146, 27);
-            this.txtColumnFilter_0.TabIndex = 130;
-            this.txtColumnFilter_0.WordWrap = false;
-            this.txtColumnFilter_0.TextChanged += new System.EventHandler(this.txtColumnFilter_TextChanged);
+            this.rbDelete.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.rbDelete.AutoSize = true;
+            this.tableLayoutPanel.SetColumnSpan(this.rbDelete, 2);
+            this.rbDelete.Location = new System.Drawing.Point(617, 2);
+            this.rbDelete.Margin = new System.Windows.Forms.Padding(2);
+            this.rbDelete.Name = "rbDelete";
+            this.rbDelete.Size = new System.Drawing.Size(74, 24);
+            this.rbDelete.TabIndex = 120;
+            this.rbDelete.Text = "Delete";
+            this.rbDelete.UseVisualStyleBackColor = true;
+            this.rbDelete.CheckedChanged += new System.EventHandler(this.rbDelete_CheckedChanged);
             // 
-            // cmbEditColumn
+            // rbAdd
             // 
-            this.cmbEditColumn.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel.SetColumnSpan(this.cmbEditColumn, 4);
-            this.cmbEditColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbEditColumn.Enabled = false;
-            this.cmbEditColumn.FormattingEnabled = true;
-            this.cmbEditColumn.Location = new System.Drawing.Point(607, 3);
-            this.cmbEditColumn.Name = "cmbEditColumn";
-            this.cmbEditColumn.Size = new System.Drawing.Size(194, 28);
-            this.cmbEditColumn.TabIndex = 126;
-            this.cmbEditColumn.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbEditColumn.SelectedIndexChanged += new System.EventHandler(this.cmbEditColumn_SelectedIndexChanged);
+            this.rbAdd.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.rbAdd.AutoSize = true;
+            this.tableLayoutPanel.SetColumnSpan(this.rbAdd, 2);
+            this.rbAdd.Location = new System.Drawing.Point(725, 2);
+            this.rbAdd.Margin = new System.Windows.Forms.Padding(2);
+            this.rbAdd.Name = "rbAdd";
+            this.rbAdd.Size = new System.Drawing.Size(58, 24);
+            this.rbAdd.TabIndex = 119;
+            this.rbAdd.Text = "Add";
+            this.rbAdd.UseVisualStyleBackColor = true;
+            this.rbAdd.CheckedChanged += new System.EventHandler(this.rbAdd_CheckedChanged);
             // 
-            // cmbColumnFilterFields_1
+            // btnDeleteAddMerge
             // 
-            this.cmbColumnFilterFields_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbColumnFilterFields_1.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbColumnFilterFields_1.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbColumnFilterFields_1.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbColumnFilterFields_1, 4);
-            this.cmbColumnFilterFields_1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbColumnFilterFields_1.ForeColor = System.Drawing.Color.Black;
-            this.cmbColumnFilterFields_1.FormattingEnabled = true;
-            this.cmbColumnFilterFields_1.Location = new System.Drawing.Point(507, 43);
-            this.cmbColumnFilterFields_1.Name = "cmbColumnFilterFields_1";
-            this.cmbColumnFilterFields_1.Size = new System.Drawing.Size(194, 28);
-            this.cmbColumnFilterFields_1.TabIndex = 131;
-            this.cmbColumnFilterFields_1.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbColumnFilterFields_1.SelectedIndexChanged += new System.EventHandler(this.cmbColumnFilterFields_SelectedIndexChanged);
+            this.btnDeleteAddMerge.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.btnDeleteAddMerge.AutoSize = true;
+            this.tableLayoutPanel.SetColumnSpan(this.btnDeleteAddMerge, 2);
+            this.btnDeleteAddMerge.ContextMenuStrip = this.GridContextMenu;
+            this.btnDeleteAddMerge.Enabled = false;
+            this.btnDeleteAddMerge.ForeColor = System.Drawing.Color.Black;
+            this.btnDeleteAddMerge.Location = new System.Drawing.Point(807, 3);
+            this.btnDeleteAddMerge.Name = "btnDeleteAddMerge";
+            this.btnDeleteAddMerge.Size = new System.Drawing.Size(94, 30);
+            this.btnDeleteAddMerge.TabIndex = 127;
+            this.btnDeleteAddMerge.Text = "Merge rows";
+            this.btnDeleteAddMerge.UseVisualStyleBackColor = true;
+            this.btnDeleteAddMerge.Click += new System.EventHandler(this.btnDeleteAddMerge_Click);
             // 
-            // txtColumnFilter_1
+            // GridContextMenu
             // 
-            this.txtColumnFilter_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel.SetColumnSpan(this.txtColumnFilter_1, 3);
-            this.txtColumnFilter_1.Location = new System.Drawing.Point(706, 42);
-            this.txtColumnFilter_1.Margin = new System.Windows.Forms.Padding(2);
-            this.txtColumnFilter_1.Name = "txtColumnFilter_1";
-            this.txtColumnFilter_1.PlaceholderText = "txtColumnFilter_1";
-            this.txtColumnFilter_1.Size = new System.Drawing.Size(146, 27);
-            this.txtColumnFilter_1.TabIndex = 132;
-            this.txtColumnFilter_1.WordWrap = false;
-            this.txtColumnFilter_1.TextChanged += new System.EventHandler(this.txtColumnFilter_TextChanged);
+            this.GridContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.GridContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.GridContextMenu_FindInHigherTable});
+            this.GridContextMenu.Name = "contextMenuStrip1";
+            this.GridContextMenu.Size = new System.Drawing.Size(190, 28);
             // 
-            // cmbColumnFilterFields_2
+            // GridContextMenu_FindInHigherTable
             // 
-            this.cmbColumnFilterFields_2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbColumnFilterFields_2.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbColumnFilterFields_2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbColumnFilterFields_2.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbColumnFilterFields_2, 4);
-            this.cmbColumnFilterFields_2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbColumnFilterFields_2.ForeColor = System.Drawing.Color.Black;
-            this.cmbColumnFilterFields_2.FormattingEnabled = true;
-            this.cmbColumnFilterFields_2.Location = new System.Drawing.Point(857, 43);
-            this.cmbColumnFilterFields_2.Name = "cmbColumnFilterFields_2";
-            this.cmbColumnFilterFields_2.Size = new System.Drawing.Size(194, 28);
-            this.cmbColumnFilterFields_2.TabIndex = 133;
-            this.cmbColumnFilterFields_2.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbColumnFilterFields_2.SelectedIndexChanged += new System.EventHandler(this.cmbColumnFilterFields_SelectedIndexChanged);
+            this.GridContextMenu_FindInHigherTable.Name = "GridContextMenu_FindInHigherTable";
+            this.GridContextMenu_FindInHigherTable.Size = new System.Drawing.Size(189, 24);
+            this.GridContextMenu_FindInHigherTable.Text = "Set as main filter";
+            this.GridContextMenu_FindInHigherTable.Click += new System.EventHandler(this.GridContextMenu_FindInHigherTable_Click);
             // 
-            // txtColumnFilter_2
+            // rbMerge
             // 
-            this.txtColumnFilter_2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel.SetColumnSpan(this.txtColumnFilter_2, 3);
-            this.txtColumnFilter_2.Location = new System.Drawing.Point(1056, 42);
-            this.txtColumnFilter_2.Margin = new System.Windows.Forms.Padding(2);
-            this.txtColumnFilter_2.Name = "txtColumnFilter_2";
-            this.txtColumnFilter_2.PlaceholderText = "txtColumnFilter_2";
-            this.txtColumnFilter_2.Size = new System.Drawing.Size(146, 27);
-            this.txtColumnFilter_2.TabIndex = 134;
-            this.txtColumnFilter_2.WordWrap = false;
-            this.txtColumnFilter_2.TextChanged += new System.EventHandler(this.txtColumnFilter_TextChanged);
-            // 
-            // lblGridFilter
-            // 
-            this.lblGridFilter.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel.SetColumnSpan(this.lblGridFilter, 3);
-            this.lblGridFilter.Location = new System.Drawing.Point(7, 43);
-            this.lblGridFilter.Margin = new System.Windows.Forms.Padding(3);
-            this.lblGridFilter.Name = "lblGridFilter";
-            this.lblGridFilter.Size = new System.Drawing.Size(144, 34);
-            this.lblGridFilter.TabIndex = 135;
-            this.lblGridFilter.Text = "lblGridFilter";
-            this.lblGridFilter.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // cmbComboFilter_2
-            // 
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilter_2, 3);
-            this.cmbComboFilter_2.FormattingEnabled = true;
-            this.cmbComboFilter_2.Location = new System.Drawing.Point(1057, 83);
-            this.cmbComboFilter_2.Name = "cmbComboFilter_2";
-            this.cmbComboFilter_2.Size = new System.Drawing.Size(144, 28);
-            this.cmbComboFilter_2.TabIndex = 145;
-            this.cmbComboFilter_2.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            // 
-            // cmbComboFilter_5
-            // 
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilter_5, 3);
-            this.cmbComboFilter_5.FormattingEnabled = true;
-            this.cmbComboFilter_5.Location = new System.Drawing.Point(1057, 123);
-            this.cmbComboFilter_5.Name = "cmbComboFilter_5";
-            this.cmbComboFilter_5.Size = new System.Drawing.Size(144, 28);
-            this.cmbComboFilter_5.TabIndex = 151;
-            this.cmbComboFilter_5.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            // 
-            // cmbComboFilterFields_2
-            // 
-            this.cmbComboFilterFields_2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbComboFilterFields_2.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbComboFilterFields_2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbComboFilterFields_2.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_2, 4);
-            this.cmbComboFilterFields_2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbComboFilterFields_2.ForeColor = System.Drawing.Color.Black;
-            this.cmbComboFilterFields_2.FormattingEnabled = true;
-            this.cmbComboFilterFields_2.Location = new System.Drawing.Point(857, 83);
-            this.cmbComboFilterFields_2.Name = "cmbComboFilterFields_2";
-            this.cmbComboFilterFields_2.Size = new System.Drawing.Size(194, 28);
-            this.cmbComboFilterFields_2.TabIndex = 139;
-            this.cmbComboFilterFields_2.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbComboFilterFields_2.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
-            // 
-            // cmbComboFilterFields_5
-            // 
-            this.cmbComboFilterFields_5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbComboFilterFields_5.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbComboFilterFields_5.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbComboFilterFields_5.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_5, 4);
-            this.cmbComboFilterFields_5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbComboFilterFields_5.ForeColor = System.Drawing.Color.Black;
-            this.cmbComboFilterFields_5.FormattingEnabled = true;
-            this.cmbComboFilterFields_5.Location = new System.Drawing.Point(857, 123);
-            this.cmbComboFilterFields_5.Name = "cmbComboFilterFields_5";
-            this.cmbComboFilterFields_5.Size = new System.Drawing.Size(194, 28);
-            this.cmbComboFilterFields_5.TabIndex = 148;
-            this.cmbComboFilterFields_5.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbComboFilterFields_5.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
-            // 
-            // cmbComboFilter_1
-            // 
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilter_1, 3);
-            this.cmbComboFilter_1.FormattingEnabled = true;
-            this.cmbComboFilter_1.Location = new System.Drawing.Point(707, 83);
-            this.cmbComboFilter_1.Name = "cmbComboFilter_1";
-            this.cmbComboFilter_1.Size = new System.Drawing.Size(144, 28);
-            this.cmbComboFilter_1.TabIndex = 152;
-            this.cmbComboFilter_1.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            // 
-            // cmbComboFilter_4
-            // 
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilter_4, 3);
-            this.cmbComboFilter_4.FormattingEnabled = true;
-            this.cmbComboFilter_4.Location = new System.Drawing.Point(707, 123);
-            this.cmbComboFilter_4.Name = "cmbComboFilter_4";
-            this.cmbComboFilter_4.Size = new System.Drawing.Size(144, 28);
-            this.cmbComboFilter_4.TabIndex = 150;
-            this.cmbComboFilter_4.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            // 
-            // cmbComboFilterFields_1
-            // 
-            this.cmbComboFilterFields_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbComboFilterFields_1.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbComboFilterFields_1.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbComboFilterFields_1.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_1, 4);
-            this.cmbComboFilterFields_1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbComboFilterFields_1.ForeColor = System.Drawing.Color.Black;
-            this.cmbComboFilterFields_1.FormattingEnabled = true;
-            this.cmbComboFilterFields_1.Location = new System.Drawing.Point(507, 83);
-            this.cmbComboFilterFields_1.Name = "cmbComboFilterFields_1";
-            this.cmbComboFilterFields_1.Size = new System.Drawing.Size(194, 28);
-            this.cmbComboFilterFields_1.TabIndex = 138;
-            this.cmbComboFilterFields_1.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbComboFilterFields_1.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
-            // 
-            // cmbComboFilterFields_4
-            // 
-            this.cmbComboFilterFields_4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbComboFilterFields_4.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbComboFilterFields_4.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbComboFilterFields_4.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_4, 4);
-            this.cmbComboFilterFields_4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbComboFilterFields_4.ForeColor = System.Drawing.Color.Black;
-            this.cmbComboFilterFields_4.FormattingEnabled = true;
-            this.cmbComboFilterFields_4.Location = new System.Drawing.Point(507, 123);
-            this.cmbComboFilterFields_4.Name = "cmbComboFilterFields_4";
-            this.cmbComboFilterFields_4.Size = new System.Drawing.Size(194, 28);
-            this.cmbComboFilterFields_4.TabIndex = 147;
-            this.cmbComboFilterFields_4.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbComboFilterFields_4.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
-            // 
-            // cmbComboFilter_0
-            // 
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilter_0, 3);
-            this.cmbComboFilter_0.FormattingEnabled = true;
-            this.cmbComboFilter_0.Location = new System.Drawing.Point(357, 83);
-            this.cmbComboFilter_0.Name = "cmbComboFilter_0";
-            this.cmbComboFilter_0.Size = new System.Drawing.Size(144, 28);
-            this.cmbComboFilter_0.TabIndex = 143;
-            this.cmbComboFilter_0.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            // 
-            // cmbComboFilter_3
-            // 
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilter_3, 3);
-            this.cmbComboFilter_3.FormattingEnabled = true;
-            this.cmbComboFilter_3.Location = new System.Drawing.Point(357, 123);
-            this.cmbComboFilter_3.Name = "cmbComboFilter_3";
-            this.cmbComboFilter_3.Size = new System.Drawing.Size(144, 28);
-            this.cmbComboFilter_3.TabIndex = 149;
-            this.cmbComboFilter_3.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            // 
-            // cmbComboFilterFields_0
-            // 
-            this.cmbComboFilterFields_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbComboFilterFields_0.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
-            this.cmbComboFilterFields_0.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
-            this.cmbComboFilterFields_0.BackColor = System.Drawing.Color.White;
-            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_0, 4);
-            this.cmbComboFilterFields_0.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbComboFilterFields_0.ForeColor = System.Drawing.Color.Black;
-            this.cmbComboFilterFields_0.FormattingEnabled = true;
-            this.cmbComboFilterFields_0.Location = new System.Drawing.Point(157, 83);
-            this.cmbComboFilterFields_0.Name = "cmbComboFilterFields_0";
-            this.cmbComboFilterFields_0.Size = new System.Drawing.Size(194, 28);
-            this.cmbComboFilterFields_0.TabIndex = 137;
-            this.cmbComboFilterFields_0.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
-            this.cmbComboFilterFields_0.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
+            this.rbMerge.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.rbMerge.AutoSize = true;
+            this.tableLayoutPanel.SetColumnSpan(this.rbMerge, 2);
+            this.rbMerge.Location = new System.Drawing.Point(917, 2);
+            this.rbMerge.Margin = new System.Windows.Forms.Padding(2);
+            this.rbMerge.Name = "rbMerge";
+            this.rbMerge.Size = new System.Drawing.Size(73, 24);
+            this.rbMerge.TabIndex = 121;
+            this.rbMerge.Text = "Merge";
+            this.rbMerge.UseVisualStyleBackColor = true;
+            this.rbMerge.CheckedChanged += new System.EventHandler(this.rbMerge_CheckedChanged);
             // 
             // cmbComboFilterFields_3
             // 
             this.cmbComboFilterFields_3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbComboFilterFields_3.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.Suggest;
             this.cmbComboFilterFields_3.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cmbComboFilterFields_3.BackColor = System.Drawing.Color.White;
             this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_3, 4);
             this.cmbComboFilterFields_3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbComboFilterFields_3.ForeColor = System.Drawing.Color.Black;
             this.cmbComboFilterFields_3.FormattingEnabled = true;
-            this.cmbComboFilterFields_3.Location = new System.Drawing.Point(157, 123);
+            this.cmbComboFilterFields_3.Location = new System.Drawing.Point(157, 145);
             this.cmbComboFilterFields_3.Name = "cmbComboFilterFields_3";
             this.cmbComboFilterFields_3.Size = new System.Drawing.Size(194, 28);
             this.cmbComboFilterFields_3.TabIndex = 146;
             this.cmbComboFilterFields_3.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
             this.cmbComboFilterFields_3.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
             // 
+            // cmbComboFilterFields_0
+            // 
+            this.cmbComboFilterFields_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbComboFilterFields_0.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbComboFilterFields_0.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_0, 4);
+            this.cmbComboFilterFields_0.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbComboFilterFields_0.ForeColor = System.Drawing.Color.Black;
+            this.cmbComboFilterFields_0.FormattingEnabled = true;
+            this.cmbComboFilterFields_0.Location = new System.Drawing.Point(157, 111);
+            this.cmbComboFilterFields_0.Name = "cmbComboFilterFields_0";
+            this.cmbComboFilterFields_0.Size = new System.Drawing.Size(194, 28);
+            this.cmbComboFilterFields_0.TabIndex = 137;
+            this.cmbComboFilterFields_0.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbComboFilterFields_0.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
+            // 
+            // cmbComboFilterValue_3
+            // 
+            this.cmbComboFilterValue_3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterValue_3, 3);
+            this.cmbComboFilterValue_3.FormattingEnabled = true;
+            this.cmbComboFilterValue_3.Location = new System.Drawing.Point(357, 145);
+            this.cmbComboFilterValue_3.Name = "cmbComboFilterValue_3";
+            this.cmbComboFilterValue_3.Size = new System.Drawing.Size(144, 28);
+            this.cmbComboFilterValue_3.TabIndex = 149;
+            this.cmbComboFilterValue_3.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            // 
+            // cmbComboFilterFields_4
+            // 
+            this.cmbComboFilterFields_4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbComboFilterFields_4.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbComboFilterFields_4.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_4, 4);
+            this.cmbComboFilterFields_4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbComboFilterFields_4.ForeColor = System.Drawing.Color.Black;
+            this.cmbComboFilterFields_4.FormattingEnabled = true;
+            this.cmbComboFilterFields_4.Location = new System.Drawing.Point(507, 145);
+            this.cmbComboFilterFields_4.Name = "cmbComboFilterFields_4";
+            this.cmbComboFilterFields_4.Size = new System.Drawing.Size(194, 28);
+            this.cmbComboFilterFields_4.TabIndex = 147;
+            this.cmbComboFilterFields_4.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbComboFilterFields_4.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
+            // 
+            // cmbComboFilterValue_4
+            // 
+            this.cmbComboFilterValue_4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterValue_4, 3);
+            this.cmbComboFilterValue_4.FormattingEnabled = true;
+            this.cmbComboFilterValue_4.Location = new System.Drawing.Point(707, 145);
+            this.cmbComboFilterValue_4.Name = "cmbComboFilterValue_4";
+            this.cmbComboFilterValue_4.Size = new System.Drawing.Size(144, 28);
+            this.cmbComboFilterValue_4.TabIndex = 150;
+            this.cmbComboFilterValue_4.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            // 
+            // cmbComboFilterFields_5
+            // 
+            this.cmbComboFilterFields_5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbComboFilterFields_5.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbComboFilterFields_5.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_5, 4);
+            this.cmbComboFilterFields_5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbComboFilterFields_5.ForeColor = System.Drawing.Color.Black;
+            this.cmbComboFilterFields_5.FormattingEnabled = true;
+            this.cmbComboFilterFields_5.Location = new System.Drawing.Point(857, 145);
+            this.cmbComboFilterFields_5.Name = "cmbComboFilterFields_5";
+            this.cmbComboFilterFields_5.Size = new System.Drawing.Size(194, 28);
+            this.cmbComboFilterFields_5.TabIndex = 148;
+            this.cmbComboFilterFields_5.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbComboFilterFields_5.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
+            // 
+            // cmbComboFilterValue_5
+            // 
+            this.cmbComboFilterValue_5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterValue_5, 3);
+            this.cmbComboFilterValue_5.FormattingEnabled = true;
+            this.cmbComboFilterValue_5.Location = new System.Drawing.Point(1057, 145);
+            this.cmbComboFilterValue_5.Name = "cmbComboFilterValue_5";
+            this.cmbComboFilterValue_5.Size = new System.Drawing.Size(144, 28);
+            this.cmbComboFilterValue_5.TabIndex = 151;
+            this.cmbComboFilterValue_5.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            // 
+            // cmbComboFilterValue_0
+            // 
+            this.cmbComboFilterValue_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterValue_0, 3);
+            this.cmbComboFilterValue_0.FormattingEnabled = true;
+            this.cmbComboFilterValue_0.Location = new System.Drawing.Point(357, 111);
+            this.cmbComboFilterValue_0.Name = "cmbComboFilterValue_0";
+            this.cmbComboFilterValue_0.Size = new System.Drawing.Size(144, 28);
+            this.cmbComboFilterValue_0.TabIndex = 143;
+            this.cmbComboFilterValue_0.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            // 
+            // cmbComboFilterFields_1
+            // 
+            this.cmbComboFilterFields_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbComboFilterFields_1.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbComboFilterFields_1.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_1, 4);
+            this.cmbComboFilterFields_1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbComboFilterFields_1.ForeColor = System.Drawing.Color.Black;
+            this.cmbComboFilterFields_1.FormattingEnabled = true;
+            this.cmbComboFilterFields_1.Location = new System.Drawing.Point(507, 111);
+            this.cmbComboFilterFields_1.Name = "cmbComboFilterFields_1";
+            this.cmbComboFilterFields_1.Size = new System.Drawing.Size(194, 28);
+            this.cmbComboFilterFields_1.TabIndex = 138;
+            this.cmbComboFilterFields_1.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbComboFilterFields_1.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
+            // 
+            // cmbComboFilterValue_1
+            // 
+            this.cmbComboFilterValue_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterValue_1, 3);
+            this.cmbComboFilterValue_1.FormattingEnabled = true;
+            this.cmbComboFilterValue_1.Location = new System.Drawing.Point(707, 111);
+            this.cmbComboFilterValue_1.Name = "cmbComboFilterValue_1";
+            this.cmbComboFilterValue_1.Size = new System.Drawing.Size(144, 28);
+            this.cmbComboFilterValue_1.TabIndex = 152;
+            this.cmbComboFilterValue_1.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            // 
+            // cmbComboFilterFields_2
+            // 
+            this.cmbComboFilterFields_2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbComboFilterFields_2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbComboFilterFields_2.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterFields_2, 4);
+            this.cmbComboFilterFields_2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbComboFilterFields_2.ForeColor = System.Drawing.Color.Black;
+            this.cmbComboFilterFields_2.FormattingEnabled = true;
+            this.cmbComboFilterFields_2.Location = new System.Drawing.Point(857, 111);
+            this.cmbComboFilterFields_2.Name = "cmbComboFilterFields_2";
+            this.cmbComboFilterFields_2.Size = new System.Drawing.Size(194, 28);
+            this.cmbComboFilterFields_2.TabIndex = 139;
+            this.cmbComboFilterFields_2.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbComboFilterFields_2.SelectedIndexChanged += new System.EventHandler(this.cmbComboFilterFields_SelectedIndexChanged);
+            // 
+            // cmbComboFilterValue_2
+            // 
+            this.cmbComboFilterValue_2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbComboFilterValue_2, 3);
+            this.cmbComboFilterValue_2.FormattingEnabled = true;
+            this.cmbComboFilterValue_2.Location = new System.Drawing.Point(1057, 111);
+            this.cmbComboFilterValue_2.Name = "cmbComboFilterValue_2";
+            this.cmbComboFilterValue_2.Size = new System.Drawing.Size(144, 28);
+            this.cmbComboFilterValue_2.TabIndex = 145;
+            this.cmbComboFilterValue_2.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            // 
             // lblComboFilter
             // 
-            this.lblComboFilter.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.lblComboFilter.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tableLayoutPanel.SetColumnSpan(this.lblComboFilter, 3);
-            this.lblComboFilter.Location = new System.Drawing.Point(7, 83);
+            this.lblComboFilter.Location = new System.Drawing.Point(7, 111);
             this.lblComboFilter.Margin = new System.Windows.Forms.Padding(3);
             this.lblComboFilter.Name = "lblComboFilter";
-            this.lblComboFilter.Size = new System.Drawing.Size(144, 34);
+            this.lblComboFilter.Size = new System.Drawing.Size(144, 28);
             this.lblComboFilter.TabIndex = 153;
             this.lblComboFilter.Text = "lblComboFilter";
             this.lblComboFilter.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // lblGridFilter
+            // 
+            this.lblGridFilter.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.lblGridFilter, 3);
+            this.lblGridFilter.Location = new System.Drawing.Point(7, 43);
+            this.lblGridFilter.Margin = new System.Windows.Forms.Padding(3);
+            this.lblGridFilter.Name = "lblGridFilter";
+            this.lblGridFilter.Size = new System.Drawing.Size(144, 28);
+            this.lblGridFilter.TabIndex = 135;
+            this.lblGridFilter.Text = "lblGridFilter";
+            this.lblGridFilter.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // cmbGridFilterFields_0
+            // 
+            this.cmbGridFilterFields_0.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbGridFilterFields_0.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbGridFilterFields_0.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterFields_0, 4);
+            this.cmbGridFilterFields_0.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbGridFilterFields_0.ForeColor = System.Drawing.Color.Black;
+            this.cmbGridFilterFields_0.FormattingEnabled = true;
+            this.cmbGridFilterFields_0.Location = new System.Drawing.Point(157, 43);
+            this.cmbGridFilterFields_0.Name = "cmbGridFilterFields_0";
+            this.cmbGridFilterFields_0.Size = new System.Drawing.Size(194, 28);
+            this.cmbGridFilterFields_0.TabIndex = 129;
+            this.cmbGridFilterFields_0.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterFields_0.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterFields_SelectedIndexChanged);
+            // 
+            // cmbGridFilterFields_1
+            // 
+            this.cmbGridFilterFields_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbGridFilterFields_1.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbGridFilterFields_1.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterFields_1, 4);
+            this.cmbGridFilterFields_1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbGridFilterFields_1.ForeColor = System.Drawing.Color.Black;
+            this.cmbGridFilterFields_1.FormattingEnabled = true;
+            this.cmbGridFilterFields_1.Location = new System.Drawing.Point(507, 43);
+            this.cmbGridFilterFields_1.Name = "cmbGridFilterFields_1";
+            this.cmbGridFilterFields_1.Size = new System.Drawing.Size(194, 28);
+            this.cmbGridFilterFields_1.TabIndex = 131;
+            this.cmbGridFilterFields_1.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterFields_1.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterFields_SelectedIndexChanged);
+            // 
+            // cmbGridFilterValue_3
+            // 
+            this.cmbGridFilterValue_3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterValue_3, 3);
+            this.cmbGridFilterValue_3.FormattingEnabled = true;
+            this.cmbGridFilterValue_3.Location = new System.Drawing.Point(357, 77);
+            this.cmbGridFilterValue_3.Name = "cmbGridFilterValue_3";
+            this.cmbGridFilterValue_3.Size = new System.Drawing.Size(144, 28);
+            this.cmbGridFilterValue_3.TabIndex = 156;
+            this.cmbGridFilterValue_3.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterValue_3.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterValue_SelectedIndexChanged);
+            this.cmbGridFilterValue_3.TextChanged += new System.EventHandler(this.cmbGridFilterValue_TextChanged);
+            // 
+            // cmbGridFilterFields_4
+            // 
+            this.cmbGridFilterFields_4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbGridFilterFields_4.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbGridFilterFields_4.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterFields_4, 4);
+            this.cmbGridFilterFields_4.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbGridFilterFields_4.ForeColor = System.Drawing.Color.Black;
+            this.cmbGridFilterFields_4.FormattingEnabled = true;
+            this.cmbGridFilterFields_4.Location = new System.Drawing.Point(507, 77);
+            this.cmbGridFilterFields_4.Name = "cmbGridFilterFields_4";
+            this.cmbGridFilterFields_4.Size = new System.Drawing.Size(194, 28);
+            this.cmbGridFilterFields_4.TabIndex = 158;
+            this.cmbGridFilterFields_4.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterFields_4.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterFields_SelectedIndexChanged);
+            // 
+            // cmbGridFilterValue_4
+            // 
+            this.cmbGridFilterValue_4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterValue_4, 3);
+            this.cmbGridFilterValue_4.FormattingEnabled = true;
+            this.cmbGridFilterValue_4.Location = new System.Drawing.Point(707, 77);
+            this.cmbGridFilterValue_4.Name = "cmbGridFilterValue_4";
+            this.cmbGridFilterValue_4.Size = new System.Drawing.Size(144, 28);
+            this.cmbGridFilterValue_4.TabIndex = 157;
+            this.cmbGridFilterValue_4.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterValue_4.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterValue_SelectedIndexChanged);
+            this.cmbGridFilterValue_4.TextChanged += new System.EventHandler(this.cmbGridFilterValue_TextChanged);
+            // 
+            // cmbGridFilterFields_5
+            // 
+            this.cmbGridFilterFields_5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbGridFilterFields_5.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbGridFilterFields_5.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterFields_5, 4);
+            this.cmbGridFilterFields_5.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbGridFilterFields_5.ForeColor = System.Drawing.Color.Black;
+            this.cmbGridFilterFields_5.FormattingEnabled = true;
+            this.cmbGridFilterFields_5.Location = new System.Drawing.Point(857, 77);
+            this.cmbGridFilterFields_5.Name = "cmbGridFilterFields_5";
+            this.cmbGridFilterFields_5.Size = new System.Drawing.Size(194, 28);
+            this.cmbGridFilterFields_5.TabIndex = 159;
+            this.cmbGridFilterFields_5.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterFields_5.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterFields_SelectedIndexChanged);
+            // 
+            // cmbGridFilterValue_1
+            // 
+            this.cmbGridFilterValue_1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterValue_1, 3);
+            this.cmbGridFilterValue_1.FormattingEnabled = true;
+            this.cmbGridFilterValue_1.Location = new System.Drawing.Point(707, 43);
+            this.cmbGridFilterValue_1.Name = "cmbGridFilterValue_1";
+            this.cmbGridFilterValue_1.Size = new System.Drawing.Size(144, 28);
+            this.cmbGridFilterValue_1.TabIndex = 155;
+            this.cmbGridFilterValue_1.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterValue_1.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterValue_SelectedIndexChanged);
+            this.cmbGridFilterValue_1.TextChanged += new System.EventHandler(this.cmbGridFilterValue_TextChanged);
+            // 
+            // cmbGridFilterValue_5
+            // 
+            this.cmbGridFilterValue_5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterValue_5, 3);
+            this.cmbGridFilterValue_5.FormattingEnabled = true;
+            this.cmbGridFilterValue_5.Location = new System.Drawing.Point(1057, 77);
+            this.cmbGridFilterValue_5.Name = "cmbGridFilterValue_5";
+            this.cmbGridFilterValue_5.Size = new System.Drawing.Size(144, 28);
+            this.cmbGridFilterValue_5.TabIndex = 162;
+            this.cmbGridFilterValue_5.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterValue_5.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterValue_SelectedIndexChanged);
+            this.cmbGridFilterValue_5.TextChanged += new System.EventHandler(this.cmbGridFilterValue_TextChanged);
+            // 
+            // cmbGridFilterValue_2
+            // 
+            this.cmbGridFilterValue_2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterValue_2, 3);
+            this.cmbGridFilterValue_2.FormattingEnabled = true;
+            this.cmbGridFilterValue_2.Location = new System.Drawing.Point(1057, 43);
+            this.cmbGridFilterValue_2.Name = "cmbGridFilterValue_2";
+            this.cmbGridFilterValue_2.Size = new System.Drawing.Size(144, 28);
+            this.cmbGridFilterValue_2.TabIndex = 163;
+            this.cmbGridFilterValue_2.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterValue_2.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterValue_SelectedIndexChanged);
+            this.cmbGridFilterValue_2.TextChanged += new System.EventHandler(this.cmbGridFilterValue_TextChanged);
+            // 
+            // cmbGridFilterFields_2
+            // 
+            this.cmbGridFilterFields_2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbGridFilterFields_2.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
+            this.cmbGridFilterFields_2.BackColor = System.Drawing.Color.White;
+            this.tableLayoutPanel.SetColumnSpan(this.cmbGridFilterFields_2, 4);
+            this.cmbGridFilterFields_2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbGridFilterFields_2.ForeColor = System.Drawing.Color.Black;
+            this.cmbGridFilterFields_2.FormattingEnabled = true;
+            this.cmbGridFilterFields_2.Location = new System.Drawing.Point(857, 43);
+            this.cmbGridFilterFields_2.Name = "cmbGridFilterFields_2";
+            this.cmbGridFilterFields_2.Size = new System.Drawing.Size(194, 28);
+            this.cmbGridFilterFields_2.TabIndex = 133;
+            this.cmbGridFilterFields_2.DropDown += new System.EventHandler(this.AdjustWidthComboBox_DropDown);
+            this.cmbGridFilterFields_2.SelectedIndexChanged += new System.EventHandler(this.cmbGridFilterFields_SelectedIndexChanged);
             // 
             // txtMessages
             // 
@@ -1234,36 +1289,39 @@
         private RadioButton rbView;
         private RadioButton rbDelete;
         private RadioButton rbMerge;
-        private ComboBox comboBox1;
         private TextBox txtMessages;
         private ToolStripTextBox txtRecordsPerPage;
-        private ComboBox comboBox2;
-        private ComboBox cmbEditColumn;
         public ToolStripMenuItem mnuToolDuplicateDisplayKeys;
         public ToolStripMenuItem mnuFindID;
         public ToolStripMenuItem mnuUpdateDatabase;
         private Button btnDeleteAddMerge;
         private ToolStripMenuItem mnuDatabaseInfo;
-        private ComboBox cmbColumnFilterFields_0;
-        private TextBox txtColumnFilter_0;
+        private ComboBox cmbGridFilterFields_0;
         private ToolStripMenuItem contextMenu_ShowAllFilters;
-        private ComboBox cmbColumnFilterFields_1;
-        private TextBox txtColumnFilter_1;
-        private ComboBox cmbColumnFilterFields_2;
-        private TextBox txtColumnFilter_2;
+        private ComboBox cmbGridFilterFields_1;
+        private ComboBox cmbGridFilterFields_2;
         private Label lblGridFilter;
         private ComboBox cmbComboFilterFields_0;
         private ComboBox cmbComboFilterFields_1;
         private ComboBox cmbComboFilterFields_2;
-        private ComboBox cmbComboFilter_0;
-        private ComboBox cmbComboFilter_2;
+        private ComboBox cmbComboFilterValue_0;
+        private ComboBox cmbComboFilterValue_2;
         private ComboBox cmbComboFilterFields_3;
         private ComboBox cmbComboFilterFields_4;
         private ComboBox cmbComboFilterFields_5;
-        private ComboBox cmbComboFilter_3;
-        private ComboBox cmbComboFilter_4;
-        private ComboBox cmbComboFilter_5;
-        private ComboBox cmbComboFilter_1;
+        private ComboBox cmbComboFilterValue_3;
+        private ComboBox cmbComboFilterValue_4;
+        private ComboBox cmbComboFilterValue_5;
+        private ComboBox cmbComboFilterValue_1;
         private Label lblComboFilter;
+        private ComboBox cmbGridFilterFields_3;
+        private ComboBox cmbGridFilterValue_0;
+        private ComboBox cmbGridFilterValue_3;
+        private ComboBox cmbGridFilterFields_4;
+        private ComboBox cmbGridFilterValue_4;
+        private ComboBox cmbGridFilterFields_5;
+        private ComboBox cmbGridFilterValue_1;
+        private ComboBox cmbGridFilterValue_5;
+        private ComboBox cmbGridFilterValue_2;
     }
 }

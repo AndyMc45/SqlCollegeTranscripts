@@ -96,35 +96,10 @@ namespace SqlCollegeTranscripts
 
     public class FkComboBoxEditingControl : DataGridViewComboBoxEditingControl
     {
-        //public override object GetEditingControlFormattedValue(DataGridViewDataErrorContexts context)
-        //{
-        //    return this.SelectedValue;
-        //}
         public override void ApplyCellStyleToEditingControl(DataGridViewCellStyle dataGridViewCellStyle)
         {
             this.BackColor = Color.Aqua;
         }
-
-
-        //public override object EditingControlFormattedValue
-        //{
-        //    get
-        //    {
-        //        return GetEditingControlFormattedValue(DataGridViewDataErrorContexts.Formatting);
-        //    }
-        //    set
-        //    {
-        //        this.SelectedValue.ToString();
-        //        //if (value is string valueStr)
-        //        //{
-        //        //    Text = valueStr;
-        //        //    //if (string.Compare(valueStr, Text, true, CultureInfo.CurrentCulture) != 0)
-        //        //    //{
-        //        //    //    SelectedIndex = -1;
-        //        //    //}
-        //        //}
-        //    }
-        //}
 
 
     }

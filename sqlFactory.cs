@@ -175,50 +175,41 @@ namespace SqlCollegeTranscripts
             List<string> WhereStrList = new List<string>();
             foreach (where ws in myWheres)
             {
-                // Get where condition
                 string condition = "";
-                switch (ws.fl.dbType)
-                {
-                    case DbType.Int64:
-                    case DbType.Int32:
-                    case DbType.Int16:
-                    case DbType.Decimal:
-                    case DbType.Byte:
-                    case DbType.Double:
-                    case DbType.Single:
-                    case DbType.Binary:
-                        condition = dataHelper.QualifiedFieldName(ws.fl) + " = " + ws.whereValue;
-                        break;
-                    case DbType.Date:
-                    case DbType.DateTimeOffset:
-                    case DbType.DateTime:
-                    case DbType.DateTime2:
-                    case DbType.Time:
-                        condition = dataHelper.QualifiedFieldName(ws.fl) + "= #" + ws.whereValue + "#";
-                        break;
-                    case DbType.String:
-                    case DbType.AnsiString:
-                    case DbType.StringFixedLength:
-                    case DbType.AnsiStringFixedLength:
-                        if(strict)
-                        {
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + " '" + ws.whereValue + "'";  //Exact string
-                        }
-                        else
-                        { 
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + " Like '" + ws.whereValue + "%'";  //Same starting string
-                        }
-                        break;
-                    case DbType.Boolean:
-                        if (ws.whereValue.ToLower() == "true")
-                        {
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.trueString + "'";
-                        }
-                        else
-                        {
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.falseString + "'";
-                        }
-                        break;
+                if (dataHelper.TryParseToDbType(ws.whereValue,ws.fl.dbType))
+                { 
+                    DbTypeType dbTypeType = dataHelper.GetDbTypeType(ws.fl.dbType);
+                    // Get where condition
+                    switch (dbTypeType)
+                    {
+                        case DbTypeType.isInteger:
+                        case DbTypeType.isDecimal:
+                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = " + ws.whereValue;
+                            break;
+                        case DbTypeType.isDateTime:
+                            condition = dataHelper.QualifiedFieldName(ws.fl) + "= #" + ws.whereValue + "#";
+                            break;
+                        case DbTypeType.isString:
+                            if (strict)
+                            {
+                                condition = dataHelper.QualifiedFieldName(ws.fl) + " '" + ws.whereValue + "'";  //Exact string
+                            }
+                            else
+                            { 
+                                condition = dataHelper.QualifiedFieldName(ws.fl) + " Like '" + ws.whereValue + "%'";  //Same starting string
+                            }
+                            break;
+                        case DbTypeType.isBoolean:
+                            if (ws.whereValue.ToLower() == "true")
+                            {
+                                condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.trueString + "'";
+                            }
+                            else
+                            {
+                                condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.falseString + "'";
+                            }
+                            break;
+                    }
                 }
                 if (condition != "")
                 {
@@ -288,7 +279,7 @@ namespace SqlCollegeTranscripts
                 }
 
                 // if Foreign Key
-                else if (dataHelper.fieldIsForeignKey(drField))  // Inner join
+                else if (dataHelper.isForeignKeyField(drField))  // Inner join
                 {
                     field RefTableField = dataHelper.getForeignKeyRefField(drField);
                     string table2 = RefTableField.table;
@@ -331,7 +322,7 @@ namespace SqlCollegeTranscripts
                             // Add the display keys of the lower tables for all FK in myTable
                             callInnerJoins(table2, drField);  // field1 will remain even for grandson tables
                         }
-                        else if (dataHelper.isDisplayKey(drField.table, drField.fieldName))
+                        else if (dataHelper.isDisplayKey(drField))
                         {
                             // For currentTable other than myTable, only add the lower display keys
                             // if this FK is a display key (i.e. such as in "marraige table with only person 1 and person2 FK's
@@ -344,12 +335,12 @@ namespace SqlCollegeTranscripts
                     if (currentTable == myTable)  // In My Table
                     {
                         myFields.Add(drField);
-                        if (dataHelper.isDisplayKey(currentTable, drField.fieldName))
+                        if (dataHelper.isDisplayKey(drField))
                         {
                             PrimaryKeyDisplayFields.Add(drField);  // Used in returnComboSql
                         }
                     }
-                    else if (dataHelper.isDisplayKey(currentTable, drField.fieldName))  // looping through a son of myTable
+                    else if (dataHelper.isDisplayKey(drField))  // looping through a son of myTable
                     {
                         myFields.Add(drField);
                         //Add fi to the DisplayFieldsDictionary

@@ -9,16 +9,22 @@ namespace SqlCollegeTranscripts
 {
     internal static class MsSql
     {
+        // Properties
         internal static string databaseType = "MsSql";
         internal static string trueString = "True";
         internal static string falseString = "False";
+        // Two connections
         internal static SqlConnection cn { get; set; }
         internal static SqlConnection noDatabaseConnection { get; set; }
+        // Three sql dataAdapters
         internal static SqlDataAdapter currentDA { get; set; }
-        internal static SqlDataAdapter extraDA { get; set; }  // Might update, delete so can not reuse until grid closed
+        // I update extraDT when merging; O.K. because same event loads and updates it.
+        // Other functions can change extraDT, so don't update in later events
+        internal static SqlDataAdapter extraDA { get; set; } 
+        // Used for all datatables that don't have own DataAdaptor - see "GetDataAdaptor" below
         internal static SqlDataAdapter readOnlyDA { get; set; }  // No update of table and so no need to keep adaptar, etc.
 
-
+        // Methods
         private static SqlDataAdapter GetDataAdaptor(DataTable dataTable)
         {
             if(dataTable == dataHelper.currentDT)
@@ -147,6 +153,7 @@ namespace SqlCollegeTranscripts
                 cn.Open();
             }
         }
+        
         internal static void openNoDatabaseConnection(string connectionString)
         {
             if (noDatabaseConnection == null)   // may be false if using frmConnection

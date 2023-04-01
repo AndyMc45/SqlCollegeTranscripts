@@ -23,6 +23,12 @@ namespace SqlCollegeTranscripts
         }
         public field ValueMember { get { return this; }}  //Field itself
         public string DisplayMember { get; set; }  // Used to display where in combo
+
+        public bool SameFieldAs(field fl)
+        {   
+            if(fl == null) { return false; }
+            if (this.fieldName == fl.fieldName && this.table == fl.table) { return true; } else { return false; }  
+        }
     }
 
     public class where
@@ -91,7 +97,9 @@ namespace SqlCollegeTranscripts
         isString,
         isDecimal,
         isInteger,
-        isDateTime
+        isDateTime,
+        isBoolean,
+        isBinary
     }
 
 
@@ -108,6 +116,7 @@ namespace SqlCollegeTranscripts
         public static DataTable indexesDT { get; set; }
         public static DataTable indexColumnsDT { get; set; }
         public static DataTable extraDT { get; set; }
+        public static DataTable editingControlDT { get; set; }
 
         internal static void clearDataTables()
         {
@@ -128,6 +137,7 @@ namespace SqlCollegeTranscripts
             indexesDT = new DataTable("indexesDT");
             indexColumnsDT = new DataTable("indexColumnsDT");
             extraDT = new DataTable("extraDT");
+            editingControlDT = new DataTable("editingControlDT");
         }
 
         internal static string QualifiedFieldName(field fld)
@@ -199,33 +209,45 @@ namespace SqlCollegeTranscripts
         {
             switch (dbType)
             {
+                case DbType.Boolean:
+                    return DbTypeType.isBoolean;
                 case DbType.Int16:
                 case DbType.Int32:
                 case DbType.Int64:
                 case DbType.Byte:
+                case DbType.SByte:   // -127 to 127 - signed byte
                     return DbTypeType.isInteger;
                 case DbType.Decimal:
                 case DbType.Double:
                 case DbType.Single:
                     return DbTypeType.isDecimal;
+                case DbType.Date:
+                case DbType.DateTimeOffset:
                 case DbType.DateTime:
                 case DbType.DateTime2:
-                case DbType.Date:
                 case DbType.Time:
                     return DbTypeType.isDateTime;
+                case DbType.Binary:    // Not handled in program
+                    return DbTypeType.isBinary;
+                case DbType.String:
+                case DbType.AnsiString:
+                case DbType.StringFixedLength:
+                case DbType.AnsiStringFixedLength:
+                    return DbTypeType.isString;
             }
-            return DbTypeType.isString;  // Not checking anything else
+            return DbTypeType.isString;  // Not checking anything else; just a guess
         }
 
-        internal static bool TryParseToDbType(string str, DbType dbType, Form form, out string message)
+        internal static string errMsg = String.Empty;
+        internal static string errMsgParameter1 = String.Empty;
+        internal static string errMsgParameter2 = String.Empty;
+
+        internal static bool TryParseToDbType(string str, DbType dbType)
         {
-            message = String.Empty;
-            switch(dbType)
+            DbTypeType dbTypeType = GetDbTypeType(dbType);
+            switch(dbTypeType)
             {
-                case DbType.Int16:
-                case DbType.Int32:
-                case DbType.Int64:
-                case DbType.Byte:
+                case DbTypeType.isInteger:
                     int i;
                     if (int.TryParse(str, out i))
                     {
@@ -233,12 +255,12 @@ namespace SqlCollegeTranscripts
                     }
                     else
                     {
-                        message = String.Format(MultiLingual.tr("Unable to parse '{0}' as {1}.", form),str,"integer");
+                        errMsg = "Unable to parse '{0}' as {1}.";
+                        errMsgParameter1 = str;
+                        errMsgParameter2 = "integer";
                         return false;
                     }
-                case DbType.Decimal: 
-                case DbType.Double:
-                case DbType.Single:
+                case DbTypeType.isDecimal: 
                     Decimal dec;
                     if(Decimal.TryParse(str, out dec))
                     {
@@ -246,13 +268,12 @@ namespace SqlCollegeTranscripts
                     }
                     else
                     {
-                        message = String.Format(MultiLingual.tr("Unable to parse {0} as {1}.", form), str, "decimal");
+                        errMsg = "Unable to parse '{0}' as {1}.";
+                        errMsgParameter1 = str;
+                        errMsgParameter2 = "decimal";
                         return false;
                     }
-                case DbType.DateTime:
-                case DbType.DateTime2:
-                case DbType.Date:
-                case DbType.Time:
+                case DbTypeType.isDateTime:
                     DateTime dt;
                     if (DateTime.TryParse(str, out dt))
                     {
@@ -260,14 +281,28 @@ namespace SqlCollegeTranscripts
                     }
                     else
                     {
-                        message = String.Format(MultiLingual.tr("Unable to parse {0} as {1}.", form), str, "Date / Time");
+                        errMsg = "Unable to parse '{0}' as {1}.";
+                        errMsgParameter1 = str;
+                        errMsgParameter2 = "Date / Time";
                         return false;
                     }
+                case DbTypeType.isBoolean:
+                    Boolean tf;
+                    if (Boolean.TryParse(str, out tf))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        errMsg = "Unable to parse '{0}' as {1}.";
+                        errMsgParameter1 = str;
+                        errMsgParameter2 = "Boolean";
+                        return false;
+                    }
+
             }
-            return true;  // Not checking anything else
+            return true;  // Not checking anything else - assuming it will be a string
         }
-
-
 
         #region  Get values from FieldsDT DataRow (&& overloads)
 
@@ -287,11 +322,10 @@ namespace SqlCollegeTranscripts
             return Convert.ToBoolean(dr[returnField]);
         }
 
-        internal static bool isDisplayKey(string tableName, string columnName)
+        internal static bool isDisplayKey(field fi)
         {
-            return dataHelper.getBoolValueFieldsDT(tableName, columnName, "is_DK");
+            return dataHelper.getBoolValueFieldsDT(fi.table, fi.fieldName, "is_DK");
         }
-
 
         // Begin overloads  -- Gets DataRow and then use above methods
 
@@ -348,15 +382,15 @@ namespace SqlCollegeTranscripts
         {
             return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_PK");
         }
-        internal static bool fieldIsForeignKey(field columnField)
+        internal static bool isForeignKeyField(field columnField)
         {
             return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_FK");
         }
 
         internal static field getForeignKeyRefField(DataRow dr)
         {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
-            string FkRefTable = getStringValueFromFieldsDT(dr, "FkRefTable");
-            string FkRefCol = getStringValueFromFieldsDT(dr, "FkRefCol");
+            string FkRefTable = getStringValueFromFieldsDT(dr, "RefTable");
+            string FkRefCol = getStringValueFromFieldsDT(dr, "RefPkColumn");
             return getFieldFromTableAndColumnName(FkRefTable,FkRefCol);
         }
   
