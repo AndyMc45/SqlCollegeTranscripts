@@ -22,6 +22,7 @@ namespace SqlCollegeTranscripts
 
         public string formCaption;
         public string returnString = string.Empty;
+        public int returnIndex = -1;
 
         public frmListItems() : base()
         {
@@ -74,9 +75,12 @@ namespace SqlCollegeTranscripts
             this.Close();
         }
 
-        private void lstDatabaseList_SelectedIndexChanged(object sender, EventArgs e)
+        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            if (listBox1.SelectedIndex > -1)
+            { 
+                returnIndex = listBox1.SelectedIndex;
+            }
         }
 
     }

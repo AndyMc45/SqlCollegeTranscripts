@@ -10,7 +10,7 @@ namespace SqlCollegeTranscripts
     {
         internal FormOptions()
         {
-            debugging = false;
+            debugging = true;
             runTimer = false;
             updating = false;
             pageSize = 0;
@@ -23,10 +23,10 @@ namespace SqlCollegeTranscripts
         internal string logFileName { get; set; }
 
         internal FileStream? ts;
-        internal Color[] ColorArray = new Color[] { Color.LightCyan, Color.LavenderBlush, Color.SeaShell, Color.LightGreen, Color.AliceBlue, Color.LightGray, Color.LightSalmon, Color.Azure };
-        internal Color[] DKColorArray = new Color[] { Color.GreenYellow, Color.LightGreen, Color.PaleGreen, Color.Chartreuse, Color.GreenYellow, Color.LightGreen, Color.PaleGreen, Color.Chartreuse };
+        internal Color[] nonDkColorArray = new Color[] { Color.LightCyan, Color.LavenderBlush, Color.SeaShell, Color.AliceBlue, Color.LightGray, Color.LightSalmon, Color.Azure, Color.LightCyan };
+        internal Color[] DkColorArray = new Color[] { Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow, Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow};
+        internal Color DefaultColumnColor = Color.Yellow;
 
-        internal Color DisplayKeyColor = Color.MediumSpringGreen;
     }
 
     internal class ConnectionOptions
@@ -50,11 +50,13 @@ namespace SqlCollegeTranscripts
             fixingDatabase = false;
             strFixDatabaseWhereCondition = string.Empty;
             FkFieldInEditingControl = null;
+            tableHasForeignKeys = false;
         }
         internal bool fixingDatabase { get; set; }
         internal string strFixDatabaseWhereCondition { get; set; }
         internal bool updating { get; set; }
         internal field? FkFieldInEditingControl { get; set; }
+        internal bool tableHasForeignKeys { get; set; } 
     }
 
 }

@@ -11,20 +11,56 @@ namespace SqlCollegeTranscripts
         public string fieldName { get; set; }
         public string table { get; set; }
         public DbType dbType { get; set; }
-        public int size { get; set; }   
+        public int size { get; set; }
 
-        public field(string table, string fieldName, DbType dbType, int size)
+        public field(string table, string fieldName, DbType dbType, int size, bool psuedoField, bool shortDisplayName)
         {
+            // Only call this constructor with pseudoFields = true;
             this.table = table;
             this.fieldName = fieldName;
             this.dbType = dbType;
             this.size = size;
-            this.DisplayMember = fieldName;
+            if (psuedoField)
+            {
+                this.DisplayMember = "PsuedoField";
+            }
+            else if (shortDisplayName)
+            {
+                this.DisplayMember = fieldName;
+            }
+            else
+            {
+                if (dataHelper.isTablePrimaryKeyField(this))
+                {
+                    this.DisplayMember = "Table: " + table;
+                }
+                else if (dataHelper.isForeignKeyField(this))
+                {
+                    string refTable = dataHelper.getForeignKeyRefField(this).table; // Danger of inf. loop, but O.K.
+                    this.DisplayMember = "Table: " + refTable;
+                }
+                else
+                {
+                    this.DisplayMember = "Col: " + fieldName;
+                }
+            }
         }
-        public field ValueMember { get { return this; }}  //Field itself
+
+        public field(string table, string fieldName, DbType dbType, int size):
+            this(table,fieldName,dbType, size, false, false)
+        {
+        }
+
+        public field(string table, string fieldName, DbType dbType, int size, bool psuedoField) :
+            this(table, fieldName, dbType, size, psuedoField, false)
+        {
+        }
+
+
+        public field ValueMember { get { return this; }}  //Field itself - ValueMember used when binding Combos to fields
         public string DisplayMember { get; set; }  // Used to display where in combo
 
-        public bool SameFieldAs(field fl)
+        public bool isSameFieldAs(field fl)
         {   
             if(fl == null) { return false; }
             if (this.fieldName == fl.fieldName && this.table == fl.table) { return true; } else { return false; }  
@@ -46,7 +82,17 @@ namespace SqlCollegeTranscripts
   
         public field fl { get; set; }
         public string whereValue { get; set; }
-        public string displayValue { get; set; }  // Used to display where in combo
+
+        public string DisplayMember { get; set; }  // Used to display where in combo
+
+        public where ValueMember { get { return this; } }
+
+        public bool isSameWhereAs(where wh)
+        {
+            if (wh == null) { return false; }
+            if (this.fl.isSameFieldAs(wh.fl) && this.whereValue == wh.whereValue) 
+            { return true; } else { return false; }
+        }
     }
 
     internal class innerJoin
@@ -304,6 +350,27 @@ namespace SqlCollegeTranscripts
             return true;  // Not checking anything else - assuming it will be a string
         }
 
+        internal static where GetWhereFromPrimaryKey(string table, string PK)
+        {
+            field pkField = getTablePrimaryKeyField(table);
+            where newWhere = new where(pkField, PK);
+            // Get display name 
+            sqlFactory sf = new sqlFactory(table, 0, 0);
+            sf.myWheres.Add(newWhere);
+            string strSql = sf.returnComboSql(pkField);
+            dataHelper.extraDT = new DataTable();
+            MsSql.FillDataTable(dataHelper.extraDT, strSql);
+            string displayMember = "Missing DK";
+            if (extraDT.Rows.Count > 0)
+            {
+                int colIndex = extraDT.Columns["DisplayMember"].Ordinal;
+                displayMember = extraDT.Rows[0][colIndex].ToString();
+            }
+            displayMember = table + ": " + displayMember;
+            newWhere.DisplayMember = displayMember;
+            return newWhere;
+        }
+
         #region  Get values from FieldsDT DataRow (&& overloads)
 
         internal static string getStringValueFromFieldsDT(DataRow dr, string fieldToReturn)
@@ -447,31 +514,31 @@ namespace SqlCollegeTranscripts
             }
 
             //Do DisplayKeyDictionary
-            Dictionary<string, List<field>> DisplayFieldDict = new Dictionary<string, List<field>>();
-            string lastTableName = string.Empty;
-            foreach (DataRow dr in fieldsDT.Rows)
-            {
-                field rowField = getFieldFromFieldsDT(dr);
-                if (rowField.table != lastTableName)  // To save time, if equal, use the last DisplayFieldDict
-                {
-                    sqlFactory tempSql = new sqlFactory(rowField.table, 1, 200);
-                    DisplayFieldDict = tempSql.DisplayFieldsDictionary;
-                }
-                // Foreign key
-                if (DisplayFieldDict.ContainsKey(rowField.fieldName))
-                {
-                    // DisplayFields
-                    List<field> fieldList = DisplayFieldDict[rowField.fieldName];
-                    List<string> fieldNameList = new List<string>();
-                    foreach (field f in fieldList)   // Could be done with linq
-                    {
-                        fieldNameList.Add(f.fieldName);
-                    }
-                    string displayFields = String.Join(",", fieldNameList);
-                    dr[dr.Table.Columns.IndexOf("DisplayFields")] = displayFields;
-                }
-                lastTableName = rowField.table;  // For next time around
-            }
+            //Dictionary<string, List<field>> DisplayFieldDict = new Dictionary<string, List<field>>();
+            //string lastTableName = string.Empty;
+            //foreach (DataRow dr in fieldsDT.Rows)
+            //{
+            //    field rowField = getFieldFromFieldsDT(dr);
+            //    if (rowField.table != lastTableName)  // To save time, if equal, use the last DisplayFieldDict
+            //    {
+            //        sqlFactory tempSql = new sqlFactory(rowField.table, 1, 200);
+            //        DisplayFieldDict = tempSql.DisplayFields_Ostensive;
+            //    }
+            //    // Foreign key
+            //    if (DisplayFieldDict.ContainsKey(rowField.fieldName))
+            //    {
+            //        // DisplayFields
+            //        List<field> fieldList = DisplayFieldDict[rowField.fieldName];
+            //        List<string> fieldNameList = new List<string>();
+            //        foreach (field f in fieldList)   // Could be done with linq
+            //        {
+            //            fieldNameList.Add(f.fieldName);
+            //        }
+            //        string displayFields = String.Join(",", fieldNameList);
+            //        dr[dr.Table.Columns.IndexOf("DisplayFields")] = displayFields;
+            //    }
+            //    lastTableName = rowField.table;  // For next time around
+            //}
         }
 
         private static bool fieldIsForeignKeyFoundational(field fld)
@@ -490,7 +557,7 @@ namespace SqlCollegeTranscripts
             DataRow dr = dataHelper.indexColumnsDT.Select(strSelect).FirstOrDefault();
             if (dr == null)
             {
-                return new field(table, "MissingPrimaryKey", DbType.Int32, 4);
+                return new field(table, "MissingPrimaryKey", DbType.Int32, 4, true);
             }
             string columnName = dr[dr.Table.Columns.IndexOf("ColumnName")].ToString();
             return getFieldFromFieldsDT(table, columnName);
@@ -501,7 +568,7 @@ namespace SqlCollegeTranscripts
             DataRow dr = dataHelper.foreignKeysDT.Select(string.Format("FkTable = '{0}' AND FkColumn = '{1}'", rowfield.table, rowfield.fieldName)).FirstOrDefault();
             if (dr == null)
             {
-                return new field("MissingRefTable", "MissingRefColumn", DbType.Int32, 4);
+                return new field("MissingRefTable", "MissingRefColumn", DbType.Int32, 4, true);
             }
             string RefTable = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefTable")]);
             string RefPkColumn = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefPkColumn")]);

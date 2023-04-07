@@ -8,22 +8,6 @@ namespace SqlCollegeTranscripts
     //internal partial class DataGridViewForm : Form
     internal class sqlFactory
     {
-        //Constructor
-        internal sqlFactory(string table, int page, int pageSize)
-        {
-            myTable = table;
-            myPage = page;
-            myPageSize = pageSize;
-            
-            // Put Primary key of main table in the first field of myFields
-            string pk = dataHelper.getTablePrimaryKeyField(myTable).fieldName;
-            field fi = new field(myTable, pk, DbType.Int32, 4);
-            myFields.Add(fi);
-
-            // This sets currentSql table and field strings - and these remain the same for this table.
-            // This also sets DisplayFieldDicitionary each foreign table key in main table
-            errorMsg = callInnerJoins();
-        }
 
         #region Variables
         //The table and job for this sql - myJob will by "" or "combo"
@@ -42,7 +26,7 @@ namespace SqlCollegeTranscripts
             {
                 recordCount = value;
                 if (myPageSize > 0)
-                { 
+                {
                     TotalPages = (int)Math.Ceiling((decimal)recordCount / myPageSize);
                 }
             }
@@ -54,15 +38,38 @@ namespace SqlCollegeTranscripts
         internal List<orderBy> myOrderBys = new List<orderBy>();
         internal List<field> myFields = new List<field>();  // Table and field
         internal List<where> myWheres = new List<where>();
-        // Fields for combos - main form constructs these from myRepresentativeColumns list for each combo
-        // internal List<field>[] myFieldsCombo = new List<field>[8];  // Table and field
+        internal List<field> DisplayFields_Ostensive = new List<field>();
 
         // Dictionary(field --> Field List) - foreign keys of this table mapped to fields to show in combo.  Set by innerjoin call.	
-        internal Dictionary<string, List<field>> DisplayFieldsDictionary = new Dictionary<string, List<field>>();
-        internal List<field> PrimaryKeyDisplayFields = new List<field>();
+        // internal Dictionary<string, List<field>> DisplayFieldsDictionary = new Dictionary<string, List<field>>();
 
 
         #endregion
+
+        //Constructor
+        internal sqlFactory(string table, int page, int pageSize)
+        {
+            myTable = table;
+            myPage = page;
+            myPageSize = pageSize;
+            
+            // Put Primary key of main table in the first field of myFields
+            string pk = dataHelper.getTablePrimaryKeyField(myTable).fieldName;
+            field fi = new field(myTable, pk, DbType.Int32, 4);
+            myFields.Add(fi);
+
+            // This sets currentSql table and field strings - and these remain the same for this table.
+            // This also sets DisplayFieldDicitionary each foreign table key in main table
+            errorMsg = callInnerJoins();
+
+            // If there is no ostensive definition, add the primary key
+            if (DisplayFields_Ostensive.Count == 0)
+            {
+                DisplayFields_Ostensive.Add(fi);
+            }
+
+        }
+
 
         // The primary function of this class
 
@@ -91,7 +98,7 @@ namespace SqlCollegeTranscripts
             return sqlString;
         }
 
-
+        // this factory is for the table that is in the combo
         internal string returnComboSql(field colField)
         {
             // For primary key, return the grid dropdown - also used in combo box for primary key
@@ -102,8 +109,8 @@ namespace SqlCollegeTranscripts
             {
                 sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
                 sqlFieldStringSB.Append(", ");
-                List<field> fls = PrimaryKeyDisplayFields;
-                string strFields = String.Empty;
+                List<field> fls = DisplayFields_Ostensive;
+                // If myTable has no display keys, make the primary field the display key
                 if (fls.Count == 1)
                 {
                     sqlFieldStringSB.Append(sqlFieldString(fls));
@@ -254,7 +261,7 @@ namespace SqlCollegeTranscripts
         // Two ways to call
         private string callInnerJoins()
         {
-            field empty = new field("None", "Note", DbType.String, 0);
+            field empty = new field("None", "Note", DbType.String, 0, true);
             string msg = callInnerJoins(myTable, empty);
             return msg;
         }
@@ -274,8 +281,8 @@ namespace SqlCollegeTranscripts
                 //if Primary Key - program assumes this will be the first field
                 if (dataHelper.isTablePrimaryKeyField(drField))
                 {
-                    // Don't add primary key to fields - but primary key of myTable added in DataGridViewForm.cs call
-                    // Also foreign keys are added - so no need to add primary key of son tables
+                    // Primary key added in class constructor as first field
+                    // Also foreign keys are added - so no need to add primary key of ref tables
                 }
 
                 // if Foreign Key
@@ -306,6 +313,8 @@ namespace SqlCollegeTranscripts
                     innerJoin new_ij = new innerJoin(drField, table2);
                     if (everythingOK)
                     {
+
+                        // strAlpha += ((char)i).ToString();   // a = 65
                         // Following not yet implemented - Allias name ignored as of now
                         if (alliasCount > 0)
                         {
@@ -337,22 +346,13 @@ namespace SqlCollegeTranscripts
                         myFields.Add(drField);
                         if (dataHelper.isDisplayKey(drField))
                         {
-                            PrimaryKeyDisplayFields.Add(drField);  // Used in returnComboSql
+                            DisplayFields_Ostensive.Add(drField);  // Used in returnComboSql
                         }
                     }
                     else if (dataHelper.isDisplayKey(drField))  // looping through a son of myTable
                     {
                         myFields.Add(drField);
-                        //Add fi to the DisplayFieldsDictionary
-                        List<field> fieldList = new List<field>();
-                        if (DisplayFieldsDictionary.ContainsKey(myTableInnerJoinField.fieldName))
-                        {
-                            fieldList = DisplayFieldsDictionary[myTableInnerJoinField.fieldName];
-                        }
-                        fieldList.Add(drField);
-                        DisplayFieldsDictionary[myTableInnerJoinField.fieldName] = fieldList;
-                        // Add to PrimaryKeyDisplayFields
-                        PrimaryKeyDisplayFields.Add(drField);
+                        DisplayFields_Ostensive.Add(drField);
                     }
                 }
 
