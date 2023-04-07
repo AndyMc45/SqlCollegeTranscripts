@@ -67,7 +67,6 @@ namespace SqlCollegeTranscripts
         private void DataGridViewForm_Load(object sender, EventArgs e)
         {
             formOptions = new FormOptions();  // Sets initial option values
-            formOptions.updating = true; // following calls cmbMainFilter changeindex event. "Updating" cancels that event.
             // Set things that don't change even if connection changes
             // 0.  Main filter datasource and 'last' element never changes
             field fi = new field("none", "none", DbType.Int32, 4, true);
@@ -113,7 +112,6 @@ namespace SqlCollegeTranscripts
             MultiLingual.InsertEnglishIntoDatabase(this);
             programMode = ProgramMode.none;
             SetAllFiltersOnModeChange(); // Will disable filters and call SetTableLayoutPanelHeight();
-            formOptions.updating = false;
         }
 
         private void DataGridViewForm_FormClosed(object sender, FormClosedEventArgs e)
@@ -380,6 +378,7 @@ namespace SqlCollegeTranscripts
             // 0. New tableOptions and Clear Grid-Combo filters
             tableOptions = new TableOptions(); // Resets options
 
+            // This does not fire any events because index will -1 (and text-change tag will be null)
             ClearFiltersOnNewTable();
 
             //1. Create currentSql - same currentSql used until new table is loaded
@@ -428,7 +427,12 @@ namespace SqlCollegeTranscripts
             cmbGridFilterFields[comboNumber].BindingContext = new BindingContext();  // Required to change 1 by 1.
             cmbGridFilterFields[comboNumber].DisplayMember = "DisplayMember";
             cmbGridFilterFields[comboNumber].ValueMember = "ValueMember";  //Entire field
+            // Fires change_selectedindex which binds cmbGridFilterValues 
+            // which calls cmbGridFilterValue_textchanged. Which writes grid with new value
+            // "Updating" cancels this write grid
+            formOptions.updating = true;
             cmbGridFilterFields[comboNumber].DataSource = filterFields;
+            formOptions.updating = false;
             cmbGridFilterFields[comboNumber].BackColor = ComboBox.DefaultBackColor;
             cmbGridFilterValue[comboNumber].BackColor = ComboBox.DefaultBackColor;
             cmbGridFilterValue[comboNumber].FlatStyle = FlatStyle.Flat;
@@ -454,8 +458,9 @@ namespace SqlCollegeTranscripts
                         }
                         cmbGridFilterFields[comboNumber].DisplayMember = "DisplayMember";
                         cmbGridFilterFields[comboNumber].ValueMember = "ValueMember";  //Entire field
-                        // Fires change_selectedindex which binds cmbGridFilterValues[comboNumber]
+                        formOptions.updating = true; // following calls cmbGridFilterValue_textchanged. "Updating" cancels that event.
                         cmbGridFilterFields[comboNumber].DataSource = dkField;
+                        formOptions.updating = false;
                         comboNumber++;
                     }
                 }
@@ -480,13 +485,14 @@ namespace SqlCollegeTranscripts
                 cmbComboTableList.BindingContext = new BindingContext();  // Required to change 1 by 1.
                 cmbComboTableList.DisplayMember = "DisplayMember";
                 cmbComboTableList.ValueMember = "ValueMember";  //Entire field
+                formOptions.updating = true;   // Following can't yet change colors because uses grid colors and grid not loaded
                 cmbComboTableList.DataSource = comboTableList;  // Will clear combofilters
+                formOptions.updating = false;
             }
 
             //5. Set programMode to ProgramMode.view
             rbView.Checked = true;
 
-            formOptions.updating = false;
 
             //6.  Enable or disable menu items
             GridContextMenu_FindInAncestor.Enabled = tableOptions.tableHasForeignKeys;
@@ -518,7 +524,6 @@ namespace SqlCollegeTranscripts
 
         internal void writeGrid_NewPage()
         {
-            formOptions.updating = true;
 
             // 1. Get the Sql command for grid
             // CENTRAL and Only USE OF sqlCurrent.returnSql IN PROGRAM
@@ -603,7 +608,6 @@ namespace SqlCollegeTranscripts
             SetTableLayoutPanelHeight();
             SetAllFiltersOnModeChange();   // Because Write_NewPage may require changes
             ColorComboBoxes();   // Must be after the above for some reason
-            formOptions.updating = false;
         }
 
 
@@ -674,7 +678,7 @@ namespace SqlCollegeTranscripts
 
             for (int i = 0; i < cmbGridFilterFields.Length; i++)
             {
-                // Color combobox the same as corresponding header
+                // Color all 12 "Filter Grid" combos
                 if (cmbGridFilterFields[i].Enabled == true)
                 {
                     field selectedField = (field)cmbGridFilterFields[i].SelectedValue;
@@ -697,6 +701,7 @@ namespace SqlCollegeTranscripts
                     }
                 }
             }
+            // Color the combo filter labels and combos
             for (int i = 0; i < lblCmbFilterFields.Length; i++)
             {
                 // Color combobox the same as corresponding header
@@ -1493,41 +1498,48 @@ namespace SqlCollegeTranscripts
         // Will rewrite grid with Filter Value set to selected item 0 (= string.empty)
         public void cmbGridFilterFields_SelectedIndexChanged(object sender, EventArgs e)
         {
+            ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5 };
+            ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5 };
             ComboBox cmb = (ComboBox)sender;
             if (cmb.SelectedIndex > -1)
             {
-                ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5 };
-                ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5 };
-
-                // Loads new values into GridFilterValue.
-                // This sets GridFilterValue text to item 0 (String.Empty), and calls Write_newFilter
-                // Do this even when updating, because values should show with "Select Value" as first element.
-                // But GridFilterValue text change will not write Grid when updating.
                 for (int i = 0; i < cmbGridFilterFields.Count(); i++)
                 {
                     // Get combo box
-                    if (cmb == cmbGridFilterFields[i])
+                    if (cmbGridFilterFields[i] == cmb)
                     {
-                        cmbGridFilterValue[i].DataSource = null;
-                        cmbGridFilterValue[i].Items.Clear();
-                        cmbGridFilterValue[i].Enabled = true;
-
-                        // Fill cmbComboFilterValue[i]
-                        field selectedField = (field)cmbGridFilterFields[i].SelectedValue;
-                        FillExtraDTForUseInCombo(selectedField);
-                        DataRow firstRow = dataHelper.extraDT.NewRow();
-                        // The Datasource in GridFieldsCombos must have "DisplayMember" and "ValueMember" columns
-                        // Leave these values null, because they might need correct type
-                        int displayColIndex = dataHelper.extraDT.Columns.IndexOf("DisplayMember");
-                        int valueColIndex = dataHelper.extraDT.Columns.IndexOf("ValueMember");
-                        dataHelper.extraDT.Rows.InsertAt(firstRow, 0); // Even if no rows
-                        cmbGridFilterValue[i].DisplayMember = "DisplayMember";
-                        cmbGridFilterValue[i].ValueMember = "ValueMember";
-                        cmbGridFilterValue[i].DataSource = dataHelper.extraDT;  // Calls WriteGrid_NewFilters
+                        RebindGridFilterValues(i);
                     }
                 }
-                this.ActiveControl = null;
             }
+        }
+
+        // Loads new values into GridFilterValue with index i, and selects the first value (dummy value = no filter)
+        private void RebindGridFilterValues(int i)
+        {
+            ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5 };
+            ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5 };
+
+            // This sets GridFilterValue text to item 0 (String.Empty), and calls Write_newFilter
+            // Do this even when updating, because values should show with "Select Value" as first element.
+            // But GridFilterValue text change will not write Grid when updating.
+            cmbGridFilterValue[i].DataSource = null;
+            cmbGridFilterValue[i].Items.Clear();
+            cmbGridFilterValue[i].Enabled = true;
+
+            // Fill cmbComboFilterValue[i]
+            field selectedField = (field)cmbGridFilterFields[i].SelectedValue;
+            FillExtraDTForUseInCombo(selectedField);
+            DataRow firstRow = dataHelper.extraDT.NewRow();
+            // The Datasource in GridFieldsCombos must have "DisplayMember" and "ValueMember" columns
+            // Leave these values null, because they might need correct type
+            int displayColIndex = dataHelper.extraDT.Columns.IndexOf("DisplayMember");
+            int valueColIndex = dataHelper.extraDT.Columns.IndexOf("ValueMember");
+            dataHelper.extraDT.Rows.InsertAt(firstRow, 0); // Even if no rows
+            cmbGridFilterValue[i].DisplayMember = "DisplayMember";
+            cmbGridFilterValue[i].ValueMember = "ValueMember";
+            cmbGridFilterValue[i].DataSource = dataHelper.extraDT;  // Calls WriteGrid_NewFilters
+            this.ActiveControl = null;  // To unselect the text (and change color from blue to background color).
         }
 
         // Calls Write_NewFilter
@@ -1577,7 +1589,7 @@ namespace SqlCollegeTranscripts
                 foreach (field fi in comboSql.DisplayFields_Ostensive)
                 {
                     // Get correct header color - on updating in Write_NewTable currentSql is not yet loaded and so myFields is empty
-                    if (!formOptions.updating)
+                    if (!formOptions.updating)  // Only used to stop coloring on writing_page.  This is done at end of writing_page
                     {
                         int colIndex = -1;
                         for (int i = 0; i < currentSql.myFields.Count; i++)
@@ -1607,8 +1619,8 @@ namespace SqlCollegeTranscripts
             // its possible values, then call its index change event (although it is not changed).
             // This will redo the possible values in grid filter value combo 
             ComboBox cmb = (ComboBox)sender;
-            if (!formOptions.updating)
-            {
+            if(cmb.Tag != null)   // I set to null when clearing all filters
+            { 
                 for (int i = 0; i < cmbGridFilterFields.Count(); i++)
                 {
                     if (cmbGridFilterFields[i].Enabled)
@@ -1618,14 +1630,15 @@ namespace SqlCollegeTranscripts
                             //No datasource
                             if (cmbGridFilterValue[i].SelectedIndex == -1)
                             {
-                                cmbGridFilterFields_SelectedIndexChanged(cmbGridFilterFields[i], e);
+                                RebindGridFilterValues(i);
                                 return;
                             }
                             field gridFilterField = (field)cmbGridFilterFields[i].SelectedValue;
                             field comboFilterField = (field)cmb.Tag;
+                            // Same field - will rebind to this element only
                             if (gridFilterField.isSameFieldAs(comboFilterField))
                             {
-                                cmbGridFilterFields_SelectedIndexChanged(cmbGridFilterFields[i], e);
+                                RebindGridFilterValues(i);
                                 return;
                             }
                             if (dataHelper.isTablePrimaryKeyField(gridFilterField))
@@ -1633,7 +1646,7 @@ namespace SqlCollegeTranscripts
                                 if (gridFilterField.table == currentSql.myTable)
                                 {
                                     //Fire event
-                                    cmbGridFilterFields_SelectedIndexChanged(cmbGridFilterFields[i], e);
+                                    RebindGridFilterValues(i);
                                 }
                                 else
                                 {
@@ -1641,7 +1654,7 @@ namespace SqlCollegeTranscripts
                                     if (sqlFact.TableIsInMyTables(comboFilterField.table))
                                     {
                                         //Fire event
-                                        cmbGridFilterFields_SelectedIndexChanged(cmbGridFilterFields[i], e);
+                                        RebindGridFilterValues(i);
                                     }
                                 }
                             }
@@ -1650,7 +1663,7 @@ namespace SqlCollegeTranscripts
                 }
             }
         }
-
+ 
         // On entering cell, load the combo with all useful distinct values
         // When viewing, this will be the distinct values in this column in grid
         // When editing, it will be all distinct values consistent with main filter and other combo filters 
@@ -1677,7 +1690,8 @@ namespace SqlCollegeTranscripts
                 // Insert Dummy element
                 strList.Insert(0, String.Empty);
                 BindingList<string> strBindingList = new BindingList<string>(strList);
-                formOptions.updating = true;  // Text will change to string.empty, but don't want to fire text change event
+                // Text will change to string.empty, but don't want to fire text change event because text originally was string.empty
+                formOptions.updating = true;
                 cmb.DataSource = strBindingList;
                 formOptions.updating = false;
             }
