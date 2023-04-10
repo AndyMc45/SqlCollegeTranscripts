@@ -12,13 +12,13 @@ namespace SqlCollegeTranscripts
         {
             debugging = true;
             runTimer = false;
-            updating = false;
+            loadingMainFilter = false;
             pageSize = 0;
             logFileName = string.Empty;
         }
         internal bool debugging { get; set; }
         internal bool runTimer { get; set; }
-        internal bool updating { get; set; } //use updating to stop events when making programatic changes 
+        internal bool loadingMainFilter { get; set; } //use updating to stop events when making programatic changes 
         internal int pageSize { get; set; }
         internal string logFileName { get; set; }
 
@@ -46,17 +46,24 @@ namespace SqlCollegeTranscripts
     {
         internal TableOptions() 
         {
-            updating = false;
+            writingTable = false;
+            doNotRebindGridFV = false;
+            doNotWriteGrid = false;
             fixingDatabase = false;
             strFixDatabaseWhereCondition = string.Empty;
             FkFieldInEditingControl = null;
             tableHasForeignKeys = false;
+            currentComboFilterValue_isDirty = false;
         }
         internal bool fixingDatabase { get; set; }
         internal string strFixDatabaseWhereCondition { get; set; }
-        internal bool updating { get; set; }
+        internal bool writingTable { get; set; }
         internal field? FkFieldInEditingControl { get; set; }
-        internal bool tableHasForeignKeys { get; set; } 
+        internal bool tableHasForeignKeys { get; set; }
+        internal bool currentComboFilterValue_isDirty { get; set; }
+        internal bool doNotRebindGridFV { get; set; }
+        internal bool doNotWriteGrid { get; set; }
+
     }
 
 }

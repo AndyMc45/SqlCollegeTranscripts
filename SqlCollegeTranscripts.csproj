@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DataGridViewForm_old.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="addressBook.bas" />
   </ItemGroup>
 

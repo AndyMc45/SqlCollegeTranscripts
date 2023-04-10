@@ -921,6 +921,7 @@
             cmbComboFilterValue_0.DropDown += AdjustWidthComboBox_DropDown;
             cmbComboFilterValue_0.TextChanged += cmbComboFilterValue_TextChanged;
             cmbComboFilterValue_0.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_0.Leave += cmbComboFilterValue_Leave;
             // 
             // cmbComboFilterValue_1
             // 
@@ -934,6 +935,7 @@
             cmbComboFilterValue_1.DropDown += AdjustWidthComboBox_DropDown;
             cmbComboFilterValue_1.TextChanged += cmbComboFilterValue_TextChanged;
             cmbComboFilterValue_1.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_1.Leave += cmbComboFilterValue_Leave;
             // 
             // cmbComboFilterValue_2
             // 
@@ -947,6 +949,7 @@
             cmbComboFilterValue_2.DropDown += AdjustWidthComboBox_DropDown;
             cmbComboFilterValue_2.TextChanged += cmbComboFilterValue_TextChanged;
             cmbComboFilterValue_2.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_2.Leave += cmbComboFilterValue_Leave;
             // 
             // cmbComboFilterValue_3
             // 
@@ -960,6 +963,7 @@
             cmbComboFilterValue_3.DropDown += AdjustWidthComboBox_DropDown;
             cmbComboFilterValue_3.TextChanged += cmbComboFilterValue_TextChanged;
             cmbComboFilterValue_3.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_3.Leave += cmbComboFilterValue_Leave;
             // 
             // cmbComboFilterValue_4
             // 
@@ -973,6 +977,7 @@
             cmbComboFilterValue_4.DropDown += AdjustWidthComboBox_DropDown;
             cmbComboFilterValue_4.TextChanged += cmbComboFilterValue_TextChanged;
             cmbComboFilterValue_4.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_4.Leave += cmbComboFilterValue_Leave;
             // 
             // cmbComboFilterValue_5
             // 
@@ -986,6 +991,7 @@
             cmbComboFilterValue_5.DropDown += AdjustWidthComboBox_DropDown;
             cmbComboFilterValue_5.TextChanged += cmbComboFilterValue_TextChanged;
             cmbComboFilterValue_5.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_5.Leave += cmbComboFilterValue_Leave;
             // 
             // rbMerge
             // 
