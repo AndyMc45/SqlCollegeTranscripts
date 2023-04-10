@@ -10,8 +10,8 @@ namespace SqlCollegeTranscripts
     {
         internal FormOptions()
         {
-            debugging = true;
-            runTimer = false;
+            debugging = false;
+            runTimer = true;
             loadingMainFilter = false;
             pageSize = 0;
             logFileName = string.Empty;
