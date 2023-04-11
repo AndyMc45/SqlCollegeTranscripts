@@ -1662,6 +1662,8 @@ namespace SqlCollegeTranscripts
                 cmbGridFilterValue[i].DataSource = dataHelper.extraDT;  // Be careful not to use extraDt until finished loading
             }
         }
+            }
+        }
 
         // Calls Write_NewFilter
         private void cmbGridFilterValue_SelectedIndexChanged(object sender, EventArgs e)
@@ -1700,9 +1702,9 @@ namespace SqlCollegeTranscripts
                 int comboNumber = 0;
                 bool oneOrMoreComboFVRebound = false;
                 // Main work of this method - rebind all ComboFVcombos
-                foreach (field fi in comboSql.DisplayFields_Ostensive)
-                {
                     // Set label and Load combo
+                        cmbComboFilterValue[comboNumber].BackColor = dataGridView1.Columns[colIndex].HeaderCell.Style.BackColor;
+                    }
                     lblCmbFilterFields[comboNumber].Text = fi.fieldName + ":"; // Shorter than DisplayName
                     lblCmbFilterFields[comboNumber].Visible = true;
                     lblCmbFilterFields[comboNumber].Enabled = true;
@@ -1713,8 +1715,6 @@ namespace SqlCollegeTranscripts
                     tableOptions.doNotRebindGridFV = true;
                     RebindOneComboFilterValueCombo(comboNumber);
                     tableOptions.doNotRebindGridFV = false;
-                    oneOrMoreComboFVRebound = true;
-
                     // Set color of combo
                     int colIndex = -1;
                     for (int i = 0; i < currentSql.myFields.Count; i++)
@@ -1739,14 +1739,14 @@ namespace SqlCollegeTranscripts
                 if (oneOrMoreComboFVRebound)
                 {
                     RebindAllEmptyGridFilterValueCombos();
+                        }
+                    }
                 }
 
 
-            }
-        }
 
         // Load the combo with all useful distinct values
-        // When viewing, this will be the distinct values in this column in grid
+
         // When editing, it will be all distinct values consistent with main filter and other combo filters
         // Only called programmatically (by comboController) with "doNotRebindGridFV = true".
         // This event will fire Text_change event.  Manually called, the later event will bind Grid_FilterValues
@@ -1803,6 +1803,8 @@ namespace SqlCollegeTranscripts
                 tableOptions.doNotWriteGrid = true;
                 RebindAllEmptyGridFilterValueCombos();
                 tableOptions.doNotWriteGrid = false;
+                cmb.DataSource = strBindingList;
+                formOptions.updating = false;
             }
         }
 
