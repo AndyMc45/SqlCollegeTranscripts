@@ -2,7 +2,6 @@
 using System.Data;
 using System.Data.SqlClient;
 using System.Text;
-using Windows.Media.AppBroadcasting;
 
 namespace SqlCollegeTranscripts
 
@@ -76,6 +75,51 @@ namespace SqlCollegeTranscripts
             sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, 4, PK);
             da.DeleteCommand = sqlCmd;
         }
+
+        // Set insert command - one parameter for each enabled combo field
+        internal static void SetInsertCommand(List<where> whereList, DataTable dataTable)
+        {
+            if(whereList.Count > 0) { 
+                // Do this once in the program
+                string msg = string.Empty;
+                // Get data adapter
+                SqlDataAdapter da = GetDataAdaptor(dataTable);
+                // Get the insert command and attach to adapter
+                string tableName = whereList[0].fl.table;  // All the fields are from the currentSql table.
+                StringBuilder sb = new StringBuilder();
+                sb.Append("INSERT INTO ");
+                sb.Append(tableName + " (");
+                List<string> strFieldList = new List<string>(); 
+                foreach(where wh in whereList) 
+                {
+                    strFieldList.Add(wh.fl.fieldName);
+                }
+                string strFieldNames = String.Join(", ",strFieldList);
+                sb.Append(strFieldNames);
+                sb.Append(") VALUES (");
+                string strParamFieldNames = "@" + String.Join(", @", strFieldList);
+                sb.Append(strParamFieldNames + ")");
+                SqlCommand sqlCmd = new SqlCommand(sb.ToString(), MsSql.cn);
+
+                // Add parameters
+                foreach (where wh in whereList)
+                {
+                    SqlDbType sqlDbType = GetSqlDbType(wh.fl.dbType);
+                    sqlCmd.Parameters.Add("@" + wh.fl.fieldName, sqlDbType, wh.fl.size, wh.fl.fieldName).Value = wh.whereValue;
+                }
+                da.InsertCommand = sqlCmd;
+            }
+        }
+        //// Create the InsertCommand.
+        //command = new SqlCommand(
+        //    "INSERT INTO Customers (CustomerID, CompanyName) VALUES (@CustomerID, @CompanyName, @CompanyName2), connection)";
+
+        //// Add the parameters for the InsertCommand.
+        //command.Parameters.Add("@CustomerID", SqlDbType.NChar, 5, "CustomerID");
+        //command.Parameters.Add("@CompanyName", SqlDbType.NVarChar, 40, "CompanyName");
+
+        //adapter.InsertCommand = command;
+
 
         internal static SqlDbType GetSqlDbType(DbType dbType)
         {
@@ -206,7 +250,7 @@ namespace SqlCollegeTranscripts
 
         internal static int GetRecordCount(string strSql)
         {
-            int result = 20;  // Testing
+            int result = 0; 
             using (SqlCommand cmd = new SqlCommand(strSql, cn))
             {
                 result = (int)cmd.ExecuteScalar();

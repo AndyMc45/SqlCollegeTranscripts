@@ -26,6 +26,7 @@ namespace SqlCollegeTranscripts
         internal Color[] nonDkColorArray = new Color[] { Color.LightCyan, Color.LavenderBlush, Color.SeaShell, Color.AliceBlue, Color.LightGray, Color.LightSalmon, Color.Azure, Color.LightCyan };
         internal Color[] DkColorArray = new Color[] { Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow, Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow};
         internal Color DefaultColumnColor = Color.Yellow;
+        internal Color PrimaryKeyColor = Color.Pink;
 
     }
 
@@ -49,14 +50,14 @@ namespace SqlCollegeTranscripts
             writingTable = false;
             doNotRebindGridFV = false;
             doNotWriteGrid = false;
-            fixingDatabase = false;
-            strFixDatabaseWhereCondition = string.Empty;
+            fixingDatabase = false;   // Manually set this - 
+            strFixingDatabaseSql = string.Empty;
             FkFieldInEditingControl = null;
             tableHasForeignKeys = false;
             currentComboFilterValue_isDirty = false;
         }
         internal bool fixingDatabase { get; set; }
-        internal string strFixDatabaseWhereCondition { get; set; }
+        internal string strFixingDatabaseSql { get; set; }
         internal bool writingTable { get; set; }
         internal field? FkFieldInEditingControl { get; set; }
         internal bool tableHasForeignKeys { get; set; }

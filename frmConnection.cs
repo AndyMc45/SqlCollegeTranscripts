@@ -12,6 +12,7 @@ namespace SqlCollegeTranscripts
         public frmConnection() : base()
         {
             InitializeComponent();
+            csList = new List<connectionString>();
         }
 
         public bool success = false;

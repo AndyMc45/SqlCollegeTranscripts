@@ -71,9 +71,13 @@ namespace SqlCollegeTranscripts
         }
 
 
-        // The primary function of this class
-
+        // The primary function of this class - 1 overload
         internal string returnSql(command cmd)
+        {
+            return returnSql(cmd, false);
+        }
+        
+        internal string returnSql(command cmd, bool strict)
         {
             // The main function of this class - used for tables and combos.
             // Logic: Set 
@@ -82,17 +86,17 @@ namespace SqlCollegeTranscripts
             //This exception only for combo's, and class must be immediately destroyed afterwards
             if (cmd == command.count)
             {
-                sqlString = "SELECT COUNT(1) FROM " + sqlTableString() + " " + sqlWhereString(false);  // + " " + sqlOrderByStr();
+                sqlString = "SELECT COUNT(1) FROM " + sqlTableString() + " " + sqlWhereString(strict);  // + " " + sqlOrderByStr();
             }
             else if (cmd == command.select)
             {
                 if (myPage == -1 || (recordCount <= offset + myPageSize))
                 {
-                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " " + sqlOrderByStr(myOrderBys) + " ";
+                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " " + sqlWhereString(strict) + " " + sqlOrderByStr(myOrderBys) + " ";
                 }
                 else
                 { // Sql 2012 required for this "Fetch" clause paging
-                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + sqlWhereString(false) + sqlOrderByStr(myOrderBys) + " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + myPageSize.ToString() + " ROWS ONLY";
+                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + sqlWhereString(strict) + sqlOrderByStr(myOrderBys) + " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + myPageSize.ToString() + " ROWS ONLY";
                 }
             }
             return sqlString;
