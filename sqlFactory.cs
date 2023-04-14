@@ -203,7 +203,7 @@ namespace SqlCollegeTranscripts
                         case DbTypeType.isString:
                             if (strict)
                             {
-                                condition = dataHelper.QualifiedFieldName(ws.fl) + " '" + ws.whereValue + "'";  //Exact string
+                                condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + ws.whereValue + "'";  //Exact string
                             }
                             else
                             { 

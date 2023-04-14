@@ -77,15 +77,21 @@ namespace SqlCollegeTranscripts
         }
 
         // Set insert command - one parameter for each enabled combo field
-        internal static void SetInsertCommand(List<where> whereList, DataTable dataTable)
+        internal static void SetInsertCommand(string tableName, List<where> whereList, DataTable dataTable)
         {
-            if(whereList.Count > 0) { 
-                // Do this once in the program
-                string msg = string.Empty;
+            if(whereList.Count == 0)
+            {
+                SqlDataAdapter da = GetDataAdaptor(dataTable);
+                string sqlString = String.Format("INSERT INTO {0} DEFAULT VALUES", tableName);
+                SqlCommand sqlCmd = new SqlCommand(sqlString, MsSql.cn);
+                da.InsertCommand = sqlCmd;
+            }
+            else
+            { 
                 // Get data adapter
                 SqlDataAdapter da = GetDataAdaptor(dataTable);
+
                 // Get the insert command and attach to adapter
-                string tableName = whereList[0].fl.table;  // All the fields are from the currentSql table.
                 StringBuilder sb = new StringBuilder();
                 sb.Append("INSERT INTO ");
                 sb.Append(tableName + " (");

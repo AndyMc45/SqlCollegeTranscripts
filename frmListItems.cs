@@ -6,6 +6,12 @@ namespace SqlCollegeTranscripts
     internal partial class frmListItems
         : System.Windows.Forms.Form
     {
+        public frmListItems() : base()
+        {
+            //This call is required by the Windows Form Designer.
+            InitializeComponent();
+        }
+
         public enum job { 
             DeleteConnections,
             SelectString
@@ -23,12 +29,6 @@ namespace SqlCollegeTranscripts
         public string formCaption;
         public string returnString = string.Empty;
         public int returnIndex = -1;
-
-        public frmListItems() : base()
-        {
-            //This call is required by the Windows Form Designer.
-            InitializeComponent();
-        }
 
         private void frmListItems_Load(object sender, EventArgs e)
         {

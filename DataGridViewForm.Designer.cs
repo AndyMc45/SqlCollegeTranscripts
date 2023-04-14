@@ -369,7 +369,7 @@
             // 
             mnuForeignKeyMissing.Name = "mnuForeignKeyMissing";
             mnuForeignKeyMissing.Size = new Size(303, 26);
-            mnuForeignKeyMissing.Text = "Update : Missing Foreign Key ";
+            mnuForeignKeyMissing.Text = "Update : Check for Foreign Key";
             mnuForeignKeyMissing.Click += mnuForeignKeyMissing_Click;
             // 
             // mnuPrintCurrentTable

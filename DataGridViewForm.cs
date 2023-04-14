@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
-
+using System.Web;
 
 namespace SqlCollegeTranscripts
 {
@@ -269,7 +269,7 @@ namespace SqlCollegeTranscripts
             StringBuilder sb = new StringBuilder();
             try
             {
-                // 1. Close old connection if any
+                // 1. Close old connection if any - also turns off various menu items.
                 CloseConnection();
 
                 // 2. Get connection string
@@ -319,9 +319,6 @@ namespace SqlCollegeTranscripts
                             mnuOpenTables.DropDownItems.Add(tsi);
                         }
                     }
-
-                    msgText("Recommend: First select object to research.  Example: choose student from student table (or whatever), right click, select 'Find / research object in higher tables'.");
-                    msgColor(Color.Navy);
                 }
             }
             catch (System.Exception excep)
@@ -349,6 +346,8 @@ namespace SqlCollegeTranscripts
             // Hide special menus
             mnuTranscript.Available = false;
             mnuAddressBook.Available = false;
+            mnuForeignKeyMissing.Enabled = false;
+
         }
 
 
@@ -471,6 +470,7 @@ namespace SqlCollegeTranscripts
             GridContextMenu_FindInAncestor.Enabled = tableOptions.tableHasForeignKeys;
             DataRow[] drs2 = dataHelper.fieldsDT.Select(String.Format("RefTable = '{0}'", currentSql.myTable));
             GridContextMenu_FindInDescendent.Enabled = (drs2.Count() > 0);
+            mnuForeignKeyMissing.Enabled = true;
 
             //7. WriteGrid - next step
             writeGrid_NewFilter();
@@ -609,7 +609,6 @@ namespace SqlCollegeTranscripts
             // e. Format the rest of the grid and form
             SetHeaderColorsOnWritePage();
             SetColumnsReadOnlyProperty(); // Might change editable column
-            // SetTableLayoutPanelHeight();
             SetAllFiltersByMode();   // Because Write_NewPage may require changes
             ColorComboBoxes();   // Must be after the above for some reason
         }
@@ -807,32 +806,32 @@ namespace SqlCollegeTranscripts
             {
                 case ProgramMode.none:
                     EnableMainFilter(false);
-                    EnableGridFilters(false);
+                    EnableGridFiltersAndSetStyle(false);
                     EnableComboFilters(false);
                     break;
                 case ProgramMode.view:
                     EnableMainFilter(true);
-                    EnableGridFilters(true);
+                    EnableGridFiltersAndSetStyle(true);
                     EnableComboFilters(true);
                     break;
                 case ProgramMode.edit:
                     EnableMainFilter(true);
-                    EnableGridFilters(true);
+                    EnableGridFiltersAndSetStyle(true);
                     EnableComboFilters(true);
                     break;
                 case ProgramMode.delete:
                     EnableMainFilter(true);
-                    EnableGridFilters(true);
+                    EnableGridFiltersAndSetStyle(true);
                     EnableComboFilters(true);
                     break;
                 case ProgramMode.add:
                     EnableMainFilter(true);
-                    EnableGridFilters(true);
+                    EnableGridFiltersAndSetStyle(true);
                     EnableComboFilters(true);
                     break;
                 case ProgramMode.merge:
                     EnableMainFilter(true);
-                    EnableGridFilters(true);
+                    EnableGridFiltersAndSetStyle(true);
                     EnableComboFilters(true);
                     break;
             }
@@ -863,7 +862,7 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        private void EnableGridFilters(bool enable)
+        private void EnableGridFiltersAndSetStyle(bool enable)
         {
             ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
             ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5, cmbGridFilterValue_6, cmbGridFilterValue_7, cmbGridFilterValue_8 };
@@ -882,28 +881,20 @@ namespace SqlCollegeTranscripts
                     cmbGridFilterFields[i].Enabled = true;
                     cmbGridFilterValue[i].Visible = true;
                     cmbGridFilterValue[i].Enabled = true;
-                    // When adding, change non-FK and non-PK display keys to dropdown style
-                    if (programMode == ProgramMode.add)
+                    // Change Style - PK/FK --> DropDownlist, others-->DropDown
+                    field gridFF = (field)cmbGridFilterFields[i].SelectedValue;  // Fill cmbGridFilterFieldList before this
+                    if (dataHelper.isForeignKeyField(gridFF) || dataHelper.isTablePrimaryKeyField(gridFF))
                     {
-                        field gridField = (field)cmbGridFilterFields[i].SelectedValue;
-                        if (gridField != null)
+                        if (cmbGridFilterValue[i].DropDownStyle == ComboBoxStyle.DropDown)
                         {
-                            if (dataHelper.isDisplayKey(gridField)
-                            && !(dataHelper.isForeignKeyField(gridField) || dataHelper.isTablePrimaryKeyField(gridField)))
-                            {
-                                if (cmbGridFilterValue[i].DropDownStyle != ComboBoxStyle.DropDown)
-                                {
-                                    cmbGridFilterValue[i].DropDownStyle = ComboBoxStyle.DropDown;
-                                }
-
-                            }
+                            cmbGridFilterValue[i].DropDownStyle = ComboBoxStyle.DropDownList;
                         }
                     }
                     else
                     {
-                        if (cmbGridFilterValue[i].DropDownStyle != ComboBoxStyle.DropDownList)
+                        if (cmbGridFilterValue[i].DropDownStyle == ComboBoxStyle.DropDownList)
                         {
-                            cmbGridFilterValue[i].DropDownStyle = ComboBoxStyle.DropDownList;
+                            cmbGridFilterValue[i].DropDownStyle = ComboBoxStyle.DropDown;
                         }
                     }
                 }
@@ -912,7 +903,7 @@ namespace SqlCollegeTranscripts
 
         private void EnableComboFilters(bool enable)
         {
-            // Combo filter selection combo
+            // Combo filter selection combo - cmbComboTableList_SelectionChange enables/disables GridFFcombos
             if (cmbComboTableList.Items.Count == 0 || enable == false)
             {
                 cmbComboTableList.Enabled = false;
@@ -924,7 +915,7 @@ namespace SqlCollegeTranscripts
                 cmbComboTableList.Visible = true;
             }
 
-            // Six Combo filters
+            // Six Combo filters - enable/disable GridFVcombos
             Label[] lblCmbFilterFields = { lblCmbFilterField_0, lblCmbFilterField_1, lblCmbFilterField_2, lblCmbFilterField_3, lblCmbFilterField_4, lblCmbFilterField_5 };
             ComboBox[] cmbComboFilterValue = { cmbComboFilterValue_0, cmbComboFilterValue_1, cmbComboFilterValue_2, cmbComboFilterValue_3, cmbComboFilterValue_4, cmbComboFilterValue_5 };
             // Keep in use labels visible, but disable to txtBox - and don't filter on them when disabled
@@ -996,42 +987,59 @@ namespace SqlCollegeTranscripts
 
         private void mnuForeignKeyMissing_Click(object sender, EventArgs e)
         {
-            // Get list of Foriegn keys
-            DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("TableName = '{0}' AND is_FK = 'True'", currentSql.myTable));
+            // Get list of Non-foriegn keys - with perhaps one intended as foreign key
+            DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("TableName = '{0}' AND is_PK = 'False' AND is_FK = 'False'", currentSql.myTable));
             if (drs.Count() > 0)
             {
-                List<string> tableList = new List<string>();
+                List<string> columnList = new List<string>();
                 foreach (DataRow dr in drs)
                 {
-                    tableList.Add(dr["ColumnName"].ToString());
+                    columnList.Add(dr["ColumnName"].ToString());
                 }
-
                 // Get user choice
-                frmListItems FK_ListForm = new frmListItems();
-                FK_ListForm.myList = tableList;
-                FK_ListForm.myJob = frmListItems.job.SelectString;
-                FK_ListForm.Text = "Select Table";
-                FK_ListForm.ShowDialog();
-                string selectedFK = FK_ListForm.returnString;
-                int selectedFKIndex = FK_ListForm.returnIndex;
-                FK_ListForm = null;
-                if (selectedFKIndex > -1)
+                frmListItems nonFK_ListForm = new frmListItems();
+                nonFK_ListForm.myList = columnList;
+                nonFK_ListForm.myJob = frmListItems.job.SelectString;
+                nonFK_ListForm.Text = "Select Column to check";
+                nonFK_ListForm.ShowDialog();
+                string selectedNonFK = nonFK_ListForm.returnString;
+                int selectedNonFKIndex = nonFK_ListForm.returnIndex;
+                nonFK_ListForm = null;
+                if (selectedNonFKIndex > -1)
                 {
-                    // Get foreign field user chosed
-                    DataRow dr = drs[selectedFKIndex];  // Index in form same as index in drs.
-                    field fkField = dataHelper.getFieldFromFieldsDT(dr);
-                    field refField = dataHelper.getForeignKeyRefField(fkField);
-                    StringBuilder sbWhere = new StringBuilder();
-                    sbWhere.Append(" (NOT EXISTS (SELECT ");
-                    sbWhere.Append(refField.fieldName + " FROM " + refField.table);
-                    sbWhere.Append(" WHERE ");
-                    sbWhere.Append(dataHelper.QualifiedFieldName(refField) + " = " + dataHelper.QualifiedFieldName(fkField));
-                    sbWhere.Append("))");
-                    tableOptions.fixingDatabase = true;
-                    tableOptions.strFixingDatabaseSql = currentSql.returnFixDatabaseSql(sbWhere.ToString());
-                    writeGrid_NewPage();
-                    //SELECT *  FROM [StudentDegrees] 
-                    //WHERE(NOT EXISTS (SELECT studentID FROM Students WHERE[students].studentID = [StudentDegrees].studentID) )
+                    // Get field
+                    field nonFkField = dataHelper.getFieldFromFieldsDT(currentSql.myTable, selectedNonFK);
+                    // Get Reference Table - 2nd user choice
+                    DataRow[] drs2 = dataHelper.fieldsDT.Select("is_PK = 'True'");
+                    List<string> refTableList = new List<string>();
+                    foreach (DataRow dr2 in drs2)
+                    {
+                        refTableList.Add(dr2["TableName"].ToString());
+                    }
+                    frmListItems RefTable_ListForm = new frmListItems();
+                    RefTable_ListForm.myList = refTableList;
+                    RefTable_ListForm.myJob = frmListItems.job.SelectString;
+                    RefTable_ListForm.Text = "Select Reference Table";
+                    RefTable_ListForm.ShowDialog();
+                    string selectedRefTable = RefTable_ListForm.returnString;
+                    int selectedRefTableIndex = RefTable_ListForm.returnIndex;
+                    RefTable_ListForm = null;
+                    if (selectedRefTableIndex > -1)
+                    {
+                        DataRow dr = drs[selectedNonFKIndex];  // Index in form same as index in drs.
+                        field refField = dataHelper.getTablePrimaryKeyField(selectedRefTable);
+                        StringBuilder sbWhere = new StringBuilder();
+                        sbWhere.Append(" (NOT EXISTS (SELECT ");
+                        sbWhere.Append(refField.fieldName + " FROM " + refField.table);
+                        sbWhere.Append(" WHERE ");
+                        sbWhere.Append(dataHelper.QualifiedFieldName(refField) + " = " + dataHelper.QualifiedFieldName(nonFkField));
+                        sbWhere.Append("))");
+                        tableOptions.fixingDatabase = true;
+                        tableOptions.strFixingDatabaseSql = currentSql.returnFixDatabaseSql(sbWhere.ToString());
+                        writeGrid_NewPage();
+                        //SELECT *  FROM [StudentDegrees] 
+                        //WHERE(NOT EXISTS (SELECT studentID FROM Students WHERE[students].studentID = [StudentDegrees].studentID) )
+                    }
                 }
             }
         }
@@ -1569,15 +1577,15 @@ namespace SqlCollegeTranscripts
         #region Events - Grid and combo filter events & related functions
 
         // (A) Basic ideas
-        //      1. Manually changing GridFVcombo will rewrite the grid.
-        //         Manually changing GridFFcombo will select the empty-string and rewrite the grid.
+        //      1. Manually changing GridFFcombo will set up GridFVcombo, select the empty-string and rewrite the grid.
+        //         Manually changing GridFVcombo will rewrite the grid.
         //         Programmatically changing either of these (by binding datasource) will not write the grid
-        //         Set "writingGrid" or "doNotWriteGrid" to true to know the change is programmatic.
-        //      2. Changing one ComboFVcombo will rebind ALL empty-string GridFVcombos (but not write grid).
-        //         In this case, I set "doNotWriteGrid"=true (but "doNotRebindGridFV" is still false)
-        //      3. Changing ComboControl will rebind all ComboFVcombo and all empty GridFVcombos
-        //         In this case I set "doNotRebindGridFV"=true (implies "doNotWriteGrid"), and then call rebind all GridFVcombos.
-        //         The purpose of this is to save time - no use rebinding all GridFVcombos for every ComboFVcombo binding 
+        //         Set "writingGrid" or "doNotWriteGrid" to true before binding to know the change_selectedIndex event is programmatic.
+        //      2. Changing one ComboFVcombo will rebind ALL relevant GridFVcombos (but not write grid).
+        //         I set "doNotWriteGrid"=true before rebinding
+        //      3. Changing ComboControl will rebind all ComboFVcombo.  This will rebind all GridFVcombos
+        //         There is no reason to rebind GridFVcombos until all ComboFVcombos are bound. 
+        //         I set "doNotRebindGridFV"=true, rebind all GridFVcombos, and then rebind the GridFVcombos.
         //      4. Point: Grid rewritten by Write_Page, Manually changing GridFFcombo or GridFVcombo, and nothing else
         // (B) GridFFcombos - combo (no dummy) -- The GridFilterFieldCombo.SelectedValue is the field to filter
         //      1.  Manual Selection change : Bind GridFVcombo -> GridFVcombo_SelectionChange (to empty-string) : Write_NewFilter
@@ -1689,7 +1697,7 @@ namespace SqlCollegeTranscripts
         }
 
         // Only rebind empty filters - no change in Grid because rebinding GridFV selects the same first value = string.empty
-        private void RebindAllEmptyGridFilterValueCombos()
+        private void RebindAllGridFilterValueCombos()
         {
             ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
             ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5, cmbGridFilterValue_6, cmbGridFilterValue_7, cmbGridFilterValue_8 };
@@ -1701,17 +1709,15 @@ namespace SqlCollegeTranscripts
                 {
                     if (gridFVneedsRebound())
                     {
-                        if (cmbGridFilterValue[i].SelectedIndex == 0)   // EmptyString
-                        {
-                            tableOptions.doNotWriteGrid = true;
-                            RebindOneGridFilterValueCombo(i);
-                            tableOptions.doNotWriteGrid = false;
-                        }
+                        //if (cmbGridFilterValue[i].SelectedIndex == 0)   // EmptyString
+                        //{
+                        tableOptions.doNotWriteGrid = true;
+                        RebindOneGridFilterValueCombo(i);
+                        tableOptions.doNotWriteGrid = false;
+                        //}
                     }
                 }
             }
-
-
         }
 
         private void RebindOneGridFilterValueCombo(int i)
@@ -1720,7 +1726,23 @@ namespace SqlCollegeTranscripts
             {
                 ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
                 ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5, cmbGridFilterValue_6, cmbGridFilterValue_7, cmbGridFilterValue_8 };
-
+                // Get two combos
+                ComboBox cmbGridFF = cmbGridFilterFields[i];
+                ComboBox cmbGridFV = cmbGridFilterValue[i];
+                // Get old value
+                string oldTextValue = String.Empty;
+                int oldKeyIntValue = 0;
+                if (cmbGridFV.DropDownStyle == ComboBoxStyle.DropDown)
+                {
+                    oldTextValue = cmbGridFV.Text;
+                }
+                else
+                {
+                    if (cmbGridFV.SelectedIndex > 0)  // Item 0 has null value
+                    {
+                        oldKeyIntValue = (int)cmbGridFV.SelectedValue;
+                    }
+                }
                 // Settig Datasource = null
                 // This will not rewrite the grid because selected_index will be -1
                 // Also, I have set doNotRewriteGrid = true whenever I call this method
@@ -1739,6 +1761,31 @@ namespace SqlCollegeTranscripts
                 cmbGridFilterValue[i].ValueMember = "ValueMember";
                 // Will not rewrite Grid because I set doNotRewriteGrid = true whenever I call this method
                 cmbGridFilterValue[i].DataSource = dataHelper.extraDT;  // Be careful not to use extraDt until finished loading
+
+                // Restore old Value
+                if (cmbGridFV.DropDownStyle == ComboBoxStyle.DropDown)
+                {
+                    tableOptions.doNotRebindGridFV = true;   // doNotWriteGrid already true when this method called.
+                    cmbGridFV.Text = oldTextValue;
+                    tableOptions.doNotRebindGridFV = false;  // Same value as entering this method - see above
+                }
+                else
+                {
+                    int indexOfOldKey = cmbGridFV.Items.IndexOf(oldKeyIntValue);
+                    if (indexOfOldKey == -1)
+                    {
+                        if (oldKeyIntValue > 0)
+                        {
+                            cmbGridFV.BackColor = Color.Red;
+                        }
+                    }
+                    else
+                    {
+                        tableOptions.doNotRebindGridFV = true;   //doNotWriteGrid already true when this method called.
+                        cmbGridFV.SelectedIndex = indexOfOldKey;
+                        tableOptions.doNotRebindGridFV = true;   // Same value as entering this method - see above
+                    }
+                }
             }
         }
 
@@ -1811,7 +1858,7 @@ namespace SqlCollegeTranscripts
                 }
                 if (oneOrMoreComboFVRebound)
                 {
-                    RebindAllEmptyGridFilterValueCombos();
+                    RebindAllGridFilterValueCombos();
                 }
 
 
@@ -1840,7 +1887,7 @@ namespace SqlCollegeTranscripts
             if (tableOptions.currentComboFilterValue_isDirty)
             {
                 tableOptions.doNotWriteGrid = true;
-                RebindAllEmptyGridFilterValueCombos();
+                RebindAllGridFilterValueCombos();
                 tableOptions.doNotWriteGrid = false;
             }
         }
@@ -1883,102 +1930,6 @@ namespace SqlCollegeTranscripts
         //----------------------------------------------------------------------------------------------------------------------
         //----------------------------------------------------------------------------------------------------------------------
 
-        #region Events - Non-Datagrid and None Grid/Combo Filter Combos Controls
-
-        #region 5 paging buttons & RecordsPerPage (RPP)
-        // Paging - <<
-        private void txtRecordsPerPage_Leave(object sender, EventArgs e)
-        {
-            int rpp = 0;
-            if (int.TryParse(txtRecordsPerPage.Text, out rpp))
-            {
-                if (rpp > 9)
-                {
-                    formOptions.pageSize = rpp;
-                    AppData.SaveKeyValue("RPP", rpp.ToString());
-                }
-
-            }
-        }
-
-        private void toolStripButton1_Click(object sender, EventArgs e)
-        {
-            if (currentSql != null)
-            {
-                int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
-                int pageLeap = Math.Max(currentSql.myPage - oneFifth, 1);
-                if (currentSql.myPage != pageLeap)
-                {
-                    currentSql.myPage = pageLeap;
-                    writeGrid_NewPage();
-                }
-            }
-
-        }
-        // Paging - <
-        private void toolStripButton2_Click(object sender, EventArgs e)
-        {
-            if (currentSql != null)
-            {
-                if (currentSql.myPage > 1)
-                {
-                    currentSql.myPage--;
-                    writeGrid_NewPage();
-                }
-            }
-        }
-        // Paging - pages / totalPages
-        private void toolStripButton3_Click(object sender, EventArgs e)
-        {
-            if (currentSql != null)
-            {
-                frmCaptions captionsForm = new frmCaptions("Pages", "pages");
-                //Get connection string
-                captionsForm.totalPages = currentSql.TotalPages;
-                captionsForm.gridFormWidth = this.Width;
-                captionsForm.gridFormLeftLocation = this.Location.X;
-                captionsForm.ShowDialog();
-                int pageSelected;
-                bool captionIsInt = Int32.TryParse(captionsForm.selectedCaption, out pageSelected);
-                if (!captionIsInt)
-                {
-                    pageSelected = currentSql.myPage;
-                }
-                captionsForm.Close();
-                if (pageSelected != currentSql.myPage)
-                {
-                    currentSql.myPage = pageSelected;
-                    writeGrid_NewPage();
-                }
-            }
-        }
-        // Paging - >
-        private void toolStripButton4_Click(object sender, EventArgs e)
-        {
-            if (currentSql != null)
-            {
-                if (currentSql.myPage < currentSql.TotalPages)
-                {
-                    currentSql.myPage++;
-                    writeGrid_NewPage();
-                }
-            }
-        }
-        // Paging - >>
-        private void toolStripButton5_Click(object sender, EventArgs e)
-        {
-            if (currentSql != null)
-            {
-                int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
-                int pageLeap = Math.Min(currentSql.myPage + oneFifth, currentSql.TotalPages);
-                if (pageLeap != currentSql.TotalPages)
-                {
-                    currentSql.myPage = pageLeap;
-                    writeGrid_NewPage();
-                }
-            }
-        }
-        #endregion
 
         #region 5 Radio buttons, Add-Delete-Merge Button
 
@@ -2139,6 +2090,7 @@ namespace SqlCollegeTranscripts
 
                 // 2. Check for unique Display Key - these changes will be changed back by SetFiltersByMode on Write_Page.
                 cmbMainFilter.Enabled = false;  // Changed back below - used to prevent filtering when checking for unique display key
+                bool hasDisplayKeys = false;
                 for (int i = 0; i < cmbGridFilterFields.Length; i++)
                 {
                     field cmbField = (field)cmbGridFilterFields[i].SelectedValue;
@@ -2150,7 +2102,8 @@ namespace SqlCollegeTranscripts
                             field FkField = dataHelper.getForeignKeyFromRefField(cmbField, currentSql.myTable);
                             if (dataHelper.isDisplayKey(FkField))
                             {
-                                cmbGridFilterFields[i].Enabled = true;  // Display keys will be enabled                            
+                                cmbGridFilterFields[i].Enabled = true;  // Display keys will be enabled
+                                hasDisplayKeys = true;
                             }
                             else
                             {
@@ -2160,6 +2113,7 @@ namespace SqlCollegeTranscripts
                         else if (dataHelper.isDisplayKey(cmbField)) // Could be the PK of myTable or non-Key
                         {
                             cmbGridFilterFields[i].Enabled = true;  // Display keys will be enabled
+                            hasDisplayKeys = true;
                         }
                         else
                         {
@@ -2167,21 +2121,25 @@ namespace SqlCollegeTranscripts
                         }
                     }
                 }
-                string strSQL = currentSql.returnSql(command.select, true);  // Only display keys enabled so filtered
-                dataHelper.extraDT = new DataTable();
-                MsSql.FillDataTable(dataHelper.extraDT, strSQL);
-                if (dataHelper.extraDT.Rows.Count > 0)
+                // Defective table has no display keys, but can add an item
+                if (hasDisplayKeys)
                 {
-                    MessageBox.Show(String.Format("You already have this object in your database!"), "Display key value array must be unique.");
-                    return;
+                    string strSQL = currentSql.returnSql(command.select, true);  // Only display keys enabled so filtered
+                    dataHelper.extraDT = new DataTable();
+                    MsSql.FillDataTable(dataHelper.extraDT, strSQL);
+                    if (dataHelper.extraDT.Rows.Count > 0)
+                    {
+                        MessageBox.Show(String.Format("You already have this object in your database!"), "Display key value array must be unique.");
+                        return;
+                    }
+                    // Undo above disable=true changes
                 }
-                // Undo above disable=true changes
                 SetAllFiltersByMode(); // GridFFcombos are enabled if count > 0.
 
                 //  3. O.K. add the row
                 try
                 {
-                    MsSql.SetInsertCommand(whereList, dataHelper.currentDT);  // knows to use currentDA
+                    MsSql.SetInsertCommand(currentSql.myTable, whereList, dataHelper.currentDT);  // knows to use currentDA
                     MsSql.currentDA.InsertCommand.ExecuteNonQuery();
                     writeGrid_NewPage();
                 }
@@ -2263,6 +2221,102 @@ namespace SqlCollegeTranscripts
 
         #endregion
 
+        #region 5 paging buttons & RecordsPerPage (RPP)
+        // Paging - <<
+        private void txtRecordsPerPage_Leave(object sender, EventArgs e)
+        {
+            int rpp = 0;
+            if (int.TryParse(txtRecordsPerPage.Text, out rpp))
+            {
+                if (rpp > 9)
+                {
+                    formOptions.pageSize = rpp;
+                    AppData.SaveKeyValue("RPP", rpp.ToString());
+                }
+
+            }
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
+            {
+                int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
+                int pageLeap = Math.Max(currentSql.myPage - oneFifth, 1);
+                if (currentSql.myPage != pageLeap)
+                {
+                    currentSql.myPage = pageLeap;
+                    writeGrid_NewPage();
+                }
+            }
+
+        }
+        // Paging - <
+        private void toolStripButton2_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
+            {
+                if (currentSql.myPage > 1)
+                {
+                    currentSql.myPage--;
+                    writeGrid_NewPage();
+                }
+            }
+        }
+        // Paging - pages / totalPages
+        private void toolStripButton3_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
+            {
+                frmCaptions captionsForm = new frmCaptions("Pages", "pages");
+                //Get connection string
+                captionsForm.totalPages = currentSql.TotalPages;
+                captionsForm.gridFormWidth = this.Width;
+                captionsForm.gridFormLeftLocation = this.Location.X;
+                captionsForm.ShowDialog();
+                int pageSelected;
+                bool captionIsInt = Int32.TryParse(captionsForm.selectedCaption, out pageSelected);
+                if (!captionIsInt)
+                {
+                    pageSelected = currentSql.myPage;
+                }
+                captionsForm.Close();
+                if (pageSelected != currentSql.myPage)
+                {
+                    currentSql.myPage = pageSelected;
+                    writeGrid_NewPage();
+                }
+            }
+        }
+        // Paging - >
+        private void toolStripButton4_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
+            {
+                if (currentSql.myPage < currentSql.TotalPages)
+                {
+                    currentSql.myPage++;
+                    writeGrid_NewPage();
+                }
+            }
+        }
+        // Paging - >>
+        private void toolStripButton5_Click(object sender, EventArgs e)
+        {
+            if (currentSql != null)
+            {
+                int oneFifth = (int)Math.Ceiling((decimal)currentSql.TotalPages / 5);
+                int pageLeap = Math.Min(currentSql.myPage + oneFifth, currentSql.TotalPages);
+                if (pageLeap != currentSql.TotalPages)
+                {
+                    currentSql.myPage = pageLeap;
+                    writeGrid_NewPage();
+                }
+            }
+        }
+        #endregion
+
+        #region Other events
         private void DataGridViewForm_Resize(object sender, EventArgs e)
         {
             SetTableLayoutPanelHeight();
@@ -2380,8 +2434,9 @@ namespace SqlCollegeTranscripts
                     if (programMode != ProgramMode.add || dataHelper.isDisplayKey(selectedField))
                     {
                         // On ProgramMode.add, some of these are changed to ComboBoxStyle.DropDown.
-                        if (cmbGridFilterValue[i].DropDownStyle == ComboBoxStyle.DropDown)   // User can add value
+                        if (cmbGridFilterValue[i].DropDownStyle == ComboBoxStyle.DropDown)
                         {
+                            // User can add value - add second clause because selected value index 1 might be String.Empty
                             if (cmbGridFilterValue[i].Text != string.Empty || cmbGridFilterValue[i].SelectedIndex > 0)
                             {
                                 whValue = cmbGridFilterValue[i].Text;
