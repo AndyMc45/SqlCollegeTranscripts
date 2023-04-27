@@ -41,10 +41,21 @@ namespace SqlCollegeTranscripts
         private TableOptions? tableOptions;
         internal ProgramMode programMode = ProgramMode.none;
         internal sqlFactory? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
-        internal sqlFactory? comboSql = null;  //Always used "just in time" to fill combo, then destroyed
         internal BindingList<where>? MainFilterList;  // Use this to fill in past main filters in combo box
 
         #endregion
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.U))
+            {
+                GridContextMenu_DeleteUnusedFK_Click(null, null);
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+
 
         //----------------------------------------------------------------------------------------------------------------------
         //----------------------------------------------------------------------------------------------------------------------
@@ -59,10 +70,11 @@ namespace SqlCollegeTranscripts
 
         private void DataGridViewForm_Load(object sender, EventArgs e)
         {
-            formOptions = new FormOptions();  // Sets initial option values
+            formOptions = AppData.GetFormOptions();  // Sets initial option values
+
             // Set things that don't change even if connection changes
             // 0.  Main filter datasource and 'last' element never changes
-            field fi = new field("none", "none", DbType.Int32, 4, true);
+            field fi = new field("none", "none", DbType.Int32, 4, fieldType.pseudo);
             where wh = new where(fi, "0");
             wh.DisplayMember = "No Research object";
             MainFilterList = new BindingList<where>();
@@ -125,7 +137,7 @@ namespace SqlCollegeTranscripts
             // Note: these things that never change           
             // Translations
             lblGridFilter.Text = MultiLingual.tr("Filter Grid:", this);
-            lblComboFilter.Text = MultiLingual.tr("Filter Dropdowns:", this);
+            lblComboFilter.Text = MultiLingual.tr("Filter Grid/Combos:", this);
 
             // Control arrays - can't make array in design mode in .net
             ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
@@ -198,7 +210,7 @@ namespace SqlCollegeTranscripts
                 for (int i = 1; i <= 50; i++)
                 {
                     //if file i does not exist, create and use it
-                    fileCurrentName = logDir + "\\transcriptLog" + fileNumber(i) + ".xml";
+                    fileCurrentName = logDir + "\\transcriptLog" + dataHelper.twoDigitNumber(i) + ".xml";
                     if (!File.Exists(fileCurrentName))
                     {
                         goto label20;
@@ -216,7 +228,7 @@ namespace SqlCollegeTranscripts
                     fil = null;
                 }
                 //No files found -- use file 1, 2nd loop, delete & recreate to change create date
-                fileCurrentName = logDir + "\\transcriptLog" + fileNumber(1) + ".xml";
+                fileCurrentName = logDir + "\\transcriptLog" + dataHelper.twoDigitNumber(1) + ".xml";
                 File.Delete(fileCurrentName);
 
             label20://UPGRADE_WARNING: (2081) CreateTextFile has a new behavior. More Information: https://docs.mobilize.net/vbuc/ewis#2081
@@ -305,7 +317,8 @@ namespace SqlCollegeTranscripts
                     dataHelper.initializeDataTables();
 
                     // 7. Fill Information Datatables
-                    MsSql.initializeDatabaseInformationTables();
+                    string NoDK = MsSql.initializeDatabaseInformationTables();
+                    if (!string.IsNullOrEmpty(NoDK)) { msgTextAdd(NoDK); }
 
                     // 8.  Load Table mainmenu
                     foreach (DataRow row in dataHelper.tablesDT.Rows)
@@ -336,7 +349,6 @@ namespace SqlCollegeTranscripts
 
             // Clear other old values
             currentSql = null;
-            comboSql = null;
 
             // Delete the old mnuOpentable members
             if (mnuOpenTables.DropDownItems != null)
@@ -368,9 +380,9 @@ namespace SqlCollegeTranscripts
 
             // 0. New tableOptions and Clear Grid-Combo filters
             tableOptions = new TableOptions(); // Resets options
-            // This does not fire any events because index will -1 (and text-change tag will be null)
-            ClearFiltersOnNewTable();
-
+            tableOptions.writingTable = true;
+            ClearFiltersOnNewTable(); // All events are cancelled via "if(Selected_index != -1) . . ."
+            tableOptions.writingTable = false;
             //1. Create currentSql - same currentSql used until new table is loaded - same myFIelds and myInnerJoins
             currentSql = new sqlFactory(table, 1, formOptions.pageSize);
             // Above may produce error message
@@ -385,53 +397,38 @@ namespace SqlCollegeTranscripts
                 msgText(currentSql.myTable);
             }
 
-            // 2. Bind some of 6 cmbGridFilterFields with fields for user to select
-            //   Only setting up cmbGridFilterFields - Values set on cmbGridFilterField SelectionChanged event
+            // 2. Bind 9 cmbGridFilterFields with fields for user to select
+            //    Only setting up cmbGridFilterFields - cmbGridFilterValues set on cmbGridFilterField SelectionChanged event
+            //    All cmbGridFilterFields values are fields in myTable
             int comboNumber = 0;
-            //2a.  Bind first grid filter to all non DK, FK fields  (Skip when adding a row)
+            //2a.  Bind cmbGridFilterFields[0] to all "yellow" text fields in my table (non-DK, non-FK, non-PK)
             BindingList<field> filterFields = new BindingList<field>();
             //First Fill filterFields
             foreach (field fl in currentSql.myFields)
             {
-                if (fl.table == currentSql.myTable && (dataHelper.isForeignKeyField(fl) || (dataHelper.isDisplayKey(fl))))
+                if (fl.table == currentSql.myTable && dataHelper.isForeignKeyField(fl))
+                { tableOptions.tableHasForeignKeys = true; }
+
+                // Yellow Keys                
+                if (!(dataHelper.isTablePrimaryKeyField(fl) || dataHelper.isForeignKeyField(fl) || dataHelper.isDisplayKey(fl)))
                 {
-                    // Handled below as single choices
-                }
-                else
-                {
-                    if (fl.table == currentSql.myTable)  // Don't add display keys for foreign fields
-                    {
-                        // Change foreign keys to primary key of ref table
-                        if (dataHelper.isForeignKeyField(fl))
-                        {
-                            field fl2 = dataHelper.getForeignKeyRefField(fl);
-                            fl2.DisplayMember = MultiLingual.tr(fl2.DisplayMember, this);
-                            filterFields.Add(fl2);
-                        }
-                        else
-                        {
-                            fl.DisplayMember = MultiLingual.tr(fl.DisplayMember, this);
-                            filterFields.Add(fl);
-                        }
-                    }
+                    filterFields.Add(fl);
                 }
             }
             // Then Bind combo to filterField bindingList
-            cmbGridFilterFields[comboNumber].BindingContext = new BindingContext();  // Required to change 1 by 1.
-            cmbGridFilterFields[comboNumber].DisplayMember = "DisplayMember";
-            cmbGridFilterFields[comboNumber].ValueMember = "ValueMember";  //Entire field
-            cmbGridFilterFields[comboNumber].Enabled = true;  // Required below (when binding cmbComboTableList)
-            // Fires change_selectedindex which binds cmbGridFilterValues 
-            // which calls cmbGridFilterValue_textchanged. Which writes grid with new value
-            // "Updating" cancels this write grid
-            tableOptions.writingTable = true;
-            cmbGridFilterFields[comboNumber].DataSource = filterFields;
-            tableOptions.writingTable = false;
-            cmbGridFilterFields[comboNumber].BackColor = ComboBox.DefaultBackColor;
-            cmbGridFilterValue[comboNumber].BackColor = ComboBox.DefaultBackColor;
-            cmbGridFilterValue[comboNumber].FlatStyle = FlatStyle.Flat;
-            comboNumber++;
-
+            if (filterFields.Count > 0)
+            {
+                cmbGridFilterFields[comboNumber].BindingContext = new BindingContext();  // Previously Required, but I still use it.
+                cmbGridFilterFields[comboNumber].DisplayMember = "DisplayMember";
+                cmbGridFilterFields[comboNumber].ValueMember = "ValueMember";  //Entire field
+                cmbGridFilterFields[comboNumber].Enabled = true;  // Required below (when binding cmbComboTableList)
+                // Fires change_selectedindex which binds cmbGridFilterValues 
+                // which calls cmbGridFilterValue_textchanged. Which writes grid with new value
+                tableOptions.writingTable = true;
+                cmbGridFilterFields[comboNumber].DataSource = filterFields;
+                tableOptions.writingTable = false;
+                comboNumber++;
+            }
             // 2b.   Bind one cmbGridFilterFields for each DK and FK
             foreach (field fl in currentSql.myFields)
             {
@@ -440,17 +437,7 @@ namespace SqlCollegeTranscripts
                     if (comboNumber < cmbGridFilterFields.Count())
                     {
                         BindingList<field> dkField = new BindingList<field>();
-                        // Change foreign keys to primary key of ref table
-                        if (dataHelper.isForeignKeyField(fl))
-                        {
-                            field fl2 = dataHelper.getForeignKeyRefField(fl);
-                            dkField.Add(fl2);
-                            tableOptions.tableHasForeignKeys = true;  // Used below
-                        }
-                        else
-                        {
-                            dkField.Add(fl);
-                        }
+                        dkField.Add(fl);
                         cmbGridFilterFields[comboNumber].Enabled = true;  // Required below (when binding cmbComboTableList)
                         cmbGridFilterFields[comboNumber].DisplayMember = "DisplayMember";
                         cmbGridFilterFields[comboNumber].ValueMember = "ValueMember";  //Entire field
@@ -544,23 +531,17 @@ namespace SqlCollegeTranscripts
 
             //5. On first load, Bind the cmbComboTableList with Primary keys of Reference Tables
 
-            if (cmbComboTableList.Items.Count == 0 && tableOptions.tableHasForeignKeys)  // Only true on first load
+            if (tableOptions.firstTimeWritingTable && tableOptions.tableHasForeignKeys)
             {
                 BindingList<field> comboTableList = new BindingList<field>();
 
-                string filter = String.Format("TableName = '{0}' and (is_FK = 'true' or is_PK = 'true')", currentSql.myTable);
+                string filter = String.Format("TableName = '{0}' and is_FK = 'true'", currentSql.myTable);
                 DataRow[] drs = dataHelper.fieldsDT.Select(filter);
                 foreach (DataRow dr in drs)
                 {
                     // Adding all fields 
                     field fi = dataHelper.getFieldFromFieldsDT(dr);
-                    // But first transform Foreign keys to ref table primary key
-                    if (dataHelper.isForeignKeyField(fi))
-                    {
-                        fi = dataHelper.getForeignKeyRefField(dr);  // Primary key of ref table
-                    }
-                    // Then add
-                    comboTableList.Add(fi);  // All keys are primary keys
+                    comboTableList.Add(fi);  // All keys are in myTable -
                 }
                 cmbComboTableList.BindingContext = new BindingContext();  // Required to change 1 by 1.
                 cmbComboTableList.DisplayMember = "DisplayMember";
@@ -577,8 +558,8 @@ namespace SqlCollegeTranscripts
             // b. Set form caption
             string dbPath = Interaction.GetSetting("AccessFreeData", "DatabaseList", "path0", "");
             StringBuilder sb = new StringBuilder(dbPath.Substring(dbPath.LastIndexOf("\\") + 1));
-            sb.Append(" - " + currentSql.myTable);
-            sb.Append(" -  " + currentSql.RecordCount.ToString() + " rows");
+            sb.Append("    -    " + currentSql.myTable);
+            sb.Append("    -     " + currentSql.RecordCount.ToString() + " rows");
             sb.Append(", Page: " + currentSql.myPage.ToString());
             this.Text = sb.ToString();
             // c. Set column widths
@@ -607,10 +588,14 @@ namespace SqlCollegeTranscripts
             }
 
             // e. Format the rest of the grid and form
-            SetHeaderColorsOnWritePage();
+            SetHeaderColorsOnWritePage();  // Must do everytime we re-write grid
             SetColumnsReadOnlyProperty(); // Might change editable column
             SetAllFiltersByMode();   // Because Write_NewPage may require changes
-            ColorComboBoxes();   // Must be after the above for some reason
+            if (tableOptions.firstTimeWritingTable)
+            {
+                ColorComboBoxes();   // Must do after the above for some reason
+            }
+            tableOptions.firstTimeWritingTable = false;
         }
 
         #endregion
@@ -668,7 +653,7 @@ namespace SqlCollegeTranscripts
                     field colField = currentSql.myFields[columnIndex];
                     if (colField.table == currentSql.myTable &&
                         !dataHelper.isTablePrimaryKeyField(colField) &&
-                        !dataHelper.isDisplayKey(colField))
+                        (!dataHelper.isDisplayKey(colField)) || tableOptions.allowDisplayKeyEdit)
                     {
                         col.ReadOnly = false;
                     }
@@ -692,11 +677,6 @@ namespace SqlCollegeTranscripts
                     for (int j = 0; j < currentSql.myFields.Count; j++)
                     {
                         field colField = currentSql.myFields[j];
-                        // Switch FK to Primary KEy of Ref table - this is what I added to the  Filter fields
-                        if (dataHelper.isForeignKeyField(colField))
-                        {
-                            colField = dataHelper.getForeignKeyRefField(colField);
-                        }
                         if (selectedField.isSameFieldAs(colField))
                         {
                             if (dataGridView1.Columns.Count > 0)
@@ -942,11 +922,13 @@ namespace SqlCollegeTranscripts
                 cmbGridFilterFields[i].Items.Clear();
                 cmbGridFilterFields[i].Visible = false;
                 cmbGridFilterFields[i].Enabled = false;
+                cmbGridFilterFields[i].Text = string.Empty;
 
                 cmbGridFilterValue[i].DataSource = null;
                 cmbGridFilterValue[i].Items.Clear();
                 cmbGridFilterValue[i].Visible = false;
                 cmbGridFilterValue[i].Enabled = false;
+                cmbGridFilterValue[i].Text = string.Empty;
 
             }
             cmbComboTableList.DataSource = null;
@@ -984,6 +966,12 @@ namespace SqlCollegeTranscripts
         //----------------------------------------------------------------------------------------------------------------------
 
         #region EVENTS - Menu events
+
+        private void mnuClose_Click(object sender, EventArgs e)
+        {
+            AppData.StoreFormOptions(formOptions);
+            this.Close();
+        }
 
         private void mnuForeignKeyMissing_Click(object sender, EventArgs e)
         {
@@ -1030,9 +1018,9 @@ namespace SqlCollegeTranscripts
                         field refField = dataHelper.getTablePrimaryKeyField(selectedRefTable);
                         StringBuilder sbWhere = new StringBuilder();
                         sbWhere.Append(" (NOT EXISTS (SELECT ");
-                        sbWhere.Append(refField.fieldName + " FROM " + refField.table);
+                        sbWhere.Append(refField.fieldName + " FROM " + refField.table + " AS " + refField.tableAlias);
                         sbWhere.Append(" WHERE ");
-                        sbWhere.Append(dataHelper.QualifiedFieldName(refField) + " = " + dataHelper.QualifiedFieldName(nonFkField));
+                        sbWhere.Append(dataHelper.QualifiedAliasFieldName(refField) + " = " + dataHelper.QualifiedAliasFieldName(nonFkField));
                         sbWhere.Append("))");
                         tableOptions.fixingDatabase = true;
                         tableOptions.strFixingDatabaseSql = currentSql.returnFixDatabaseSql(sbWhere.ToString());
@@ -1063,8 +1051,12 @@ namespace SqlCollegeTranscripts
             String sql1 = String.Format("Select {0} From {1} Group By {2} Having Count(*) > 1", fields2, currentSql.myTable, fields);
             dataHelper.extraDT = new DataTable();
             MsSql.FillDataTable(dataHelper.extraDT, sql1);
-            if (dataHelper.extraDT.Rows.Count == 0) { msgText("Everything O.K. No duplicates!"); return; }
+            if (dataHelper.extraDT.Rows.Count == 0)
+            {
+                msgColor(Color.Red); msgText("Everything O.K. No duplicates!" + "                " + "Everything O.K. No duplicates!"); return;
+            }
             msgColor(Color.Navy);
+            msgText("Count: " + dataHelper.extraDT.Rows.Count.ToString());
             List<String> andConditions = new List<String>();
             foreach (DataRow row in dataHelper.extraDT.Rows)
             {
@@ -1072,10 +1064,11 @@ namespace SqlCollegeTranscripts
                 foreach (string dkField in dkFields)
                 {
                     field fl = new field(currentSql.myTable, dkField, DbType.String, 0);
-                    String atomicStatement = String.Format("{0} = '{1}'", dataHelper.QualifiedFieldName(fl), row[dkField].ToString());
+                    String atomicStatement = String.Format("{0} = '{1}'", dataHelper.QualifiedAliasFieldName(fl), row[dkField].ToString());
                     atomicStatements.Add(atomicStatement);
                 }
                 andConditions.Add("(" + String.Join(" AND ", atomicStatements) + ")");
+                // break;  // Break after first row - i.e. fix one by one
             }
             string whereCondition = String.Join(" OR ", andConditions);
             tableOptions.fixingDatabase = true;
@@ -1087,13 +1080,6 @@ namespace SqlCollegeTranscripts
         {
             frmDatabaseInfo formDBI = new frmDatabaseInfo();
             formDBI.ShowDialog();
-        }
-
-        private void mnuUpdateDatabase_Click(object sender, EventArgs e)
-        {
-            frmUpdateDatabaseToV2 updateForm = new frmUpdateDatabaseToV2();
-            updateForm.ShowDialog();
-            updateForm = null;
         }
 
         private void mnuDeleteDatabase_Click(object sender, EventArgs e)
@@ -1152,31 +1138,9 @@ namespace SqlCollegeTranscripts
                         // 1a. This assumes the first column in row is the Primary Key and it is an integer
                         string value = dataGridView1.SelectedRows[0].Cells[0].Value.ToString(); //Integer
 
-
-
-                        //// 2. Get DisplayValue of selected row                
-                        //List<String> displayValueList = new List<String>();
-                        //foreach (field dkField in currentSql.DisplayFields_Ostensive)
-                        //{
-                        //    int fieldIndex = dataHelper.currentDT.Columns.IndexOf(dkField.fieldName);
-                        //    string str = dataGridView1.SelectedRows[0].Cells[fieldIndex].Value.ToString();
-                        //    if (!String.IsNullOrEmpty(str))
-                        //    {
-                        //        displayValueList.Add(str);
-                        //    }
-                        //}
-                        //string displayValue = string.Empty;
-                        //if (displayValueList.Count == 0)
-                        //{ displayValue = "No Display columns!"; }
-                        //else
-                        //{ displayValue = String.Join(", ", displayValueList); }
-
                         ////3. Get filter "where" for selected row
                         //field fi2 = new field(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, DbType.Int32, 4);
                         where newMainFilter = dataHelper.GetWhereFromPrimaryKey(currentSql.myTable, value);
-                        //where newMainFilter = new where(fi2, value);
-                        // newMainFilter.DisplayMember = displayValue; // WhereValue set in constructor
-                        //1d. Update pastFilters list
 
                         foreach (where wh in MainFilterList)
                         {
@@ -1187,6 +1151,7 @@ namespace SqlCollegeTranscripts
                         cmbMainFilter.Refresh();
                         formOptions.loadingMainFilter = true;  // following will not write grid
                         cmbMainFilter.SelectedIndex = 0;
+                        cmbMainFilter.Enabled = true;
                         formOptions.loadingMainFilter = false;
                         writeGrid_NewTable(selectedTable);
                     }
@@ -1244,6 +1209,7 @@ namespace SqlCollegeTranscripts
                             cmbMainFilter.Refresh();
                             formOptions.loadingMainFilter = true;  // following will not write grid
                             cmbMainFilter.SelectedIndex = 0;
+                            cmbMainFilter.Enabled = true;
                             formOptions.loadingMainFilter = false;
                             writeGrid_NewTable(selectedTable);
                         }
@@ -1251,6 +1217,46 @@ namespace SqlCollegeTranscripts
                 }
             }
 
+        }
+
+        private void GridContextMenu_DeleteUnusedFK_Click(object sender, EventArgs e)
+        {
+            // Find row which is not used as the Ref row of a foreign key
+            if (currentSql != null)
+            {
+                string sqlString = currentSql.returnSql(command.selectAll);
+                dataHelper.extraDT = new DataTable();
+                MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                foreach (DataRow dr in dataHelper.extraDT.Rows)
+                {
+                    // Get PK values
+                    int drPKValue = Convert.ToInt32(dr.Field<int>(0));
+                    //  Get rows in the fieldsDT that have myTable as RefTable 
+                    DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("RefTable = '{0}'", currentSql.myTable));
+                    // Count how many rows the firstPK occurs as FK's in other tables
+                    int firstPKCount = 0;
+                    foreach (DataRow drInner in drs)    // Only 1 dr with "Courses" main table, and that is the CourseTerm table.
+                    {
+                        string FKColumnName = drInner.ItemArray[drInner.Table.Columns.IndexOf("ColumnName")].ToString();
+                        string TableWithFK = drInner.ItemArray[drInner.Table.Columns.IndexOf("TableName")].ToString();
+                        string strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, drPKValue);
+                        firstPKCount = firstPKCount + MsSql.GetRecordCount(strSql);
+                    }
+                    if (firstPKCount == 0)
+                    {
+                        tableOptions.fixingDatabase = true;
+                        string strField = dataHelper.QualifiedAliasFieldName(currentSql.myFields[0]);
+                        string strWhere = String.Format("{0} = '{1}'", strField, drPKValue);
+                        tableOptions.strFixingDatabaseSql = currentSql.returnFixDatabaseSql(strWhere);
+                        writeGrid_NewPage();
+                        txtMessages.Text = String.Format("The slected row is not the value of a foreign key.");
+                        return;
+                    }
+                }
+                msgColor(Color.Red);
+                msgText("All keys in this page are in use");
+                msgColor(Color.Navy);
+            }
         }
 
         private void mnuOpenTables_Click(object sender, EventArgs e) { }
@@ -1357,8 +1363,7 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        // Update datatable in FkComboEditingControl on entering cell
-        // Even if I leave, I will re-enter
+        // Update datatable in FkComboEditingControl on entering cell.  
         private void dataGridView1_CellEnter(object sender, DataGridViewCellEventArgs e)
         {
             if (programMode == ProgramMode.edit)
@@ -1371,13 +1376,18 @@ namespace SqlCollegeTranscripts
                 FkComboColumn Fkcol = col as FkComboColumn;
                 if (Fkcol != null)  // Will be null for non-foreign key row
                 {
-                    // Update the Editing control
-                    // if (!colField.SameFieldAs(tableOptions.FkFieldInEditingControl))
-                    // {
-                    // Fill Data table (datahelper.extraDT)
-                    field FkTablePKField = dataHelper.getForeignKeyRefField(colField);
-                    FillExtraDTForUseInCombo(FkTablePKField);   //Filter by all comboFilters
-                                                                // Assign datatable to each cell in FK column
+                    // Get from inner joins because we need the correct table alias
+                    foreach (innerJoin ij in currentSql.myInnerJoins)
+                    {
+                        if (ij.fkFld.isSameFieldAs(colField))
+                        {
+                            // Fill Data table (datahelper.extraDT)
+                            field PK_refTable = ij.pkRefFld;
+                            FillExtraDTForUseInCombo(PK_refTable, comboValueType.PK_refTable);
+                            break;
+                        }
+                    }
+                    // Assign datatable to each cell in FK column
                     int index = dataHelper.currentDT.Columns.IndexOf(col.Name);
                     for (int j = 0; j < dataHelper.currentDT.Rows.Count; j++)
                     {
@@ -1385,7 +1395,6 @@ namespace SqlCollegeTranscripts
                         fkCell.dataTable = dataHelper.extraDT;
                     }
                     tableOptions.FkFieldInEditingControl = colField;
-                    // }
                 }
             }
         }
@@ -1590,9 +1599,11 @@ namespace SqlCollegeTranscripts
         // (B) GridFFcombos - combo (no dummy) -- The GridFilterFieldCombo.SelectedValue is the field to filter
         //      1.  Manual Selection change : Bind GridFVcombo -> GridFVcombo_SelectionChange (to empty-string) : Write_NewFilter
         //      2.  Write_NewTable : Setup and bind all GridFFcombos (often only 1 field), Setup GridFVcombos (Item 0 choosen)
+        //      3.  Note: Some GridFFcombos have a Primary Key and some have a text-string.  These will be handled very differently
         // (C)  GridFVcombos – combo (first value dummy) -- The GridFilterValueCombo.Selected Value is the value of the filter
         //      1.  Manual Selection change : Write_NewFilter
-        // (D)  ComboController (no dummy) - List of primary key fields that can be filteeed 
+        //      2.  Note: all the GridFVcombos are text fields. 
+        // (D)  ComboController (no dummy) - The RefTable PK for each FK in myTable 
         //      1.  Selection change : Unbind GFV filters, setup & Bind GFV filters, Update All empty GridFVcombos
         //          (Do last two steps when mode changed as well.)
         //      2.  Write_NewTable: Bind this -> Will select Item 0.
@@ -1689,12 +1700,27 @@ namespace SqlCollegeTranscripts
             {
                 if (!(tableOptions.writingTable || tableOptions.doNotWriteGrid))
                 {
-                    writeGrid_NewFilter();
+                    // writeGrid_NewFilter();  // Using Reload button
                 }
             }
 
 
         }
+
+        private void cmbGridFilterValue_Enter(object sender, EventArgs e)
+        {
+            ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
+            ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5, cmbGridFilterValue_6, cmbGridFilterValue_7, cmbGridFilterValue_8 };
+            ComboBox cmb = (ComboBox)sender;
+            for (int i = 0; i < cmbGridFilterValue.Length; i++)
+            {
+                if (cmb == cmbGridFilterValue[i])
+                {
+                    cmb.BackColor = cmbGridFilterFields[i].BackColor;
+                }
+            }
+        }
+
 
         // Only rebind empty filters - no change in Grid because rebinding GridFV selects the same first value = string.empty
         private void RebindAllGridFilterValueCombos()
@@ -1707,15 +1733,9 @@ namespace SqlCollegeTranscripts
             {
                 if (cmbGridFilterFields[i].Enabled)
                 {
-                    if (gridFVneedsRebound())
-                    {
-                        //if (cmbGridFilterValue[i].SelectedIndex == 0)   // EmptyString
-                        //{
-                        tableOptions.doNotWriteGrid = true;
-                        RebindOneGridFilterValueCombo(i);
-                        tableOptions.doNotWriteGrid = false;
-                        //}
-                    }
+                    tableOptions.doNotWriteGrid = true;
+                    RebindOneGridFilterValueCombo(i);
+                    tableOptions.doNotWriteGrid = false;
                 }
             }
         }
@@ -1743,16 +1763,32 @@ namespace SqlCollegeTranscripts
                         oldKeyIntValue = (int)cmbGridFV.SelectedValue;
                     }
                 }
-                // Settig Datasource = null
-                // This will not rewrite the grid because selected_index will be -1
-                // Also, I have set doNotRewriteGrid = true whenever I call this method
+                // Settig Datasource = null - No _TextChange event, and _SelectionChange will have selectedIndex = -1 (stops grid write)
                 cmbGridFilterValue[i].DataSource = null;
                 cmbGridFilterValue[i].Items.Clear();
                 cmbGridFilterValue[i].Enabled = true;
 
-                // Fill cmbComboFilterValue[i]
+                // Fill cmbComboFilterValue[i] - all selectedValues are in myTable - either an FK or a text field
                 field selectedField = (field)cmbGridFilterFields[i].SelectedValue;
-                FillExtraDTForUseInCombo(selectedField);
+                if (dataHelper.isForeignKeyField(selectedField))
+                {
+                    // Get primary key of the Ref table from innerJoins
+                    // Get from inner joins because we need the correct table alias
+                    foreach (innerJoin ij in currentSql.myInnerJoins)
+                    {
+                        if (ij.fkFld.isSameFieldAs(selectedField))
+                        {
+                            // Fill Data table (datahelper.extraDT)
+                            field PK_refTable = ij.pkRefFld;
+                            FillExtraDTForUseInCombo(PK_refTable, comboValueType.PK_refTable);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    FillExtraDTForUseInCombo(selectedField, comboValueType.textField_myTable);
+                }
                 DataRow firstRow = dataHelper.extraDT.NewRow();
                 // The Datasource in GridFieldsCombos must have "DisplayMember" and "ValueMember" columns
                 // Leave these values null, because they might need correct type
@@ -1771,28 +1807,27 @@ namespace SqlCollegeTranscripts
                 }
                 else
                 {
-                    int indexOfOldKey = cmbGridFV.Items.IndexOf(oldKeyIntValue);
-                    if (indexOfOldKey == -1)
+                    if (oldKeyIntValue > 0)
                     {
-                        if (oldKeyIntValue > 0)
+                        int indexOfOldKey = -1;
+                        for (int index = 1; index < cmbGridFV.Items.Count; index++)
                         {
-                            cmbGridFV.BackColor = Color.Red;
+                            tableOptions.doNotRebindGridFV = true;   //doNotWriteGrid already true when this method called.
+                            cmbGridFV.SelectedIndex = index;
+                            tableOptions.doNotRebindGridFV = false;   // Same value as entering this method - see above
+                            if ((int)cmbGridFV.SelectedValue == oldKeyIntValue)
+                            {
+                                return;
+                            }
                         }
-                    }
-                    else
-                    {
+                        cmbGridFV.BackColor = Color.Red;
                         tableOptions.doNotRebindGridFV = true;   //doNotWriteGrid already true when this method called.
-                        cmbGridFV.SelectedIndex = indexOfOldKey;
-                        tableOptions.doNotRebindGridFV = true;   // Same value as entering this method - see above
+                        cmbGridFV.SelectedIndex = 0;
+                        tableOptions.doNotRebindGridFV = false;   // Same value as entering this method - see above
+
                     }
                 }
             }
-        }
-
-        private bool gridFVneedsRebound()
-        {
-            // Use to warn user of problems - no values or needs rebound
-            return true;
         }
 
         //  COMBO FILTERS COMBOS EVENTS-----------------------------------------------------------------------------------------
@@ -1814,12 +1849,21 @@ namespace SqlCollegeTranscripts
             // Fill combo filters with each value in ostensive definition
             if (cmb.SelectedIndex > -1)
             {
-                field selectedValue = (field)cmb.SelectedValue;
-                comboSql = new sqlFactory(selectedValue.table, 0, 0);
+                field selectedFK = (field)cmb.SelectedValue;
                 int comboNumber = 0;
                 bool oneOrMoreComboFVRebound = false;
                 // Main work of this method - rebind all ComboFVcombos
-                foreach (field fi in comboSql.DisplayFields_Ostensive)
+                field PkRefTable = dataHelper.getForeignKeyRefField(selectedFK);
+                foreach (innerJoin ij in currentSql.myInnerJoins)
+                {
+                    if (ij.fkFld.isSameBaseFieldAs(selectedFK))
+                    {
+                        PkRefTable.tableAlias = ij.pkRefFld.tableAlias;
+                        break;
+                    }
+                }
+                Tuple<string, string, string> key = Tuple.Create(PkRefTable.tableAlias, PkRefTable.table, PkRefTable.fieldName);
+                foreach (field fi in currentSql.PKs_OstensiveDictionary[key])
                 {
                     // Set label and Load combo
                     lblCmbFilterFields[comboNumber].Text = fi.fieldName + ":"; // Shorter than DisplayName
@@ -1827,7 +1871,7 @@ namespace SqlCollegeTranscripts
                     lblCmbFilterFields[comboNumber].Enabled = true;
                     cmbComboFilterValue[comboNumber].Visible = true;
                     cmbComboFilterValue[comboNumber].Enabled = true;
-                    cmbComboFilterValue[comboNumber].Tag = fi;  // Used in program
+                    cmbComboFilterValue[comboNumber].Tag = fi;  // Used in program - a foreign key
                     // Bind ComboFilterValue[comboNumber] - but wait to end to bind grid filter values (see below)
                     tableOptions.doNotRebindGridFV = true;
                     RebindOneComboFilterValueCombo(comboNumber);
@@ -1860,8 +1904,6 @@ namespace SqlCollegeTranscripts
                 {
                     RebindAllGridFilterValueCombos();
                 }
-
-
             }
         }
 
@@ -1889,41 +1931,30 @@ namespace SqlCollegeTranscripts
                 tableOptions.doNotWriteGrid = true;
                 RebindAllGridFilterValueCombos();
                 tableOptions.doNotWriteGrid = false;
+                tableOptions.currentComboFilterValue_isDirty = false;
             }
         }
 
-        // Load the combo with all useful distinct values
-        // When viewing, this will be the distinct values in this column in grid
-        // When editing, it will be all distinct values consistent with main filter and other combo filters
-        // Only called programmatically (by comboController) with "doNotRebindGridFV = true".
-        // This event will fire Text_change event.  Manually called, the later event will bind Grid_FilterValues
-        // But "doNotRebindGridFV=true" will stop this.
+        // Load the combo with all distinct values; Called by cmbComboTableList_SelectedIndexChanged
+        // Will rebind all GridFV; If selectedIndex change is called programmatically use "doNotRebindGridFV = true".
         private void RebindOneComboFilterValueCombo(int i)
         {
             ComboBox[] cmbComboFilterValue = { cmbComboFilterValue_0, cmbComboFilterValue_1, cmbComboFilterValue_2, cmbComboFilterValue_3, cmbComboFilterValue_4, cmbComboFilterValue_5 };
             ComboBox cmb = cmbComboFilterValue[i];
 
-            field fi = (field)cmb.Tag;
-            // Fill with distinct strings from either currentDT or the entire Table
+            field fi = (field)cmb.Tag;  // Non-FK myTable
             List<string> strList = new List<string>();
-            if (InAnEditingMode())
-            {
-                // Filters by main filter and enabled, non-null ComboFilterValues
-                // Will not filter by this value because this cmb datasource is null
-                FillExtraDTForUseInCombo(fi);
-                strList = dataHelper.extraDT.AsEnumerable().Select(x => x["DisplayMember"].ToString()).ToList();
-            }
-            else
-            {
-                // Select distinct elements in currentDT - On Write_Table, must be after currentSql (currentDT) set.
-                strList = (dataHelper.currentDT.AsEnumerable().Select(x => x[fi.fieldName].ToString()).Distinct()).ToList();
-            }
+            FillExtraDTForUseInCombo(fi, comboValueType.textField_refTable);
+            strList = dataHelper.extraDT.AsEnumerable().Select(x => x["DisplayMember"].ToString()).ToList();
+
             // Insert Dummy element
             strList.Insert(0, String.Empty);
             BindingList<string> strBindingList = new BindingList<string>(strList);
             // Text will change to string.empty, but since it is unbound this is no change
             cmb.DataSource = strBindingList;
         }
+
+
 
         #endregion
 
@@ -1932,6 +1963,10 @@ namespace SqlCollegeTranscripts
 
 
         #region 5 Radio buttons, Add-Delete-Merge Button
+        private void btnReload_Click(object sender, EventArgs e)
+        {
+            writeGrid_NewFilter();
+        }
 
         private void btnDeleteAddMerge_Click(object sender, EventArgs e)
         {
@@ -1941,6 +1976,13 @@ namespace SqlCollegeTranscripts
             txtMessages.Text = string.Empty;
             if (programMode == ProgramMode.merge)
             {
+                if (dataGridView1.Rows.Count == 2)
+                {
+                    if (dataGridView1.SelectedRows.Count != 2)
+                    {
+                        dataGridView1.SelectAll();
+                    }
+                }
                 if (dataGridView1.SelectedRows.Count != 2)
                 {
                     msgColor(Color.Red);
@@ -2132,8 +2174,8 @@ namespace SqlCollegeTranscripts
                         MessageBox.Show(String.Format("You already have this object in your database!"), "Display key value array must be unique.");
                         return;
                     }
-                    // Undo above disable=true changes
                 }
+                // Undo above disable=true changes
                 SetAllFiltersByMode(); // GridFFcombos are enabled if count > 0.
 
                 //  3. O.K. add the row
@@ -2231,9 +2273,7 @@ namespace SqlCollegeTranscripts
                 if (rpp > 9)
                 {
                     formOptions.pageSize = rpp;
-                    AppData.SaveKeyValue("RPP", rpp.ToString());
                 }
-
             }
         }
 
@@ -2404,25 +2444,30 @@ namespace SqlCollegeTranscripts
         {
             ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
             ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5, cmbGridFilterValue_6, cmbGridFilterValue_7, cmbGridFilterValue_8 };
+            ComboBox[] cmbComboFilterValue = { cmbComboFilterValue_0, cmbComboFilterValue_1, cmbComboFilterValue_2, cmbComboFilterValue_3, cmbComboFilterValue_4, cmbComboFilterValue_5 };
 
             // 1. Clear any old filters from currentSql
             currentSql.myWheres.Clear();
 
-            // 2. Main filter - add this where to the currentSql)
+
+            //Main filter - add this where to the currentSql)
             if (programMode != ProgramMode.add && cmbMainFilter.Enabled && cmbMainFilter.SelectedIndex != cmbMainFilter.Items.Count - 1)
             {
                 where mfWhere = (where)cmbMainFilter.SelectedValue;
+
                 if (Convert.ToInt32(mfWhere.whereValue) > 0)
                 {
-                    // Check that the table is in the myFields
-                    if (currentSql.TableIsInMyTables(mfWhere.fl.table))
+                    // Check that the table and field is in the myFields
+                    field PkField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
+                    if (currentSql.MainFilterTableIsInSql(mfWhere, PkField, out string tableAlias))
                     {
+                        mfWhere.fl.tableAlias = tableAlias;
                         currentSql.myWheres.Add(mfWhere);
                     }
                 }
             }
 
-            // 3. cmbGridFilterFields - Currently 9.
+            // 2. cmbGridFilterFields - Currently 9.
             for (int i = 0; i < cmbGridFilterFields.Length; i++)
             {
                 if (cmbGridFilterFields[i].Enabled)
@@ -2431,7 +2476,7 @@ namespace SqlCollegeTranscripts
                     string whValue = string.Empty;
                     bool addWhere = false;
                     // On programMode.add, only add displayKeys
-                    if (programMode != ProgramMode.add || dataHelper.isDisplayKey(selectedField))
+                    if (!(programMode == ProgramMode.add && !dataHelper.isDisplayKey(selectedField)))
                     {
                         // On ProgramMode.add, some of these are changed to ComboBoxStyle.DropDown.
                         if (cmbGridFilterValue[i].DropDownStyle == ComboBoxStyle.DropDown)
@@ -2443,7 +2488,7 @@ namespace SqlCollegeTranscripts
                                 addWhere = true;
                             }
                         }
-                        else if (cmbGridFilterValue[i].SelectedIndex > 0) // 0 is the pseudo item "-1" or "Filter Value"
+                        else if (cmbGridFilterValue[i].SelectedIndex > 0) // 0 is the pseudo item
                         {
                             whValue = cmbGridFilterValue[i].SelectedValue.ToString();
                             addWhere = true;
@@ -2465,26 +2510,59 @@ namespace SqlCollegeTranscripts
                     }
                 }
             }
+
+            // 3. cmbComboFilterFields - Currently 6.
+            // cmbComboFilterFields  (6 fields)
+            for (int i = 0; i < cmbComboFilterValue.Length; i++)
+            {
+                if (cmbComboFilterValue[i].Enabled)  // True iff visible
+                {
+                    if (cmbComboFilterValue[i].DataSource != null)  // Probably not needed but just in case 
+                    {
+                        if (cmbComboFilterValue[i].Text != String.Empty) // ComboFV is a non-PK non-FK
+                        {
+                            field comboFF = (field)cmbComboFilterValue[i].Tag;
+                            // field PKcomboFF = dataHelper.getTablePrimaryKeyField(comboFF.table);
+                            // PKcomboFF.tableAlias = comboFF.tableAlias;
+                            where wh = new where(comboFF, cmbComboFilterValue[i].Text);
+                            if (dataHelper.TryParseToDbType(wh.whereValue, comboFF.dbType))
+                            {
+                                currentSql.myWheres.Add(wh);
+                            }
+                            else
+                            {
+                                string erroMsg = String.Format(dataHelper.errMsg, dataHelper.errMsgParameter1, dataHelper.errMsgParameter2);
+                                msgColor(Color.Red);
+                                msgText(erroMsg);
+                            }
+                        }
+                    }
+                }
+            }
+
+
+
         }
 
-        private void callSqlWheresForCombo()
+        private void callSqlWheresForCombo(field PkField)  // PK used to get inner joins 
         {   // Adds all the filters - FK, DK, non-Key and
-            Label[] lblCmbFilterFields = { lblCmbFilterField_0, lblCmbFilterField_1, lblCmbFilterField_2, lblCmbFilterField_3, lblCmbFilterField_4, lblCmbFilterField_5 };
             ComboBox[] cmbComboFilterValue = { cmbComboFilterValue_0, cmbComboFilterValue_1, cmbComboFilterValue_2, cmbComboFilterValue_3, cmbComboFilterValue_4, cmbComboFilterValue_5 };
 
             // Clear any old filters from currentSql
-            comboSql.myWheres.Clear();
+            currentSql.myComboWheres.Clear();
 
             //Main filter - add this where to the currentSql)
             if (cmbMainFilter.SelectedIndex != cmbMainFilter.Items.Count - 1)
             {
                 where mfWhere = (where)cmbMainFilter.SelectedValue;
+
                 if (Convert.ToInt32(mfWhere.whereValue) > 0)
                 {
                     // Check that the table and field is in the myFields
-                    if (comboSql.TableIsInMyTables(mfWhere.fl.table))
+                    if (currentSql.MainFilterTableIsInSql(mfWhere, PkField, out string tableAlias))
                     {
-                        comboSql.myWheres.Add(mfWhere);
+                        mfWhere.fl.tableAlias = tableAlias;
+                        currentSql.myComboWheres.Add(mfWhere);
                     }
                 }
             }
@@ -2497,13 +2575,15 @@ namespace SqlCollegeTranscripts
                     {
                         if (cmbComboFilterValue[i].Text != String.Empty) // ComboFV is a non-PK non-FK
                         {
-                            field comboFilterField = (field)cmbComboFilterValue[i].Tag;
-                            if (comboSql.TableIsInMyTables(comboFilterField.table))  // Should always be true
+                            field comboFF = (field)cmbComboFilterValue[i].Tag;
+                            field PKcomboFF = dataHelper.getTablePrimaryKeyField(comboFF.table);
+                            PKcomboFF.tableAlias = comboFF.tableAlias;
+                            if (currentSql.TableIsInMyInnerJoins(PkField, comboFF.tableAlias))  // Should always be true
                             {
-                                where wh = new where(comboFilterField, cmbComboFilterValue[i].Text);
-                                if (dataHelper.TryParseToDbType(wh.whereValue, comboFilterField.dbType))
+                                where wh = new where(comboFF, cmbComboFilterValue[i].Text);
+                                if (dataHelper.TryParseToDbType(wh.whereValue, comboFF.dbType))
                                 {
-                                    comboSql.myWheres.Add(wh);
+                                    currentSql.myComboWheres.Add(wh);
                                 }
                                 else
                                 {
@@ -2518,12 +2598,21 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        private void FillExtraDTForUseInCombo(field comboField)
+        private void FillExtraDTForUseInCombo(field fl, comboValueType cmbValueType)
         {
-            comboSql = new sqlFactory(comboField.table, 0, 0);
-            callSqlWheresForCombo();  // Filter by main filter and visible Combo filter Combos
+            // If a foreign key
+            if (cmbValueType == comboValueType.PK_myTable || cmbValueType == comboValueType.PK_refTable)
+            {
+                callSqlWheresForCombo(fl);  // Filter by main filter and visible Combo filter Combos
+            }
+            else  // a text field
+            {
+                field PkTable = dataHelper.getTablePrimaryKeyField(fl.table);
+                PkTable.tableAlias = fl.tableAlias;
+                callSqlWheresForCombo(PkTable);
+            }
             // combo.returnComboSql works very differently for Primary keys and non-Primary keys
-            string strSql = comboSql.returnComboSql(comboField);
+            string strSql = currentSql.returnComboSql(fl, cmbValueType);
             dataHelper.extraDT = new DataTable();
             MsSql.FillDataTable(dataHelper.extraDT, strSql);
         }
@@ -2538,7 +2627,7 @@ namespace SqlCollegeTranscripts
             }
             try
             {
-                dr.Delete();
+                dr.Delete();  // Delete datarow from grid
                 // Only update this one row
                 DataRow[] drArray = new DataRow[1];
                 drArray[0] = dr;
@@ -2592,19 +2681,6 @@ namespace SqlCollegeTranscripts
             string msg = MultiLingual.tr(text, this);
             txtMessages.Text += msg;
             toolStripMsg.Text += msg;
-        }
-
-        // Add a "0" to i if it is less than 10.
-        private string fileNumber(int i)
-        {
-            if (i < 10)
-            {
-                return "0" + i.ToString();
-            }
-            else
-            {
-                return i.ToString();
-            }
         }
 
         private bool InAnEditingMode()

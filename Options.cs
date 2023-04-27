@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace SqlCollegeTranscripts
 {
-    internal class FormOptions
+    public class FormOptions
     {
-        internal FormOptions()
+        public FormOptions()
         {
             debugging = false;
             runTimer = true;
@@ -16,17 +16,17 @@ namespace SqlCollegeTranscripts
             pageSize = 0;
             logFileName = string.Empty;
         }
-        internal bool debugging { get; set; }
-        internal bool runTimer { get; set; }
-        internal bool loadingMainFilter { get; set; } //use updating to stop events when making programatic changes 
-        internal int pageSize { get; set; }
-        internal string logFileName { get; set; }
+        public bool debugging { get; set; }
+        public bool runTimer { get; set; }
+        public bool loadingMainFilter { get; set; } //use updating to stop events when making programatic changes 
+        public int pageSize { get; set; }
+        public string logFileName { get; set; }
 
-        internal FileStream? ts;
-        internal Color[] nonDkColorArray = new Color[] { Color.LightCyan, Color.LavenderBlush, Color.SeaShell, Color.AliceBlue, Color.LightGray, Color.LightSalmon, Color.Azure, Color.LightCyan };
-        internal Color[] DkColorArray = new Color[] { Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow, Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow};
-        internal Color DefaultColumnColor = Color.Yellow;
-        internal Color PrimaryKeyColor = Color.Pink;
+        public FileStream? ts;
+        public Color[] nonDkColorArray = new Color[] { Color.LightCyan, Color.LavenderBlush, Color.Plum, Color.Pink, Color.LightGray, Color.LightSalmon, Color.Azure, Color.OrangeRed };
+        public Color[] DkColorArray = new Color[] { Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow, Color.MediumSpringGreen, Color.PaleGreen, Color.LightGreen, Color.GreenYellow};
+        public Color DefaultColumnColor = Color.Yellow;
+        public Color PrimaryKeyColor = Color.Pink;
 
     }
 
@@ -54,7 +54,9 @@ namespace SqlCollegeTranscripts
             strFixingDatabaseSql = string.Empty;
             FkFieldInEditingControl = null;
             tableHasForeignKeys = false;
+            firstTimeWritingTable = true;
             currentComboFilterValue_isDirty = false;
+            allowDisplayKeyEdit = true;
         }
         internal bool fixingDatabase { get; set; }
         internal string strFixingDatabaseSql { get; set; }
@@ -64,6 +66,8 @@ namespace SqlCollegeTranscripts
         internal bool currentComboFilterValue_isDirty { get; set; }
         internal bool doNotRebindGridFV { get; set; }
         internal bool doNotWriteGrid { get; set; }
+        internal bool firstTimeWritingTable { get; set; }
+        internal bool allowDisplayKeyEdit { get; set; }
 
     }
 

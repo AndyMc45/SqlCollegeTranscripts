@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualBasic;
 using System.Text.Json;
+using System.Web;
 
 namespace SqlCollegeTranscripts
 {
@@ -26,6 +27,27 @@ namespace SqlCollegeTranscripts
     public static class AppData
     {
         private static string appName = "SqlCollegeTranscripts";
+
+        public static void StoreFormOptions(FormOptions formOpts)
+        {
+            string jsonString = JsonSerializer.Serialize<FormOptions>(formOpts);
+            SaveKeyValue("FormOptions", jsonString);
+        }
+
+        public static FormOptions GetFormOptions()
+        {
+            string jsonString = GetKeyValue("FormOptions");
+            try
+            {
+                FormOptions formOpts = JsonSerializer.Deserialize<FormOptions>(jsonString);
+                return formOpts;
+            }
+            catch 
+            { 
+                FormOptions formOptsNew = new FormOptions();
+                return formOptsNew;
+            }
+        }
 
         public static void storeConnectionStringList(List<connectionString> csList)
         {

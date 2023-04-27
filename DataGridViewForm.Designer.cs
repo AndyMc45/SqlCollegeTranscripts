@@ -62,7 +62,6 @@
             mnuAddressBookGetEmails = new ToolStripMenuItem();
             mnuTools = new ToolStripMenuItem();
             mnuDatabaseInfo = new ToolStripMenuItem();
-            mnuUpdateInstructions = new ToolStripMenuItem();
             mnuDuplicateDisplayKeys = new ToolStripMenuItem();
             mnuForeignKeyMissing = new ToolStripMenuItem();
             mnuPrintCurrentTable = new ToolStripMenuItem();
@@ -98,23 +97,12 @@
             GridContextMenu = new ContextMenuStrip(components);
             GridContextMenu_FindInDescendent = new ToolStripMenuItem();
             GridContextMenu_FindInAncestor = new ToolStripMenuItem();
+            deleteUnusedForeignKeysToolStripMenuItem = new ToolStripMenuItem();
+            correctDuplicateDKsToolStripMenuItem = new ToolStripMenuItem();
             rbAdd = new RadioButton();
             rbDelete = new RadioButton();
             rbEdit = new RadioButton();
             rbView = new RadioButton();
-            lblCmbFilterField_3 = new Label();
-            lblCmbFilterField_0 = new Label();
-            cmbComboFilterValue_3 = new ComboBox();
-            cmbComboFilterValue_0 = new ComboBox();
-            lblCmbFilterField_4 = new Label();
-            lblCmbFilterField_1 = new Label();
-            cmbComboFilterValue_4 = new ComboBox();
-            cmbComboFilterValue_1 = new ComboBox();
-            lblCmbFilterField_5 = new Label();
-            lblCmbFilterField_2 = new Label();
-            cmbComboFilterValue_5 = new ComboBox();
-            cmbComboFilterValue_2 = new ComboBox();
-            cmbComboTableList = new ComboBox();
             lblComboFilter = new Label();
             cmbGridFilterFields_7 = new ComboBox();
             cmbGridFilterValue_6 = new ComboBox();
@@ -122,6 +110,21 @@
             cmbGridFilterValue_7 = new ComboBox();
             cmbGridFilterFields_8 = new ComboBox();
             cmbGridFilterValue_8 = new ComboBox();
+            lblCmbFilterField_3 = new Label();
+            cmbComboFilterValue_3 = new ComboBox();
+            lblCmbFilterField_4 = new Label();
+            cmbComboFilterValue_4 = new ComboBox();
+            lblCmbFilterField_5 = new Label();
+            cmbComboFilterValue_5 = new ComboBox();
+            lblCmbFilterField_0 = new Label();
+            cmbComboFilterValue_0 = new ComboBox();
+            lblCmbFilterField_1 = new Label();
+            cmbComboFilterValue_1 = new ComboBox();
+            lblCmbFilterField_2 = new Label();
+            cmbComboFilterValue_2 = new ComboBox();
+            cmbComboTableList = new ComboBox();
+            button1 = new Button();
+            btnReload = new Button();
             txtMessages = new TextBox();
             dataGridView1 = new DataGridView();
             MainMenu1.SuspendLayout();
@@ -155,7 +158,7 @@
             MainMenu1.Location = new Point(0, 0);
             MainMenu1.Name = "MainMenu1";
             MainMenu1.Padding = new Padding(6, 3, 0, 3);
-            MainMenu1.Size = new Size(1362, 30);
+            MainMenu1.Size = new Size(1538, 30);
             MainMenu1.TabIndex = 38;
             // 
             // mnuFile
@@ -169,7 +172,7 @@
             // 
             mnuConnections.DropDownItems.AddRange(new ToolStripItem[] { mnuConnectionList, mnuBlankLine3, mnuAddConnection, mnuDeleteConnection });
             mnuConnections.Name = "mnuConnections";
-            mnuConnections.Size = new Size(173, 26);
+            mnuConnections.Size = new Size(224, 26);
             mnuConnections.Text = "Connections";
             // 
             // mnuConnectionList
@@ -202,8 +205,9 @@
             // mnuClose
             // 
             mnuClose.Name = "mnuClose";
-            mnuClose.Size = new Size(173, 26);
+            mnuClose.Size = new Size(224, 26);
             mnuClose.Text = "&Close";
+            mnuClose.Click += mnuClose_Click;
             // 
             // mnuOpenTables
             // 
@@ -339,7 +343,7 @@
             // 
             // mnuTools
             // 
-            mnuTools.DropDownItems.AddRange(new ToolStripItem[] { mnuDatabaseInfo, mnuUpdateInstructions, mnuDuplicateDisplayKeys, mnuForeignKeyMissing, mnuPrintCurrentTable, mnuViewLog });
+            mnuTools.DropDownItems.AddRange(new ToolStripItem[] { mnuDatabaseInfo, mnuDuplicateDisplayKeys, mnuForeignKeyMissing, mnuPrintCurrentTable, mnuViewLog });
             mnuTools.Name = "mnuTools";
             mnuTools.Size = new Size(58, 24);
             mnuTools.Text = "Tools";
@@ -350,13 +354,6 @@
             mnuDatabaseInfo.Size = new Size(303, 26);
             mnuDatabaseInfo.Text = "Database Information";
             mnuDatabaseInfo.Click += mnuToolsDatabaseInformation_Click;
-            // 
-            // mnuUpdateInstructions
-            // 
-            mnuUpdateInstructions.Name = "mnuUpdateInstructions";
-            mnuUpdateInstructions.Size = new Size(303, 26);
-            mnuUpdateInstructions.Text = "Update : Instructions";
-            mnuUpdateInstructions.Click += mnuUpdateDatabase_Click;
             // 
             // mnuDuplicateDisplayKeys
             // 
@@ -405,7 +402,7 @@
             toolStripBottom.Items.AddRange(new ToolStripItem[] { toolStripMsg, txtRecordsPerPage, toolStripButton5, toolStripButton4, toolStripButton3, toolStripButton2, toolStripButton1 });
             toolStripBottom.Location = new Point(0, 768);
             toolStripBottom.Name = "toolStripBottom";
-            toolStripBottom.Size = new Size(1362, 27);
+            toolStripBottom.Size = new Size(1538, 27);
             toolStripBottom.TabIndex = 75;
             toolStripBottom.Text = "toolStrip1";
             // 
@@ -504,7 +501,7 @@
             // 
             splitContainer1.Panel2.Controls.Add(dataGridView1);
             splitContainer1.Panel2MinSize = 3;
-            splitContainer1.Size = new Size(1600, 738);
+            splitContainer1.Size = new Size(1776, 738);
             splitContainer1.SplitterDistance = 410;
             splitContainer1.TabIndex = 77;
             // 
@@ -563,37 +560,40 @@
             tableLayoutPanel.Controls.Add(rbDelete, 15, 0);
             tableLayoutPanel.Controls.Add(rbEdit, 13, 0);
             tableLayoutPanel.Controls.Add(rbView, 11, 0);
-            tableLayoutPanel.Controls.Add(lblCmbFilterField_3, 8, 6);
-            tableLayoutPanel.Controls.Add(lblCmbFilterField_0, 8, 4);
-            tableLayoutPanel.Controls.Add(cmbComboFilterValue_3, 11, 6);
-            tableLayoutPanel.Controls.Add(cmbComboFilterValue_0, 11, 4);
-            tableLayoutPanel.Controls.Add(lblCmbFilterField_4, 14, 6);
-            tableLayoutPanel.Controls.Add(lblCmbFilterField_1, 14, 4);
-            tableLayoutPanel.Controls.Add(cmbComboFilterValue_4, 17, 6);
-            tableLayoutPanel.Controls.Add(cmbComboFilterValue_1, 17, 4);
-            tableLayoutPanel.Controls.Add(lblCmbFilterField_5, 20, 6);
-            tableLayoutPanel.Controls.Add(lblCmbFilterField_2, 20, 4);
-            tableLayoutPanel.Controls.Add(cmbComboFilterValue_5, 23, 6);
-            tableLayoutPanel.Controls.Add(cmbComboFilterValue_2, 23, 4);
-            tableLayoutPanel.Controls.Add(cmbComboTableList, 4, 4);
-            tableLayoutPanel.Controls.Add(lblComboFilter, 1, 4);
+            tableLayoutPanel.Controls.Add(lblComboFilter, 1, 6);
             tableLayoutPanel.Controls.Add(cmbGridFilterFields_7, 11, 3);
             tableLayoutPanel.Controls.Add(cmbGridFilterValue_6, 8, 3);
             tableLayoutPanel.Controls.Add(cmbGridFilterFields_6, 4, 3);
             tableLayoutPanel.Controls.Add(cmbGridFilterValue_7, 15, 3);
             tableLayoutPanel.Controls.Add(cmbGridFilterFields_8, 18, 3);
             tableLayoutPanel.Controls.Add(cmbGridFilterValue_8, 22, 3);
+            tableLayoutPanel.Controls.Add(lblCmbFilterField_3, 8, 7);
+            tableLayoutPanel.Controls.Add(cmbComboFilterValue_3, 11, 7);
+            tableLayoutPanel.Controls.Add(lblCmbFilterField_4, 14, 7);
+            tableLayoutPanel.Controls.Add(cmbComboFilterValue_4, 17, 7);
+            tableLayoutPanel.Controls.Add(lblCmbFilterField_5, 20, 7);
+            tableLayoutPanel.Controls.Add(cmbComboFilterValue_5, 23, 7);
+            tableLayoutPanel.Controls.Add(lblCmbFilterField_0, 8, 6);
+            tableLayoutPanel.Controls.Add(cmbComboFilterValue_0, 11, 6);
+            tableLayoutPanel.Controls.Add(lblCmbFilterField_1, 14, 6);
+            tableLayoutPanel.Controls.Add(cmbComboFilterValue_1, 17, 6);
+            tableLayoutPanel.Controls.Add(lblCmbFilterField_2, 20, 6);
+            tableLayoutPanel.Controls.Add(cmbComboFilterValue_2, 23, 6);
+            tableLayoutPanel.Controls.Add(cmbComboTableList, 4, 6);
+            tableLayoutPanel.Controls.Add(button1, 4, 5);
+            tableLayoutPanel.Controls.Add(btnReload, 24, 0);
             tableLayoutPanel.Location = new Point(0, 27);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.RowCount = 7;
+            tableLayoutPanel.RowCount = 8;
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 10F));
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle());
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tableLayoutPanel.Size = new Size(1600, 227);
+            tableLayoutPanel.Size = new Size(1529, 285);
             tableLayoutPanel.TabIndex = 108;
             // 
             // cmbMainFilter
@@ -667,6 +667,7 @@
             cmbGridFilterValue_3.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_3.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_3.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_3.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterFields_4
             // 
@@ -696,6 +697,7 @@
             cmbGridFilterValue_4.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_4.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_4.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_4.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterFields_5
             // 
@@ -725,6 +727,7 @@
             cmbGridFilterValue_1.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_1.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_1.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_1.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterValue_5
             // 
@@ -738,6 +741,7 @@
             cmbGridFilterValue_5.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_5.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_5.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_5.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterValue_2
             // 
@@ -751,6 +755,7 @@
             cmbGridFilterValue_2.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_2.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_2.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_2.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterFields_2
             // 
@@ -780,6 +785,7 @@
             cmbGridFilterValue_0.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_0.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_0.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_0.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterFields_3
             // 
@@ -830,14 +836,14 @@
             // GridContextMenu
             // 
             GridContextMenu.ImageScalingSize = new Size(20, 20);
-            GridContextMenu.Items.AddRange(new ToolStripItem[] { GridContextMenu_FindInDescendent, GridContextMenu_FindInAncestor });
+            GridContextMenu.Items.AddRange(new ToolStripItem[] { GridContextMenu_FindInDescendent, GridContextMenu_FindInAncestor, deleteUnusedForeignKeysToolStripMenuItem, correctDuplicateDKsToolStripMenuItem });
             GridContextMenu.Name = "contextMenuStrip1";
-            GridContextMenu.Size = new Size(243, 52);
+            GridContextMenu.Size = new Size(248, 100);
             // 
             // GridContextMenu_FindInDescendent
             // 
             GridContextMenu_FindInDescendent.Name = "GridContextMenu_FindInDescendent";
-            GridContextMenu_FindInDescendent.Size = new Size(242, 24);
+            GridContextMenu_FindInDescendent.Size = new Size(247, 24);
             GridContextMenu_FindInDescendent.Text = "Find in Descendent table";
             GridContextMenu_FindInDescendent.Click += GridContextMenu_FindInDescendent_Click;
             // 
@@ -845,9 +851,23 @@
             // 
             GridContextMenu_FindInAncestor.DoubleClickEnabled = true;
             GridContextMenu_FindInAncestor.Name = "GridContextMenu_FindInAncestor";
-            GridContextMenu_FindInAncestor.Size = new Size(242, 24);
+            GridContextMenu_FindInAncestor.Size = new Size(247, 24);
             GridContextMenu_FindInAncestor.Text = "Find in Ancestor table";
             GridContextMenu_FindInAncestor.Click += GridContextMenu_FindInAncestor_Click;
+            // 
+            // deleteUnusedForeignKeysToolStripMenuItem
+            // 
+            deleteUnusedForeignKeysToolStripMenuItem.Name = "deleteUnusedForeignKeysToolStripMenuItem";
+            deleteUnusedForeignKeysToolStripMenuItem.Size = new Size(247, 24);
+            deleteUnusedForeignKeysToolStripMenuItem.Text = "Find &Unused Foreign Keys";
+            deleteUnusedForeignKeysToolStripMenuItem.Click += GridContextMenu_DeleteUnusedFK_Click;
+            // 
+            // correctDuplicateDKsToolStripMenuItem
+            // 
+            correctDuplicateDKsToolStripMenuItem.Name = "correctDuplicateDKsToolStripMenuItem";
+            correctDuplicateDKsToolStripMenuItem.Size = new Size(247, 24);
+            correctDuplicateDKsToolStripMenuItem.Text = "Correct Duplicate DK's";
+            correctDuplicateDKsToolStripMenuItem.Click += mnuToolDuplicateDisplayKeys_Click;
             // 
             // rbAdd
             // 
@@ -905,196 +925,11 @@
             rbView.UseVisualStyleBackColor = true;
             rbView.CheckedChanged += rbView_CheckedChanged;
             // 
-            // lblCmbFilterField_3
-            // 
-            lblCmbFilterField_3.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_3, 3);
-            lblCmbFilterField_3.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            lblCmbFilterField_3.Location = new Point(356, 177);
-            lblCmbFilterField_3.Margin = new Padding(2, 0, 2, 0);
-            lblCmbFilterField_3.Name = "lblCmbFilterField_3";
-            lblCmbFilterField_3.Size = new Size(146, 24);
-            lblCmbFilterField_3.TabIndex = 174;
-            lblCmbFilterField_3.Text = "lblCmbFilterField_3";
-            lblCmbFilterField_3.TextAlign = ContentAlignment.MiddleRight;
-            // 
-            // lblCmbFilterField_0
-            // 
-            lblCmbFilterField_0.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_0, 3);
-            lblCmbFilterField_0.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            lblCmbFilterField_0.Location = new Point(356, 143);
-            lblCmbFilterField_0.Margin = new Padding(2, 0, 2, 0);
-            lblCmbFilterField_0.Name = "lblCmbFilterField_0";
-            lblCmbFilterField_0.Size = new Size(146, 24);
-            lblCmbFilterField_0.TabIndex = 168;
-            lblCmbFilterField_0.Text = "lblCmbFilterField_0";
-            lblCmbFilterField_0.TextAlign = ContentAlignment.MiddleRight;
-            // 
-            // cmbComboFilterValue_3
-            // 
-            cmbComboFilterValue_3.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_3, 3);
-            cmbComboFilterValue_3.FormattingEnabled = true;
-            cmbComboFilterValue_3.Location = new Point(506, 179);
-            cmbComboFilterValue_3.Margin = new Padding(2);
-            cmbComboFilterValue_3.Name = "cmbComboFilterValue_3";
-            cmbComboFilterValue_3.Size = new Size(146, 28);
-            cmbComboFilterValue_3.TabIndex = 180;
-            cmbComboFilterValue_3.DropDown += AdjustWidthComboBox_DropDown;
-            cmbComboFilterValue_3.TextChanged += cmbComboFilterValue_TextChanged;
-            cmbComboFilterValue_3.Enter += cmbComboFilterValue_Enter;
-            cmbComboFilterValue_3.Leave += cmbComboFilterValue_Leave;
-            // 
-            // cmbComboFilterValue_0
-            // 
-            cmbComboFilterValue_0.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_0, 3);
-            cmbComboFilterValue_0.FormattingEnabled = true;
-            cmbComboFilterValue_0.Location = new Point(506, 145);
-            cmbComboFilterValue_0.Margin = new Padding(2);
-            cmbComboFilterValue_0.Name = "cmbComboFilterValue_0";
-            cmbComboFilterValue_0.Size = new Size(146, 28);
-            cmbComboFilterValue_0.TabIndex = 177;
-            cmbComboFilterValue_0.DropDown += AdjustWidthComboBox_DropDown;
-            cmbComboFilterValue_0.TextChanged += cmbComboFilterValue_TextChanged;
-            cmbComboFilterValue_0.Enter += cmbComboFilterValue_Enter;
-            cmbComboFilterValue_0.Leave += cmbComboFilterValue_Leave;
-            // 
-            // lblCmbFilterField_4
-            // 
-            lblCmbFilterField_4.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_4, 3);
-            lblCmbFilterField_4.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            lblCmbFilterField_4.Location = new Point(656, 177);
-            lblCmbFilterField_4.Margin = new Padding(2, 0, 2, 0);
-            lblCmbFilterField_4.Name = "lblCmbFilterField_4";
-            lblCmbFilterField_4.Size = new Size(146, 24);
-            lblCmbFilterField_4.TabIndex = 175;
-            lblCmbFilterField_4.Text = "lblCmbFilterField_4";
-            lblCmbFilterField_4.TextAlign = ContentAlignment.MiddleRight;
-            // 
-            // lblCmbFilterField_1
-            // 
-            lblCmbFilterField_1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_1, 3);
-            lblCmbFilterField_1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            lblCmbFilterField_1.Location = new Point(656, 143);
-            lblCmbFilterField_1.Margin = new Padding(2, 0, 2, 0);
-            lblCmbFilterField_1.Name = "lblCmbFilterField_1";
-            lblCmbFilterField_1.Size = new Size(146, 24);
-            lblCmbFilterField_1.TabIndex = 170;
-            lblCmbFilterField_1.Text = "lblCmbFilterField_1";
-            lblCmbFilterField_1.TextAlign = ContentAlignment.MiddleRight;
-            // 
-            // cmbComboFilterValue_4
-            // 
-            cmbComboFilterValue_4.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_4, 3);
-            cmbComboFilterValue_4.FormattingEnabled = true;
-            cmbComboFilterValue_4.Location = new Point(806, 179);
-            cmbComboFilterValue_4.Margin = new Padding(2);
-            cmbComboFilterValue_4.Name = "cmbComboFilterValue_4";
-            cmbComboFilterValue_4.Size = new Size(146, 28);
-            cmbComboFilterValue_4.TabIndex = 181;
-            cmbComboFilterValue_4.DropDown += AdjustWidthComboBox_DropDown;
-            cmbComboFilterValue_4.TextChanged += cmbComboFilterValue_TextChanged;
-            cmbComboFilterValue_4.Enter += cmbComboFilterValue_Enter;
-            cmbComboFilterValue_4.Leave += cmbComboFilterValue_Leave;
-            // 
-            // cmbComboFilterValue_1
-            // 
-            cmbComboFilterValue_1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_1, 3);
-            cmbComboFilterValue_1.FormattingEnabled = true;
-            cmbComboFilterValue_1.Location = new Point(806, 145);
-            cmbComboFilterValue_1.Margin = new Padding(2);
-            cmbComboFilterValue_1.Name = "cmbComboFilterValue_1";
-            cmbComboFilterValue_1.Size = new Size(146, 28);
-            cmbComboFilterValue_1.TabIndex = 178;
-            cmbComboFilterValue_1.DropDown += AdjustWidthComboBox_DropDown;
-            cmbComboFilterValue_1.TextChanged += cmbComboFilterValue_TextChanged;
-            cmbComboFilterValue_1.Enter += cmbComboFilterValue_Enter;
-            cmbComboFilterValue_1.Leave += cmbComboFilterValue_Leave;
-            // 
-            // lblCmbFilterField_5
-            // 
-            lblCmbFilterField_5.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_5, 3);
-            lblCmbFilterField_5.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            lblCmbFilterField_5.Location = new Point(956, 177);
-            lblCmbFilterField_5.Margin = new Padding(2, 0, 2, 0);
-            lblCmbFilterField_5.Name = "lblCmbFilterField_5";
-            lblCmbFilterField_5.Size = new Size(146, 24);
-            lblCmbFilterField_5.TabIndex = 176;
-            lblCmbFilterField_5.Text = "lblCmbFilterField_5";
-            lblCmbFilterField_5.TextAlign = ContentAlignment.MiddleRight;
-            // 
-            // lblCmbFilterField_2
-            // 
-            lblCmbFilterField_2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_2, 3);
-            lblCmbFilterField_2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            lblCmbFilterField_2.Location = new Point(956, 143);
-            lblCmbFilterField_2.Margin = new Padding(2, 0, 2, 0);
-            lblCmbFilterField_2.Name = "lblCmbFilterField_2";
-            lblCmbFilterField_2.Size = new Size(146, 24);
-            lblCmbFilterField_2.TabIndex = 172;
-            lblCmbFilterField_2.Text = "lblCmbFilterField_1";
-            lblCmbFilterField_2.TextAlign = ContentAlignment.MiddleRight;
-            // 
-            // cmbComboFilterValue_5
-            // 
-            cmbComboFilterValue_5.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_5, 3);
-            cmbComboFilterValue_5.FormattingEnabled = true;
-            cmbComboFilterValue_5.Location = new Point(1106, 179);
-            cmbComboFilterValue_5.Margin = new Padding(2);
-            cmbComboFilterValue_5.Name = "cmbComboFilterValue_5";
-            cmbComboFilterValue_5.Size = new Size(146, 28);
-            cmbComboFilterValue_5.TabIndex = 182;
-            cmbComboFilterValue_5.DropDown += AdjustWidthComboBox_DropDown;
-            cmbComboFilterValue_5.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
-            cmbComboFilterValue_5.TextChanged += cmbComboFilterValue_TextChanged;
-            cmbComboFilterValue_5.Enter += cmbComboFilterValue_Enter;
-            cmbComboFilterValue_5.Leave += cmbComboFilterValue_Leave;
-            // 
-            // cmbComboFilterValue_2
-            // 
-            cmbComboFilterValue_2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_2, 3);
-            cmbComboFilterValue_2.FormattingEnabled = true;
-            cmbComboFilterValue_2.Location = new Point(1106, 145);
-            cmbComboFilterValue_2.Margin = new Padding(2);
-            cmbComboFilterValue_2.Name = "cmbComboFilterValue_2";
-            cmbComboFilterValue_2.Size = new Size(146, 28);
-            cmbComboFilterValue_2.TabIndex = 179;
-            cmbComboFilterValue_2.DropDown += AdjustWidthComboBox_DropDown;
-            cmbComboFilterValue_2.TextChanged += cmbComboFilterValue_TextChanged;
-            cmbComboFilterValue_2.Enter += cmbComboFilterValue_Enter;
-            cmbComboFilterValue_2.Leave += cmbComboFilterValue_Leave;
-            // 
-            // cmbComboTableList
-            // 
-            cmbComboTableList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            cmbComboTableList.AutoCompleteMode = AutoCompleteMode.Suggest;
-            cmbComboTableList.AutoCompleteSource = AutoCompleteSource.ListItems;
-            tableLayoutPanel.SetColumnSpan(cmbComboTableList, 4);
-            cmbComboTableList.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbComboTableList.FormattingEnabled = true;
-            cmbComboTableList.Location = new Point(156, 145);
-            cmbComboTableList.Margin = new Padding(2);
-            cmbComboTableList.Name = "cmbComboTableList";
-            cmbComboTableList.Size = new Size(196, 28);
-            cmbComboTableList.TabIndex = 167;
-            cmbComboTableList.DropDown += AdjustWidthComboBox_DropDown;
-            cmbComboTableList.SelectedIndexChanged += cmbComboTableList_SelectedIndexChanged;
-            // 
             // lblComboFilter
             // 
             lblComboFilter.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             tableLayoutPanel.SetColumnSpan(lblComboFilter, 3);
-            lblComboFilter.Location = new Point(7, 146);
+            lblComboFilter.Location = new Point(7, 172);
             lblComboFilter.Margin = new Padding(3);
             lblComboFilter.Name = "lblComboFilter";
             lblComboFilter.Size = new Size(144, 28);
@@ -1129,6 +964,7 @@
             cmbGridFilterValue_6.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_6.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_6.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_6.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterFields_6
             // 
@@ -1157,6 +993,7 @@
             cmbGridFilterValue_7.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_7.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_7.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_7.Enter += cmbGridFilterValue_Enter;
             // 
             // cmbGridFilterFields_8
             // 
@@ -1185,6 +1022,223 @@
             cmbGridFilterValue_8.DropDown += AdjustWidthComboBox_DropDown;
             cmbGridFilterValue_8.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
             cmbGridFilterValue_8.TextChanged += cmbGridFilterValue_TextChanged;
+            cmbGridFilterValue_8.Enter += cmbGridFilterValue_Enter;
+            // 
+            // lblCmbFilterField_3
+            // 
+            lblCmbFilterField_3.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_3, 3);
+            lblCmbFilterField_3.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            lblCmbFilterField_3.Location = new Point(356, 203);
+            lblCmbFilterField_3.Margin = new Padding(2, 0, 2, 0);
+            lblCmbFilterField_3.Name = "lblCmbFilterField_3";
+            lblCmbFilterField_3.Size = new Size(146, 24);
+            lblCmbFilterField_3.TabIndex = 174;
+            lblCmbFilterField_3.Text = "lblCmbFilterField_3";
+            lblCmbFilterField_3.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // cmbComboFilterValue_3
+            // 
+            cmbComboFilterValue_3.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_3, 3);
+            cmbComboFilterValue_3.FormattingEnabled = true;
+            cmbComboFilterValue_3.Location = new Point(506, 205);
+            cmbComboFilterValue_3.Margin = new Padding(2);
+            cmbComboFilterValue_3.Name = "cmbComboFilterValue_3";
+            cmbComboFilterValue_3.Size = new Size(146, 28);
+            cmbComboFilterValue_3.TabIndex = 180;
+            cmbComboFilterValue_3.DropDown += AdjustWidthComboBox_DropDown;
+            cmbComboFilterValue_3.TextChanged += cmbComboFilterValue_TextChanged;
+            cmbComboFilterValue_3.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_3.Leave += cmbComboFilterValue_Leave;
+            cmbComboFilterValue_3.MouseLeave += cmbComboFilterValue_Leave;
+            // 
+            // lblCmbFilterField_4
+            // 
+            lblCmbFilterField_4.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_4, 3);
+            lblCmbFilterField_4.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            lblCmbFilterField_4.Location = new Point(656, 203);
+            lblCmbFilterField_4.Margin = new Padding(2, 0, 2, 0);
+            lblCmbFilterField_4.Name = "lblCmbFilterField_4";
+            lblCmbFilterField_4.Size = new Size(146, 24);
+            lblCmbFilterField_4.TabIndex = 175;
+            lblCmbFilterField_4.Text = "lblCmbFilterField_4";
+            lblCmbFilterField_4.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // cmbComboFilterValue_4
+            // 
+            cmbComboFilterValue_4.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_4, 3);
+            cmbComboFilterValue_4.FormattingEnabled = true;
+            cmbComboFilterValue_4.Location = new Point(806, 205);
+            cmbComboFilterValue_4.Margin = new Padding(2);
+            cmbComboFilterValue_4.Name = "cmbComboFilterValue_4";
+            cmbComboFilterValue_4.Size = new Size(146, 28);
+            cmbComboFilterValue_4.TabIndex = 181;
+            cmbComboFilterValue_4.DropDown += AdjustWidthComboBox_DropDown;
+            cmbComboFilterValue_4.TextChanged += cmbComboFilterValue_TextChanged;
+            cmbComboFilterValue_4.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_4.Leave += cmbComboFilterValue_Leave;
+            cmbComboFilterValue_4.MouseLeave += cmbComboFilterValue_Leave;
+            // 
+            // lblCmbFilterField_5
+            // 
+            lblCmbFilterField_5.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_5, 3);
+            lblCmbFilterField_5.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            lblCmbFilterField_5.Location = new Point(956, 203);
+            lblCmbFilterField_5.Margin = new Padding(2, 0, 2, 0);
+            lblCmbFilterField_5.Name = "lblCmbFilterField_5";
+            lblCmbFilterField_5.Size = new Size(146, 24);
+            lblCmbFilterField_5.TabIndex = 176;
+            lblCmbFilterField_5.Text = "lblCmbFilterField_5";
+            lblCmbFilterField_5.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // cmbComboFilterValue_5
+            // 
+            cmbComboFilterValue_5.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_5, 3);
+            cmbComboFilterValue_5.FormattingEnabled = true;
+            cmbComboFilterValue_5.Location = new Point(1106, 205);
+            cmbComboFilterValue_5.Margin = new Padding(2);
+            cmbComboFilterValue_5.Name = "cmbComboFilterValue_5";
+            cmbComboFilterValue_5.Size = new Size(146, 28);
+            cmbComboFilterValue_5.TabIndex = 182;
+            cmbComboFilterValue_5.DropDown += AdjustWidthComboBox_DropDown;
+            cmbComboFilterValue_5.SelectedIndexChanged += cmbGridFilterValue_SelectedIndexChanged;
+            cmbComboFilterValue_5.TextChanged += cmbComboFilterValue_TextChanged;
+            cmbComboFilterValue_5.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_5.Leave += cmbComboFilterValue_Leave;
+            cmbComboFilterValue_5.MouseLeave += cmbComboFilterValue_Leave;
+            // 
+            // lblCmbFilterField_0
+            // 
+            lblCmbFilterField_0.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_0, 3);
+            lblCmbFilterField_0.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            lblCmbFilterField_0.Location = new Point(356, 169);
+            lblCmbFilterField_0.Margin = new Padding(2, 0, 2, 0);
+            lblCmbFilterField_0.Name = "lblCmbFilterField_0";
+            lblCmbFilterField_0.Size = new Size(146, 24);
+            lblCmbFilterField_0.TabIndex = 168;
+            lblCmbFilterField_0.Text = "lblCmbFilterField_0";
+            lblCmbFilterField_0.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // cmbComboFilterValue_0
+            // 
+            cmbComboFilterValue_0.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_0, 3);
+            cmbComboFilterValue_0.FormattingEnabled = true;
+            cmbComboFilterValue_0.Location = new Point(506, 171);
+            cmbComboFilterValue_0.Margin = new Padding(2);
+            cmbComboFilterValue_0.Name = "cmbComboFilterValue_0";
+            cmbComboFilterValue_0.Size = new Size(146, 28);
+            cmbComboFilterValue_0.TabIndex = 177;
+            cmbComboFilterValue_0.DropDown += AdjustWidthComboBox_DropDown;
+            cmbComboFilterValue_0.TextChanged += cmbComboFilterValue_TextChanged;
+            cmbComboFilterValue_0.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_0.Leave += cmbComboFilterValue_Leave;
+            cmbComboFilterValue_0.MouseLeave += cmbComboFilterValue_Leave;
+            // 
+            // lblCmbFilterField_1
+            // 
+            lblCmbFilterField_1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_1, 3);
+            lblCmbFilterField_1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            lblCmbFilterField_1.Location = new Point(656, 169);
+            lblCmbFilterField_1.Margin = new Padding(2, 0, 2, 0);
+            lblCmbFilterField_1.Name = "lblCmbFilterField_1";
+            lblCmbFilterField_1.Size = new Size(146, 24);
+            lblCmbFilterField_1.TabIndex = 170;
+            lblCmbFilterField_1.Text = "lblCmbFilterField_1";
+            lblCmbFilterField_1.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // cmbComboFilterValue_1
+            // 
+            cmbComboFilterValue_1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_1, 3);
+            cmbComboFilterValue_1.FormattingEnabled = true;
+            cmbComboFilterValue_1.Location = new Point(806, 171);
+            cmbComboFilterValue_1.Margin = new Padding(2);
+            cmbComboFilterValue_1.Name = "cmbComboFilterValue_1";
+            cmbComboFilterValue_1.Size = new Size(146, 28);
+            cmbComboFilterValue_1.TabIndex = 178;
+            cmbComboFilterValue_1.DropDown += AdjustWidthComboBox_DropDown;
+            cmbComboFilterValue_1.TextChanged += cmbComboFilterValue_TextChanged;
+            cmbComboFilterValue_1.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_1.Leave += cmbComboFilterValue_Leave;
+            cmbComboFilterValue_1.MouseLeave += cmbComboFilterValue_Leave;
+            // 
+            // lblCmbFilterField_2
+            // 
+            lblCmbFilterField_2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(lblCmbFilterField_2, 3);
+            lblCmbFilterField_2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            lblCmbFilterField_2.Location = new Point(956, 169);
+            lblCmbFilterField_2.Margin = new Padding(2, 0, 2, 0);
+            lblCmbFilterField_2.Name = "lblCmbFilterField_2";
+            lblCmbFilterField_2.Size = new Size(146, 24);
+            lblCmbFilterField_2.TabIndex = 172;
+            lblCmbFilterField_2.Text = "lblCmbFilterField_1";
+            lblCmbFilterField_2.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // cmbComboFilterValue_2
+            // 
+            cmbComboFilterValue_2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel.SetColumnSpan(cmbComboFilterValue_2, 3);
+            cmbComboFilterValue_2.FormattingEnabled = true;
+            cmbComboFilterValue_2.Location = new Point(1106, 171);
+            cmbComboFilterValue_2.Margin = new Padding(2);
+            cmbComboFilterValue_2.Name = "cmbComboFilterValue_2";
+            cmbComboFilterValue_2.Size = new Size(146, 28);
+            cmbComboFilterValue_2.TabIndex = 179;
+            cmbComboFilterValue_2.DropDown += AdjustWidthComboBox_DropDown;
+            cmbComboFilterValue_2.TextChanged += cmbComboFilterValue_TextChanged;
+            cmbComboFilterValue_2.Enter += cmbComboFilterValue_Enter;
+            cmbComboFilterValue_2.Leave += cmbComboFilterValue_Leave;
+            cmbComboFilterValue_2.MouseLeave += cmbComboFilterValue_Leave;
+            // 
+            // cmbComboTableList
+            // 
+            cmbComboTableList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            cmbComboTableList.AutoCompleteMode = AutoCompleteMode.Suggest;
+            cmbComboTableList.AutoCompleteSource = AutoCompleteSource.ListItems;
+            tableLayoutPanel.SetColumnSpan(cmbComboTableList, 4);
+            cmbComboTableList.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbComboTableList.FormattingEnabled = true;
+            cmbComboTableList.Location = new Point(156, 171);
+            cmbComboTableList.Margin = new Padding(2);
+            cmbComboTableList.Name = "cmbComboTableList";
+            cmbComboTableList.Size = new Size(196, 28);
+            cmbComboTableList.TabIndex = 167;
+            cmbComboTableList.DropDown += AdjustWidthComboBox_DropDown;
+            cmbComboTableList.SelectedIndexChanged += cmbComboTableList_SelectedIndexChanged;
+            // 
+            // button1
+            // 
+            button1.BackColor = Color.Black;
+            button1.CausesValidation = false;
+            tableLayoutPanel.SetColumnSpan(button1, 22);
+            button1.ForeColor = Color.Black;
+            button1.Location = new Point(157, 156);
+            button1.Name = "button1";
+            button1.Size = new Size(1094, 10);
+            button1.TabIndex = 189;
+            button1.Text = "b";
+            button1.UseVisualStyleBackColor = false;
+            // 
+            // btnReload
+            // 
+            btnReload.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            btnReload.BackgroundImage = Properties.Resources.reload;
+            btnReload.BackgroundImageLayout = ImageLayout.Zoom;
+            btnReload.Location = new Point(1156, 3);
+            btnReload.Name = "btnReload";
+            btnReload.Size = new Size(45, 30);
+            btnReload.TabIndex = 190;
+            btnReload.UseVisualStyleBackColor = true;
+            btnReload.Click += btnReload_Click;
             // 
             // txtMessages
             // 
@@ -1195,7 +1249,7 @@
             txtMessages.Margin = new Padding(2);
             txtMessages.Name = "txtMessages";
             txtMessages.ReadOnly = true;
-            txtMessages.Size = new Size(1600, 27);
+            txtMessages.Size = new Size(1776, 27);
             txtMessages.TabIndex = 109;
             // 
             // dataGridView1
@@ -1218,7 +1272,7 @@
             dataGridView1.RowHeadersWidth = 51;
             dataGridView1.RowTemplate.Height = 27;
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dataGridView1.Size = new Size(1600, 324);
+            dataGridView1.Size = new Size(1776, 324);
             dataGridView1.TabIndex = 1;
             dataGridView1.CellBeginEdit += dataGridView1_CellBeginEdit;
             dataGridView1.CellContentClick += dataGridView1_CellContentClick;
@@ -1243,10 +1297,11 @@
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1362, 795);
+            ClientSize = new Size(1538, 795);
             Controls.Add(splitContainer1);
             Controls.Add(toolStripBottom);
             Controls.Add(MainMenu1);
+            KeyPreview = true;
             Margin = new Padding(3, 4, 3, 4);
             Name = "DataGridViewForm";
             Text = "DataGridViewForm";
@@ -1356,7 +1411,6 @@
         private ComboBox cmbComboFilterValue_4;
         private ComboBox cmbComboFilterValue_5;
         private ToolStripMenuItem GridContextMenu_FindInAncestor;
-        private ToolStripMenuItem mnuUpdateInstructions;
         private ToolStripMenuItem mnuDuplicateDisplayKeys;
         private ToolStripMenuItem mnuForeignKeyMissing;
         private ToolStripMenuItem mnuViewLog;
@@ -1366,5 +1420,10 @@
         private ComboBox cmbGridFilterValue_7;
         private ComboBox cmbGridFilterFields_8;
         private ComboBox cmbGridFilterValue_8;
+        private Button button1;
+        private Button btnReload;
+        private ToolStripMenuItem deleteUnusedForeignKeysToolStripMenuItem;
+        private ToolStripMenuItem correctDuplicateDKsToolStripMenuItem;
+        //private Button button2;
     }
 }

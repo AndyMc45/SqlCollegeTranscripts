@@ -46,7 +46,6 @@ namespace SqlCollegeTranscripts
         // Set update command - only one set field and the where is for PK=@PK - i.e. only one row
         internal static void SetUpdateCommand(field fieldToSet, DataTable dataTable)
         { 
-            // Do this once in the program
             string msg = string.Empty;
             // Get data adapter
             SqlDataAdapter da = GetDataAdaptor(dataTable);
@@ -116,16 +115,6 @@ namespace SqlCollegeTranscripts
                 da.InsertCommand = sqlCmd;
             }
         }
-        //// Create the InsertCommand.
-        //command = new SqlCommand(
-        //    "INSERT INTO Customers (CustomerID, CompanyName) VALUES (@CustomerID, @CompanyName, @CompanyName2), connection)";
-
-        //// Add the parameters for the InsertCommand.
-        //command.Parameters.Add("@CustomerID", SqlDbType.NChar, 5, "CustomerID");
-        //command.Parameters.Add("@CompanyName", SqlDbType.NVarChar, 40, "CompanyName");
-
-        //adapter.InsertCommand = command;
-
 
         internal static SqlDbType GetSqlDbType(DbType dbType)
         {
@@ -219,7 +208,7 @@ namespace SqlCollegeTranscripts
         internal static void FillDataTable(DataTable dt, string sqlString)
         {
             // dt.Rows.Clear();
-            //dt.Columns.Clear();
+            // dt.Columns.Clear();
             SqlDataAdapter da = GetDataAdaptor(dt);
             da = new SqlDataAdapter();  //I guess
             SqlCommand sqlCmd = new SqlCommand(sqlString, cn);
@@ -264,7 +253,7 @@ namespace SqlCollegeTranscripts
             return result;
         }
 
-        internal static void initializeDatabaseInformationTables()
+        internal static string initializeDatabaseInformationTables()
         {
             // foreignKeysDT
             StringBuilder sb = new StringBuilder();
@@ -311,7 +300,7 @@ namespace SqlCollegeTranscripts
             sb.Append("SELECT so.name as TableName , ");
             sb.Append("so.name as TableDisplayName , ");
             sb.Append("st.max_column_id_used as ColNum, ");
-            sb.Append("st.create_date as Created, st.modify_date as Modified, 0 as Hidden ");
+            sb.Append("st.create_date as Created, st.modify_date as Modified, '' as DK_Index, 0 as Hidden ");
             sb.Append("FROM sys.objects so inner join sys.tables st on so.object_id = st.object_id ");
             sb.Append("WHERE so.is_ms_shipped <> 1 AND so.type = 'U' and st.lob_data_space_id = 0 ");
             sb.Append("ORDER BY TableName ");
@@ -334,10 +323,14 @@ namespace SqlCollegeTranscripts
             sb.Append("FROM sys.objects so inner join sys.columns sc on so.object_id = sc.object_id ");
             sb.Append("inner join sys.tables st on so.object_id = st.object_id ");
             sb.Append("WHERE so.is_ms_shipped <> 1 AND so.type = 'U' and st.lob_data_space_id = 0 ");
+            sb.Append("ORDER BY ColNum ");
             string sqlFields = sb.ToString();
             readOnlyDA = new SqlDataAdapter(sqlFields, cn);
             readOnlyDA.Fill(dataHelper.fieldsDT);
-            dataHelper.updateFieldsTable();
+            string errorNotice = String.Empty;
+            errorNotice = dataHelper.updateTablesDTtableOnProgramLoad(); // fills in "DK_Index"
+            dataHelper.updateFieldsDTtableOnProgramLoad(); // fills in many columns that are used in the rest of the program
+            return errorNotice;
         }
 
         // Copied from web.  Point: SqlParameter implements this conversion

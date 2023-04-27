@@ -1,6 +1,7 @@
 ﻿using System.Data;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using System.Globalization;
 
 namespace SqlCollegeTranscripts
 {
@@ -8,62 +9,80 @@ namespace SqlCollegeTranscripts
 
     public class field
     {
-        public string fieldName { get; set; }
-        public string table { get; set; }
-        public DbType dbType { get; set; }
-        public int size { get; set; }
-
-        public field(string table, string fieldName, DbType dbType, int size, bool psuedoField, bool shortDisplayName)
+        public field(string table, string fieldName, DbType dbType, int size, fieldType fType)
         {
             // Only call this constructor with pseudoFields = true;
             this.table = table;
+            this.tableAlias = table + "00";  //Default
             this.fieldName = fieldName;
             this.dbType = dbType;
             this.size = size;
-            if (psuedoField)
-            {
-                this.DisplayMember = "PsuedoField";
-            }
-            else if (shortDisplayName)
-            {
-                this.DisplayMember = fieldName;
-            }
-            else
-            {
-                if (dataHelper.isTablePrimaryKeyField(this))
-                {
-                    this.DisplayMember = "Table: " + table;
-                }
-                else if (dataHelper.isForeignKeyField(this))
-                {
-                    string refTable = dataHelper.getForeignKeyRefField(this).table; // Danger of inf. loop, but O.K.
-                    this.DisplayMember = "Table: " + refTable;
-                }
-                else
-                {
-                    this.DisplayMember = "Col: " + fieldName;
-                }
-            }
+            this.fType = fType;
+            this.displayMember = fieldName;  // Default
         }
 
         public field(string table, string fieldName, DbType dbType, int size):
-            this(table,fieldName,dbType, size, false, false)
-        {
-        }
+            this(table, fieldName, dbType, size, fieldType.regular){  }
 
-        public field(string table, string fieldName, DbType dbType, int size, bool psuedoField) :
-            this(table, fieldName, dbType, size, psuedoField, false)
-        {
-        }
-
+        public string fieldName { get; set; }
+        public string table { get; set; }
+        public string tableAlias { get; set; }
+        public DbType dbType { get; set; }
+        public int size { get; set; }
+        public fieldType fType { get; set; }
 
         public field ValueMember { get { return this; }}  //Field itself - ValueMember used when binding Combos to fields
-        public string DisplayMember { get; set; }  // Used to display where in combo
+
+        private string displayMember;
+        public string DisplayMember { 
+            set { displayMember = value; } 
+            get {
+                string lastTwoDigetOfTableAlias = tableAlias.Substring(tableAlias.Length - 2);
+                if (fType == fieldType.pseudo)
+                {
+                    return "PsuedoField";  // Should never see this
+                }
+                else if (fType == fieldType.longName)
+                {
+                    return tableAlias + ":" + fieldName;
+                }
+                else
+                {
+                    if (dataHelper.isTablePrimaryKeyField(this))
+                    {
+                        return "PK: " + fieldName;
+                    }
+                    else if (dataHelper.isForeignKeyField(this))
+                    {
+                        return "FK: " + fieldName;
+                    }
+                    else
+                    {
+                        if (lastTwoDigetOfTableAlias! == "00")
+                        {
+                            return fieldName;
+                        }
+                        else
+                        {
+                            return lastTwoDigetOfTableAlias + ": " + fieldName;
+                        }
+                    }
+
+                }
+            }
+        }  // Used to display where in combo
 
         public bool isSameFieldAs(field fl)
         {   
             if(fl == null) { return false; }
-            if (this.fieldName == fl.fieldName && this.table == fl.table) { return true; } else { return false; }  
+            if (this.fieldName == fl.fieldName && this.table == fl.table && this.tableAlias == fl.tableAlias) { return true; } else { return false; }  
+        }
+
+        public bool isSameBaseFieldAs(field fl)
+        {
+            if (fl == null) { return false; }
+            if (this.fieldName == fl.fieldName && this.table == fl.table) { return true; } else { return false; }
+
         }
     }
 
@@ -98,17 +117,12 @@ namespace SqlCollegeTranscripts
 
     internal class innerJoin
     {
-        internal field fld { get; set; }
-        internal string table2 { get; set; }
-        internal string table2PrimaryKey { get; set; }
-        internal string table2Allias { get; set; }
-        internal innerJoin(field fld, string table2)
+        internal field fkFld { get; set; }
+        internal field pkRefFld { get; set; }
+        internal innerJoin(field fkFld, field pkRefField)
         {
-            this.fld = fld;
-            this.table2 = table2;
-            // All inner joins must be to the primary field of table2
-            this.table2PrimaryKey = dataHelper.getTablePrimaryKeyField(table2).fieldName;
-            this.table2Allias = string.Empty;
+            this.fkFld = fkFld;
+            this.pkRefFld = pkRefField;
         }
     }
 
@@ -127,6 +141,7 @@ namespace SqlCollegeTranscripts
     internal enum command
     {
         select,
+        selectAll,
         count
     }
 
@@ -139,6 +154,7 @@ namespace SqlCollegeTranscripts
         delete,
         merge
     }
+
     internal enum DbTypeType
     {
         isString,
@@ -149,7 +165,21 @@ namespace SqlCollegeTranscripts
         isBinary
     }
 
+    public enum fieldType
+    {
+        regular,
+        longName,
+        pseudo
+    }
 
+    public enum comboValueType
+    { 
+        // This enum is not actually needed, but using it to remember there are four returnComboSql cases
+        PK_myTable,
+        PK_refTable,
+        textField_myTable,
+        textField_refTable
+    }
 
     #endregion
 
@@ -181,6 +211,15 @@ namespace SqlCollegeTranscripts
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("[" + fld.table + "]");
+            sb.Append(".");
+            sb.Append("[" + fld.fieldName + "]");
+            return sb.ToString();
+        }
+
+        internal static string QualifiedAliasFieldName(field fld)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("[" + fld.tableAlias + "]");
             sb.Append(".");
             sb.Append("[" + fld.fieldName + "]");
             return sb.ToString();
@@ -299,7 +338,7 @@ namespace SqlCollegeTranscripts
                     }
                 case DbTypeType.isDecimal: 
                     Decimal dec;
-                    if(Decimal.TryParse(str, out dec))
+                    if(Decimal.TryParse(str, NumberStyles.Number ^ NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out dec))
                     {
                         return true;
                     }
@@ -341,14 +380,14 @@ namespace SqlCollegeTranscripts
             return true;  // Not checking anything else - assuming it will be a string
         }
 
-        internal static where GetWhereFromPrimaryKey(string table, string PK)
+        internal static where GetWhereFromPrimaryKey(string table, string PKvalue)
         {
             field pkField = getTablePrimaryKeyField(table);
-            where newWhere = new where(pkField, PK);
+            where newWhere = new where(pkField, PKvalue);
             // Get display name 
             sqlFactory sf = new sqlFactory(table, 0, 0);
-            sf.myWheres.Add(newWhere);
-            string strSql = sf.returnComboSql(pkField);
+            sf.myComboWheres.Add(newWhere);
+            string strSql = sf.returnComboSql(pkField, comboValueType.PK_myTable);
             dataHelper.extraDT = new DataTable();
             MsSql.FillDataTable(dataHelper.extraDT, strSql);
             string displayMember = "Missing DK";
@@ -361,6 +400,20 @@ namespace SqlCollegeTranscripts
             newWhere.DisplayMember = displayMember;
             return newWhere;
         }
+
+        // Add a "0" to i if it is less than 10.
+        internal static string twoDigitNumber(int i)
+        {
+            if (i < 10)
+            {
+                return "0" + i.ToString();
+            }
+            else
+            {
+                return i.ToString();
+            }
+        }
+
 
         #region  Get values from FieldsDT DataRow (&& overloads)
 
@@ -387,15 +440,9 @@ namespace SqlCollegeTranscripts
             return dataHelper.getBoolValueFieldsDT(fi.table, fi.fieldName, "is_DK");
         }
 
-        internal static DataRow getDataRowFromFieldsDT(string tableName, string columnName)
-        {
-            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", tableName, columnName)).FirstOrDefault();
-            return dr;
-        }
-
         internal static field getFieldFromFieldsDT(string tableName, string columnName)
         {
-            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
             return getFieldFromFieldsDT(dr);
         }
         
@@ -411,19 +458,19 @@ namespace SqlCollegeTranscripts
 
         internal static string getStringValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
             return getStringValueFromFieldsDT(dr,columnToReturn);
         }
 
         internal static int getIntValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRowFromFieldsDT(tableName,columnName);
+            DataRow dr = getDataRowFromFieldsDTFoundational(tableName,columnName);
             return getIntValueFromFieldsDT(dr,columnToReturn);
         }
  
         internal static bool getBoolValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
             return getBoolValueFromFieldsDT(dr,columnToReturn);
         }
 
@@ -455,7 +502,7 @@ namespace SqlCollegeTranscripts
 
         internal static field getForeignKeyRefField(field foreignKey)
         {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
-            DataRow dr = getDataRowFromFieldsDT(foreignKey.table,foreignKey.fieldName);
+            DataRow dr = getDataRowFromFieldsDTFoundational(foreignKey.table,foreignKey.fieldName);
             string FkRefTable = getStringValueFromFieldsDT(dr, "RefTable");
             string FkRefCol = getStringValueFromFieldsDT(dr, "RefPkColumn");
             return getFieldFromTableAndColumnName(FkRefTable, FkRefCol);
@@ -475,15 +522,60 @@ namespace SqlCollegeTranscripts
 
         #endregion
 
-        #region  Loading fieldsDT on connnection.open from non-fieldDT tables
+        #region  Loading tableDT (DK_Index) and fieldsDT (many columns) on connnection.open from other tables
 
-        internal static void updateFieldsTable()
+        internal static string updateTablesDTtableOnProgramLoad()
         {
-            // Updates the FieldsDT from the other table.
+            List<string> NoDKList = new List<string>();
+            List<string> NoPKList = new List<string>();
+
+            // Updates "DK_Index" in tablesDT
+            foreach (DataRow dr in tablesDT.Rows)
+            {
+                // Get DK_Index for this table
+                string tableName = dr["TableName"].ToString();
+
+                // PK - used to check errors
+                DataRow[] drs2 = dataHelper.indexesDT.Select(string.Format("TableName = '{0}' AND is_PK = 'True'", tableName));
+                if (drs2.Count() == 0) { NoPKList.Add(tableName); }
+
+
+                // DK - used in program as well as to check for errors
+                DataRow[] drs = dataHelper.indexesDT.Select(string.Format("TableName = '{0}' AND _unique = 'True' AND is_PK = 'False'", tableName));
+                if(drs.Count() == 0) { NoDKList.Add(tableName); }
+                string indexName = string.Empty;
+                int dkRow = -1;
+                foreach (DataRow dr2 in drs)
+                {
+                    indexName = dr2["IndexName"].ToString();
+                    if (indexName.Length > 1)
+                    {
+                        if (indexName.Substring(0, 2).ToLower() == "dk")
+                        {
+                            dr["DK_Index"] = indexName;
+                            break; // break out of inner for loop
+                        }
+                    }
+                }
+                // Found non-primary unique index not starting with "dk"
+                if (indexName != string.Empty)
+                {
+                    dr["DK_Index"] = indexName;
+                }
+            }
+            if(NoDKList.Count > 0 || NoPKList.Count>0)
+            { 
+            return "No DK: " + String.Join(", ", NoDKList) + " No PK: " + String.Join(", ", NoPKList);
+            }
+            else { return string.Empty; }
+        }
+
+        internal static void updateFieldsDTtableOnProgramLoad()
+        {
+            // Updates FieldsDT from the other table.
             // Uses "Foundational" methods to put info into FieldsDT.
             // After calling this, we can get all information from FieldsDT
-
-            // First update is_PK and is_DK and is_FK- because these used in innerjoin call below
+            // First update is_PK, is_DK, is_FK - because these used in innerjoin call below
             foreach (DataRow dr in fieldsDT.Rows)
             {
                 field rowField = getFieldFromFieldsDT(dr);  // Each row in fieldsDT is a field
@@ -510,33 +602,6 @@ namespace SqlCollegeTranscripts
                     dr[dr.Table.Columns.IndexOf("RefPkColumn")] = refField.fieldName;  // Only displays itself
                 }
             }
-
-            //Do DisplayKeyDictionary
-            //Dictionary<string, List<field>> DisplayFieldDict = new Dictionary<string, List<field>>();
-            //string lastTableName = string.Empty;
-            //foreach (DataRow dr in fieldsDT.Rows)
-            //{
-            //    field rowField = getFieldFromFieldsDT(dr);
-            //    if (rowField.table != lastTableName)  // To save time, if equal, use the last DisplayFieldDict
-            //    {
-            //        sqlFactory tempSql = new sqlFactory(rowField.table, 1, 200);
-            //        DisplayFieldDict = tempSql.DisplayFields_Ostensive;
-            //    }
-            //    // Foreign key
-            //    if (DisplayFieldDict.ContainsKey(rowField.fieldName))
-            //    {
-            //        // DisplayFields
-            //        List<field> fieldList = DisplayFieldDict[rowField.fieldName];
-            //        List<string> fieldNameList = new List<string>();
-            //        foreach (field f in fieldList)   // Could be done with linq
-            //        {
-            //            fieldNameList.Add(f.fieldName);
-            //        }
-            //        string displayFields = String.Join(",", fieldNameList);
-            //        dr[dr.Table.Columns.IndexOf("DisplayFields")] = displayFields;
-            //    }
-            //    lastTableName = rowField.table;  // For next time around
-            //}
         }
 
         private static bool fieldIsForeignKeyFoundational(field fld)
@@ -555,7 +620,7 @@ namespace SqlCollegeTranscripts
             DataRow dr = dataHelper.indexColumnsDT.Select(strSelect).FirstOrDefault();
             if (dr == null)
             {
-                return new field(table, "MissingPrimaryKey", DbType.Int32, 4, true);
+                return new field(table, "MissingPrimaryKey", DbType.Int32, 4, fieldType.pseudo);
             }
             string columnName = dr[dr.Table.Columns.IndexOf("ColumnName")].ToString();
             return getFieldFromFieldsDT(table, columnName);
@@ -566,7 +631,7 @@ namespace SqlCollegeTranscripts
             DataRow dr = dataHelper.foreignKeysDT.Select(string.Format("FkTable = '{0}' AND FkColumn = '{1}'", rowfield.table, rowfield.fieldName)).FirstOrDefault();
             if (dr == null)
             {
-                return new field("MissingRefTable", "MissingRefColumn", DbType.Int32, 4, true);
+                return new field("MissingRefTable", "MissingRefColumn", DbType.Int32, 4, fieldType.pseudo);
             }
             string RefTable = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefTable")]);
             string RefPkColumn = Convert.ToString(dr[dr.Table.Columns.IndexOf("RefPkColumn")]);
@@ -575,82 +640,32 @@ namespace SqlCollegeTranscripts
 
         private static bool isDisplayKeyFoundational(string tableName, string fieldName)  // Note 'private
         {
-            switch (tableName.ToLower())
+            DataRow dr = dataHelper.tablesDT.Select(string.Format("TableName = '{0}'",tableName)).FirstOrDefault();
+            if (dr != null) // always true 
             {
-                case "courses":
-                    switch(fieldName.ToLower()) 
+                string DK_Index = dr["DK_Index"].ToString();
+                if (!String.IsNullOrEmpty(DK_Index))
+                {
+                    // May be two indexes on same column
+                    DataRow[] drs = dataHelper.indexColumnsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", tableName,fieldName));
+                    foreach(DataRow dr2 in drs) 
                     {
-                        case "departmentid":
-                        case "coursename":
+                        if (dr2["IndexName"].ToString() == DK_Index)
+                        {
                             return true;
-                        default: 
-                            return false;
+                        }
                     }
-                case "transcript":
-                    switch (fieldName.ToLower())
-                    {
-                        case "studentid":
-                        case "coursetermid":
-                            return true;
-                        default:
-                            return false;
-                    }
-                case "courseterms":
-                    switch (fieldName.ToLower())
-                    {
-                        case "courseid":
-                        // case "termid":
-                            return true;
-                        default:
-                            return false;
-                    }
-                case "students":
-                    switch (fieldName.ToLower())
-                    {
-                        case "studentname":
-                        case "estudentname":
-                            return true;
-                        default:
-                            return false;
-                    }
-                case "terms":
-                    switch (fieldName.ToLower())
-                    {
-                        case "term":
-                            return true;
-                        default:
-                            return false;
-                    }
-                case "studentdegrees":
-                    switch (fieldName.ToLower())
-                    {
-                        case "studentid":
-                        case "degreeid":
-                            return true;
-                        default:
-                            return false;
-                    }
-                case "faculty":
-                    switch (fieldName.ToLower())
-                    {
-                        case "facultyname":
-                        case "efacultyname":
-                            return true;
-                        default:
-                            return false;
-                    }
-                case "departments":
-                    switch (fieldName.ToLower())
-                    {
-                        case "departmentname":
-                            return true;
-                        default:
-                            return false;
-                    }
-                default:
-                    return false;
+                }
             }
+            return false;
         }
+
+        private static DataRow getDataRowFromFieldsDTFoundational(string tableName, string columnName)
+        {
+            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", tableName, columnName)).FirstOrDefault();
+            return dr;
+        }
+
 
         #endregion
 

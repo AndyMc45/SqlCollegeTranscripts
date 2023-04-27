@@ -1,7 +1,9 @@
 // using Microsoft.Office.Interop.Word;
 using Microsoft.VisualBasic;
 using System.Data;
+using System.Diagnostics.Eventing.Reader;
 using System.Text;
+using System.Web;
 
 namespace SqlCollegeTranscripts
 {
@@ -38,11 +40,11 @@ namespace SqlCollegeTranscripts
         internal List<orderBy> myOrderBys = new List<orderBy>();
         internal List<field> myFields = new List<field>();  // Table and field
         internal List<where> myWheres = new List<where>();
-        internal List<field> DisplayFields_Ostensive = new List<field>();
-
-        // Dictionary(field --> Field List) - foreign keys of this table mapped to fields to show in combo.  Set by innerjoin call.	
-        // internal Dictionary<string, List<field>> DisplayFieldsDictionary = new Dictionary<string, List<field>>();
-
+        internal List<where> myComboWheres = new List<where>();  // Must be redone for every combo call
+//        internal List<field> DisplayFields_Ostensive = new List<field>();
+        // Map Primary keys to their displayfields and to these display keys InnerJoins (for FK display keys)
+        internal Dictionary<Tuple<string,string, string>, List<field>> PKs_OstensiveDictionary = new Dictionary<Tuple<string, string, string>, List<field>>();
+        internal Dictionary<Tuple<string, string, string>, List<innerJoin>> PKs_InnerjoinMap = new Dictionary<Tuple<string, string, string>, List<innerJoin>>();
 
         #endregion
 
@@ -60,14 +62,27 @@ namespace SqlCollegeTranscripts
 
             // This sets currentSql table and field strings - and these remain the same for this table.
             // This also sets DisplayFieldDicitionary each foreign table key in main table
-            errorMsg = callInnerJoins();
+            errorMsg = addInnerJoins();
 
-            // If there is no ostensive definition, add the primary key
-            if (DisplayFields_Ostensive.Count == 0)
+            // If there is no ostensive definition for PK or FK, add the primary key of myTable or refTable
+            foreach (Tuple<string, string, string> key in PKs_OstensiveDictionary.Keys)
             {
-                DisplayFields_Ostensive.Add(fi);
+                if (PKs_OstensiveDictionary[key].Count == 0)
+                {
+                    field check = new field(key.Item2,key.Item3, DbType.Int32, 4);
+                    field PK_myTable = dataHelper.getTablePrimaryKeyField(myTable);
+                    if (check.isSameFieldAs(PK_myTable))
+                    {
+                        PKs_OstensiveDictionary[key].Add(PK_myTable);
+                    }
+                    else  // primary key of ref table
+                    {
+                        field PK_RefTable = dataHelper.getFieldFromFieldsDT(key.Item2,key.Item3);
+                        PK_RefTable.tableAlias = key.Item1;
+                        PKs_OstensiveDictionary[key].Add(PK_RefTable);
+                    }
+                }
             }
-
         }
 
 
@@ -86,38 +101,41 @@ namespace SqlCollegeTranscripts
             //This exception only for combo's, and class must be immediately destroyed afterwards
             if (cmd == command.count)
             {
-                sqlString = "SELECT COUNT(1) FROM " + sqlTableString() + " " + sqlWhereString(strict);  // + " " + sqlOrderByStr();
+                sqlString = "SELECT COUNT(1) FROM " + sqlTableString() + " " + sqlWhereString(myWheres, strict);  // + " " + sqlOrderByStr();
+            }
+            else if (cmd == command.selectAll || (recordCount <= offset + myPageSize))
+            {
+                sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " " + sqlWhereString(myWheres, strict) + " " + sqlOrderByStr(myOrderBys) + " ";
             }
             else if (cmd == command.select)
-            {
-                if (myPage == -1 || (recordCount <= offset + myPageSize))
-                {
-                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + " " + sqlWhereString(strict) + " " + sqlOrderByStr(myOrderBys) + " ";
-                }
-                else
-                { // Sql 2012 required for this "Fetch" clause paging
-                    sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + sqlWhereString(strict) + sqlOrderByStr(myOrderBys) + " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + myPageSize.ToString() + " ROWS ONLY";
-                }
+            { 
+                // Sql 2012 required for this "Fetch" clause paging
+                sqlString = "SELECT " + sqlFieldString(myFields) + " FROM " + sqlTableString() + sqlWhereString(myWheres, strict) + sqlOrderByStr(myOrderBys) + " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + myPageSize.ToString() + " ROWS ONLY";
             }
+
             return sqlString;
         }
 
-        // this factory is for the table that is in the combo
-        internal string returnComboSql(field colField)
+        // This factory is still the currentSql factory
+        internal string returnComboSql(field cmbField, comboValueType cmbValueType)  // Return all Display keys
         {
-            // For primary key, return the grid dropdown - also used in combo box for primary key
-            // For non-Keys return distinct values - used in combo boxes 
-            string sqlString = "";
-            StringBuilder sqlFieldStringSB = new StringBuilder();
-            if (dataHelper.isTablePrimaryKeyField(colField))
-            {
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
-                sqlFieldStringSB.Append(", ");
-                List<field> fls = DisplayFields_Ostensive;
+            string sqlString = string.Empty;
+
+            // For primary keys, displayMember is the ostensive display keys and value member is the Pk value.
+            if (cmbValueType == comboValueType.PK_myTable || cmbValueType == comboValueType.PK_refTable)  // no distinction between these two
+            { 
+                StringBuilder sqlFieldStringSB = new StringBuilder();
+                // Put the cmbField as first field
+                Tuple<string, string, string> key = Tuple.Create(cmbField.tableAlias, cmbField.table, cmbField.fieldName);
+                List<field> fls = PKs_OstensiveDictionary[key];  // Error if not present
                 // If myTable has no display keys, make the primary field the display key
-                if (fls.Count == 1)
+                if (fls.Count == 0)
                 {
-                    sqlFieldStringSB.Append(sqlFieldString(fls));
+                    sqlFieldStringSB.Append(dataHelper.QualifiedAliasFieldName(cmbField));
+                }
+                else if (fls.Count == 1)
+                {
+                    sqlFieldStringSB.Append(dataHelper.QualifiedAliasFieldName(fls[0]));
                 }
                 else
                 {
@@ -127,20 +145,34 @@ namespace SqlCollegeTranscripts
                 }
                 sqlFieldStringSB.Append(" as DisplayMember");
                 sqlFieldStringSB.Append(", ");
-                // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
+                // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias) 
+                sqlFieldStringSB.Append(dataHelper.QualifiedAliasFieldName(cmbField));
                 sqlFieldStringSB.Append(" as ValueMember");
+                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString(cmbField, key) + " " + sqlWhereString(myComboWheres, false) + " Order by DisplayMember";
             }
-            else
+            // For text fields return distinct values - used in combo boxes 
+            else if (cmbValueType == comboValueType.textField_myTable || cmbValueType == comboValueType.textField_refTable)  // no distinction between these two
             {
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
+                // For non-Keys return distinct values - used in combo boxes 
+                StringBuilder sqlFieldStringSB = new StringBuilder();
+                sqlFieldStringSB.Append(dataHelper.QualifiedAliasFieldName(cmbField));
                 sqlFieldStringSB.Append(" as DisplayMember");
                 sqlFieldStringSB.Append(", ");
                 // Add primary key of table as ValueField (May not need to add this twice but O.K. with Alias 
-                sqlFieldStringSB.Append(dataHelper.QualifiedFieldName(colField));
+                sqlFieldStringSB.Append(dataHelper.QualifiedAliasFieldName(cmbField));
                 sqlFieldStringSB.Append(" as ValueMember");
+                field PkField = dataHelper.getTablePrimaryKeyField(cmbField.table);
+                PkField.tableAlias = cmbField.tableAlias;
+                Tuple<string, string, string> key = Tuple.Create(PkField.tableAlias, PkField.table, PkField.fieldName);
+                string tableString = sqlTableString(PkField, key);
+                //if (dataHelper.isForeignKeyField(cmbField))
+                //{
+                //    ijList = PKs_InnerjoinMap[Keyfield.fieldName];
+                //    field PkField = dataHelper.getForeignKeyRefField(Keyfield);
+                //    tableString = sqlTableString(PkField, ijList);
+                //}
+                sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + tableString + " " + sqlWhereString(myComboWheres, false) + " Order by DisplayMember";
             }
-            sqlString = "SELECT DISTINCT " + sqlFieldStringSB.ToString() + " FROM " + sqlTableString() + " " + sqlWhereString(false) + " Order by DisplayMember";
             return sqlString;
         }
 
@@ -151,19 +183,29 @@ namespace SqlCollegeTranscripts
 
         private string sqlTableString()
         {
-            string ts = myTable;
-            foreach (innerJoin ij in myInnerJoins)
-            {
-                // Get the 'on' condition
-                StringBuilder sb = new StringBuilder();
-                sb.Append(dataHelper.QualifiedFieldName(ij.fld));
-                sb.Append("=");
-                field fld2 = new field(ij.table2, ij.table2PrimaryKey, DbType.Int32, 4);
-                sb.Append(dataHelper.QualifiedFieldName(fld2));
-                string condition = sb.ToString();
+            field myPK = dataHelper.getTablePrimaryKeyField(myTable);
+            Tuple<string,string,string> key = Tuple.Create(myPK.tableAlias, myPK.table, myPK.fieldName); // Should find all innerjoins
+            string ts = sqlTableString(myPK, key);
+            return ts;
+        }
 
-                // construct inner join
-                ts = "([" + ij.table2 + "] INNER JOIN " + ts + " ON " + condition + ")";
+        private string sqlTableString(field PkField, Tuple<string,string,string> key)
+        {
+            List<innerJoin> ijList = PKs_InnerjoinMap[key];
+            string ts = PkField.table + " AS " + PkField.tableAlias;
+            return sqlExtendTableStringByInnerJoins(ijList, ts);
+        }
+
+        private string sqlExtendTableStringByInnerJoins(List<innerJoin> ijList, string ts)
+        {
+            foreach (innerJoin ij in ijList)
+            {
+                string condition = string.Format(" {0} = {1} ", dataHelper.QualifiedAliasFieldName(ij.fkFld), dataHelper.QualifiedAliasFieldName(ij.pkRefFld));
+                ts = "([" + ij.pkRefFld.table + "] AS " + ij.pkRefFld.tableAlias + " INNER JOIN " + ts + " ON " + condition + ")";
+                // Recursive step
+                Tuple<string, string, string> RefTableKey = Tuple.Create(ij.pkRefFld.tableAlias, ij.pkRefFld.table, ij.pkRefFld.fieldName);
+                List<innerJoin> RefTable_ijs = PKs_InnerjoinMap[RefTableKey];
+                ts = sqlExtendTableStringByInnerJoins(RefTable_ijs, ts);
             }
             return ts;
         }
@@ -174,17 +216,17 @@ namespace SqlCollegeTranscripts
             List<string> fieldStrList = new List<string>();
             foreach (field fs in fieldList)
             {
-                fieldStrList.Add(dataHelper.QualifiedFieldName(fs));
+                fieldStrList.Add(dataHelper.QualifiedAliasFieldName(fs));
             }
             // Join with commas - .Join knows to skip a closing comma.
             return String.Join(",", fieldStrList);
         }
 
-        private string sqlWhereString(bool strict)   // Not strict uses "Like" to get strings that start with a string
+        private string sqlWhereString(List<where> myOrComboWheres, bool strict)   // Not strict uses "Like" to get strings that start with a string
         {
             // Make a list of the conditions
             List<string> WhereStrList = new List<string>();
-            foreach (where ws in myWheres)
+            foreach (where ws in myOrComboWheres)
             {
                 string condition = "";
                 if (dataHelper.TryParseToDbType(ws.whereValue,ws.fl.dbType))
@@ -195,29 +237,29 @@ namespace SqlCollegeTranscripts
                     {
                         case DbTypeType.isInteger:
                         case DbTypeType.isDecimal:
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + " = " + ws.whereValue;
+                            condition = dataHelper.QualifiedAliasFieldName(ws.fl) + " = " + ws.whereValue;
                             break;
                         case DbTypeType.isDateTime:
-                            condition = dataHelper.QualifiedFieldName(ws.fl) + "= #" + ws.whereValue + "#";
+                            condition = dataHelper.QualifiedAliasFieldName(ws.fl) + "= #" + ws.whereValue + "#";
                             break;
                         case DbTypeType.isString:
                             if (strict)
                             {
-                                condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + ws.whereValue + "'";  //Exact string
+                                condition = dataHelper.QualifiedAliasFieldName(ws.fl) + " = '" + ws.whereValue + "'";  //Exact string
                             }
                             else
                             { 
-                                condition = dataHelper.QualifiedFieldName(ws.fl) + " Like '" + ws.whereValue + "%'";  //Same starting string
+                                condition = dataHelper.QualifiedAliasFieldName(ws.fl) + " Like '" + ws.whereValue + "%'";  //Same starting string
                             }
                             break;
                         case DbTypeType.isBoolean:
                             if (ws.whereValue.ToLower() == "true")
                             {
-                                condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.trueString + "'";
+                                condition = dataHelper.QualifiedAliasFieldName(ws.fl) + " = '" + MsSql.trueString + "'";
                             }
                             else
                             {
-                                condition = dataHelper.QualifiedFieldName(ws.fl) + " = '" + MsSql.falseString + "'";
+                                condition = dataHelper.QualifiedAliasFieldName(ws.fl) + " = '" + MsSql.falseString + "'";
                             }
                             break;
                     }
@@ -246,7 +288,7 @@ namespace SqlCollegeTranscripts
             List<string> orderByStrList = new List<string>();
             foreach (orderBy ob in orderByList)
             {
-                string qualFieldName = dataHelper.QualifiedFieldName(ob.fld);
+                string qualFieldName = dataHelper.QualifiedAliasFieldName(ob.fld);
                 if (ob.sortOrder == System.Windows.Forms.SortOrder.Descending)
                 {
                     orderByStrList.Add(qualFieldName + " DESC");
@@ -261,129 +303,160 @@ namespace SqlCollegeTranscripts
         }
 
         // Go through table and adds to myInnerJoins and myFields lists
-        // Note - 0 inner joins will add fields from myTable (1st Call)
-        // Two ways to call
-        private string callInnerJoins()
+        // Also, for every table in the sql, add map from its primary key to all its ForeignKeys.  (PKs_InnerjoinMap[PK] --> list of FK inner joins)
+        // Also, for every table in the sql, add map from its primary key to all its displayFields (PKs_OstensiveDictionary[PK] --> list of display fields)
+        private string addInnerJoins()
         {
-            field empty = new field("None", "Note", DbType.String, 0, true);
-            string msg = callInnerJoins(myTable, empty);
-            return msg;
+            List<string> msgStrings = new List<string>();  // List of error messages.
+            List<string> allTables = new List<string>();
+            allTables.Add(myTable);  // So next use of myTable will myTable01
+            field myTablePK = dataHelper.getTablePrimaryKeyField(myTable);
+            Tuple<string, string, string> key = Tuple.Create(myTablePK.tableAlias, myTablePK.table, myTablePK.fieldName);
+            List<field> myTableDisplayFields = new List<field>();
+            PKs_OstensiveDictionary.Add(key, myTableDisplayFields);  // myTable key to empty list
+            List<innerJoin> myTableInnerJoins = new List<innerJoin>();
+            PKs_InnerjoinMap.Add(key, myTableInnerJoins);  // myTable key to empty list
+            List<string> myTableStack = new List<string>();  // Start empty so that myTable can be added once.
+            addInnerJoins(key, myTablePK, myTableStack, ref allTables, ref msgStrings );
+            
+            if (msgStrings.Count > 0) { return String.Join(", ", msgStrings); } else { return string.Empty; }
         }
-        private string callInnerJoins(string currentTable, field myTableInnerJoinField)
+
+        private void addInnerJoins(Tuple<string, string, string> currentKey, field currentTablePK, List<string>myTableStack, ref List<string> allTables, ref List<string> msgStrings)
         {
-            // (myTableInnerJoinField used in constructing the DisplayFieldsDictionary
-            // - i.e. a map from top table FK's to all displaykeys that come from it including grandson tables)
-      
-            StringBuilder MsgStr = new StringBuilder();
-            DataRow[] drs = dataHelper.fieldsDT.Select("TableName = '" + currentTable + "'");
+
             // Loop through fields in table - adding to innerjoins and fields lists
+            DataRow[] drs = dataHelper.fieldsDT.Select("TableName = '" + currentTablePK.table + "'","ColNum ASC");
             foreach (DataRow dr in drs)
             {
-                // Get the field for this row - containing table, fieldName, DataType, Size
+                // Get the field for this row - same table and tableAlias for all fields
                 field drField = dataHelper.getFieldFromFieldsDT(dr);
+                drField.tableAlias = currentTablePK.tableAlias;
 
-                //if Primary Key - program assumes this will be the first field
-                if (dataHelper.isTablePrimaryKeyField(drField))
+                if (dataHelper.isForeignKeyField(drField))  // Must add Inner join
+                {
+                    field RefTableField = dataHelper.getForeignKeyRefField(drField);  // Primary key of ref table
+
+                    // Set TableAlias - Change default if table already in allTables list
+                    int i = allTables.Count(e=>e.Equals(RefTableField.table));
+                    if (i > 0) 
+                    {
+                        RefTableField.tableAlias = RefTableField.table + dataHelper.twoDigitNumber(i); 
+                    }
+                    allTables.Add(RefTableField.table);  // Prepare for next use of refTable if any
+
+                    // Circular check: if table already in myTableStack, skip this foreign key
+                    if (!myTableStack.Contains(RefTableField.table))
+                    {
+                        // 1. Add to myFields and innerjoins - all FKs or only "my table"? 
+                        if (currentTablePK.table == myTable)
+                        { 
+                            myFields.Add(drField);
+                        }
+                        innerJoin new_ij = new innerJoin(drField, RefTableField);
+                        myInnerJoins.Add(new_ij);
+                        // Recursive step (1st Case): currentTable is myTable
+                        if (currentTablePK.table == myTable)
+                        {
+                            // 1. Add all myTable FK to PKs_InnerjoinMap[currentKey]
+                            PKs_InnerjoinMap[currentKey].Add(new_ij);
+                            // 2. Recursive step    
+                            // 2a. Create Key for PKs_Ostensive dictionary for this FK - all will have, both display and non-display
+                            Tuple<string, string, string> newKey = Tuple.Create(RefTableField.tableAlias, RefTableField.table, RefTableField.fieldName);
+                            List<field> fiList = new List<field>();
+                            PKs_OstensiveDictionary.Add(newKey, fiList);
+                            // 2b. Create Key for PKs_InnerjoinMap
+                            List<innerJoin> ijList = new List<innerJoin>();
+                            PKs_InnerjoinMap.Add(newKey, ijList);
+                            // 2c. Recursive call with a new table stack
+                            List<string> newTableStack = new List<string>();
+                            addInnerJoins(newKey, RefTableField, newTableStack, ref allTables, ref msgStrings);
+                        }
+                        else if ( dataHelper.isDisplayKey(drField) )
+                        {
+                            // 1. Add to PK_InnerjoinMap
+                            PKs_InnerjoinMap[currentKey].Add(new_ij);
+                            // 2. Recursive step (2nd Case): a foreign key not in myTable that isDispayKey 
+                            // 2a. Create Key for PKs_Ostensive dictionary for this FK displaykey
+                            Tuple<string, string, string> newKey = Tuple.Create(RefTableField.tableAlias, RefTableField.table, RefTableField.fieldName);
+                            List<field> fiList = new List<field>();
+                            PKs_OstensiveDictionary.Add(newKey, fiList);
+                            // 2b. Create Key for PKs_InnerjoinMap
+                            List<innerJoin> ijList = new List<innerJoin>();
+                            PKs_InnerjoinMap.Add(newKey, ijList);
+                            // 2c. Add to myTableStack
+                            myTableStack.Add(RefTableField.table);
+                            // Old key and tablestack
+                            addInnerJoins(currentKey, RefTableField, myTableStack, ref allTables, ref msgStrings);
+                        }
+                    }
+                    else
+                    {
+                        msgStrings.Append("Skipping circular foreignkey: (" + dataHelper.QualifiedAliasFieldName(drField));
+                    }
+                }
+                else if (dataHelper.isTablePrimaryKeyField(drField))
                 {
                     // Primary key added in class constructor as first field
                     // Also foreign keys are added - so no need to add primary key of ref tables
+                    // Handle is_FK before is_PK in crazy case where the PK is also an FK.
                 }
-
-                // if Foreign Key
-                else if (dataHelper.isForeignKeyField(drField))  // Inner join
+                else  // Neither PK or FK
                 {
-                    field RefTableField = dataHelper.getForeignKeyRefField(drField);
-                    string table2 = RefTableField.table;
-                    // Handle circles (don't allow) and repeats (needs an alias)
-                    int alliasCount = 0;
-                    bool everythingOK = true;
-                    foreach (innerJoin ij in myInnerJoins)
-                    {
-                        // Don't allow circular  Table1 --> Table2 --> Table1
-                        if (ij.fld.table == table2)
-                        {
-                            // msgStr.Append(translation.tr("WarningTwoInnerJoinsOnTable", table2, "", ""));
-                            MsgStr.Append("Circular innerjoin: " + currentTable);
-                        }
-                        // Requires allias - i tells you how many times this table has been an alliaas
-                        // If Table1 -->Table2, Table1 --> Table2, Table1 -->Table3, then i=2
-                        if (ij.table2 == table2)
-                        {
-                            alliasCount++;
-                            everythingOK = false;
-                            MsgStr.Append("Alias: " + table2 + alliasCount.ToString());
-                        }
-                    }
-                    innerJoin new_ij = new innerJoin(drField, table2);
-                    if (everythingOK)
-                    {
-
-                        // strAlpha += ((char)i).ToString();   // a = 65
-                        // Following not yet implemented - Allias name ignored as of now
-                        if (alliasCount > 0)
-                        {
-                            new_ij.table2Allias = table2 + alliasCount.ToString();
-                        }
-                        // Add to inner joins
-                        myInnerJoins.Add(new_ij);
-
-                        //Recursive step - table 2 becomes table 1
-                        if (currentTable == myTable)
-                        {
-                            // Add this FK field of the main table - needed when editing table
-                            myFields.Add(drField);
-                            // Add the display keys of the lower tables for all FK in myTable
-                            callInnerJoins(table2, drField);  // field1 will remain even for grandson tables
-                        }
-                        else if (dataHelper.isDisplayKey(drField))
-                        {
-                            // For currentTable other than myTable, only add the lower display keys
-                            // if this FK is a display key (i.e. such as in "marraige table with only person 1 and person2 FK's
-                            callInnerJoins(table2, myTableInnerJoinField);   //Maintains higher level "field1" to any grandsons.
-                        }
-                    }
-                }
-                else  // A none key field
-                {
-                    if (currentTable == myTable)  // In My Table
+                    if ( currentTablePK.table == myTable || dataHelper.isDisplayKey(drField) )  // Add if myTable and all lower table displaykeys
                     {
                         myFields.Add(drField);
                         if (dataHelper.isDisplayKey(drField))
                         {
-                            DisplayFields_Ostensive.Add(drField);  // Used in returnComboSql
+                            // Add to PKs_OstensiveDictionary
+                            PKs_OstensiveDictionary[currentKey].Add(drField);
                         }
                     }
-                    else if (dataHelper.isDisplayKey(drField))  // looping through a son of myTable
-                    {
-                        myFields.Add(drField);
-                        DisplayFields_Ostensive.Add(drField);
-                    }
                 }
-
             }
-            return MsgStr.ToString();
         }
 
-        internal bool fieldIsInMyFields(string tableName, string fieldName)
+        internal bool TableIsInMyInnerJoins(field PkField, string tableAliasName)
         {
-            foreach (field fl in myFields)
+            if (tableAliasName == PkField.tableAlias)  // Table can be filtered on itself 
+            { 
+                return true; 
+            } 
+            Tuple<string, string, string> key = Tuple.Create(PkField.tableAlias, PkField.table, PkField.fieldName);
+            foreach (innerJoin ij in PKs_InnerjoinMap[key])
             {
-                if (fl.table == tableName && fl.fieldName == fieldName)
-                { return true; }
-
+                // Recursive call
+                if (TableIsInMyInnerJoins(ij.pkRefFld, tableAliasName))
+                {
+                    return true;
+                }
+//                if (tableAliasName == ij.pkRefFld.tableAlias) { return true; }
             }
             return false;
         }
 
-        internal bool TableIsInMyTables(string tableName)
+        internal bool MainFilterTableIsInSql(where mainFilter, field PkField, out string tableAlias)
         {
-            if (tableName == myTable) { return true; }
-            foreach (innerJoin ij in myInnerJoins)
-            {
-                if (tableName == ij.table2) { return true; }
+            // Same logic as "TableIsInMyInnerJoin" but will return a tableAlias that matches the mainFilter field
+            if (mainFilter.fl.isSameBaseFieldAs(PkField))  // Table itself is the first table in the Sql table string
+            { 
+                tableAlias = PkField.tableAlias;  
+                return true; 
             }
+            // Recursive search
+            Tuple<string, string, string> key = Tuple.Create(PkField.tableAlias, PkField.table, PkField.fieldName);
+            foreach (innerJoin ij in PKs_InnerjoinMap[key])
+            {
+                if(MainFilterTableIsInSql(mainFilter, ij.pkRefFld,out tableAlias))
+                {
+                    return true;
+                }
+            }
+            tableAlias = string.Empty;
             return false;
         }
+        // PKs_InnerjoinMap[PKs_InnerjoinMap.Keys.ToList()[1]]
+
 
     }
 }
