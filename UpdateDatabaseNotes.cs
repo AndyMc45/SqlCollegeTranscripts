@@ -23,6 +23,7 @@ First, make the following changes using SSMS  (sql files found in Documents > SQ
     b.  Add All Requirement tables - You can generate this code in SQL Server Management Studio
     c.  Add new Departments table - Add values for short names:  NT, OT, PT, TH, CH, BC, --
     d.  Drop Primary keys that have chinese names and then readd (or just change the name)
+   'Backup database at every drop or change content step'
 
 Next Create all ForeignKeys and  Display Keys - important to do to prevent deleting things you should not delete
 Next Create all ForeignKeys and  Display Keys.  Use tools
@@ -124,6 +125,9 @@ Other things to do
 		    Inner Join Requirements r3 On R3.req_name = R2.req_name
 		    Inner Join Degrees on GradRequirements.degreeID = Degrees.degreeID
 	        Where Degrees.degreeLevelID = 3  AND NOT R3.requirementID = GradRequirements.requirementID -- R3 is the Bachelor
+
+   'Backup database after any permanent change or a few non-permanent changes'
+
 		
     g. Push the DegreeLevelID down from CourseTerms to Courses.
        (Use same stratagy as above.)
@@ -175,7 +179,84 @@ Other things to do
 
     i.  Delete unused FK in Requirements and in Courses  (Use ^U and Delete)
 
-    j.  Finally, after Courses And GradRequirements have the correct requirementID, delete everything related to OldDeptID 
+   'Backup database after any permanent change or a few non-permanent changes'
+
+
+    j.  Transfer listingCredit to note and delete column
+        USE [CrtsTranscript_2007_Test]
+        GO
+        UPDATE [dbo].[transcript]
+           SET [note] = 
+           CASE WHEN   transcript.listeningCredit = 'True' THEN Concat('Listen Credit ', note)
+           Else transcript.note END
+        GO
+
+    k.  Added "GradeStatus"
+        k1.  This is FK in transcript table - options (in statusKey column): "forCredit, auditting, dropped, withdrawn, etc.
+        k2.  Use following to set the status based on the audit column of transcripts - then delete audit column.
+            'Backup database at every step'
+
+        UPDATE [dbo].[transcript]
+        SET [gradeStatusID] = 2   -- Must pick "audit" gradeStatusID
+        FROM transcript
+        Where transcript.auditing = 'True'
+
+    l.  Added "RequirementStatus
+        l1.  This is a FK of the requirement table - the name of the requirement should reflect this status
+        12.  Examples (in statusKey column):  online, onlineSimultanius, inPerson, DVD, directedStudy
+            (GradRequirments could be "60 online credits", "60 onlineSimulanius or inPerson credits")
+        13.  Use following to update and then delete 'self-study' column in transcripts
+            'Backup database at every step'
+
+        USE [CrtsTranscript_2007_Test]
+        GO
+        UPDATE [dbo].[transcript]
+        SET [requirementStatusID] = 2
+        FROM transcript
+        Where transcript.selfStudyCourse = 'True'
+        GO
+
+        USE [CrtsTranscript_2007_Test]
+        GO
+        UPDATE [dbo].[transcript]
+        SET [requirementStatusID] = 4
+        FROM transcript
+        where note Like '%DVD%'
+        GO
+
+    M. Create table "RequirementNames" and fill it with the following - 34 rows
+        (Could do this earlier.)
+        USE [CrtsTranscript_2007_Test]
+        GO
+        INSERT INTO [dbo].[RequirementName]
+                   ([name]
+                   ,[e_name])
+        Select  DISTINCT
+		        Requirements.req_name,
+		        Requirements.e_req_name
+        FROM	Requirements
+        GO
+
+        USE [CrtsTranscript_2007_Test]
+        GO
+        UPDATE [dbo].[Requirements]
+           SET [requirementNameID] = RequirementName.requirementNameID
+           From RequirementName
+         WHERE Requirements.req_name = RequirementName.name AND Requirements.e_req_name = RequirementName.e_name
+        GO
+
+
+
+    M2.  And then add RequirementNames as FK to Requirments, and then delete two columns from Requrirements
+
+
+
+
+
+
+
+
+    z.  Finally, after Courses And GradRequirements have the correct requirementID, delete everything related to OldDeptID 
         and delete "degreeLevel" from CourseTerms if added.  DO THIS AFTER WEEKS OF TESTING
          
          

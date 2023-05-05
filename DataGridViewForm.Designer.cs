@@ -97,6 +97,7 @@
             GridContextMenu = new ContextMenuStrip(components);
             GridContextMenu_FindInDescendent = new ToolStripMenuItem();
             GridContextMenu_FindInAncestor = new ToolStripMenuItem();
+            GridContextMenu_TimesUsedAsFK = new ToolStripMenuItem();
             deleteUnusedForeignKeysToolStripMenuItem = new ToolStripMenuItem();
             correctDuplicateDKsToolStripMenuItem = new ToolStripMenuItem();
             rbAdd = new RadioButton();
@@ -172,7 +173,7 @@
             // 
             mnuConnections.DropDownItems.AddRange(new ToolStripItem[] { mnuConnectionList, mnuBlankLine3, mnuAddConnection, mnuDeleteConnection });
             mnuConnections.Name = "mnuConnections";
-            mnuConnections.Size = new Size(224, 26);
+            mnuConnections.Size = new Size(173, 26);
             mnuConnections.Text = "Connections";
             // 
             // mnuConnectionList
@@ -205,7 +206,7 @@
             // mnuClose
             // 
             mnuClose.Name = "mnuClose";
-            mnuClose.Size = new Size(224, 26);
+            mnuClose.Size = new Size(173, 26);
             mnuClose.Text = "&Close";
             mnuClose.Click += mnuClose_Click;
             // 
@@ -836,9 +837,9 @@
             // GridContextMenu
             // 
             GridContextMenu.ImageScalingSize = new Size(20, 20);
-            GridContextMenu.Items.AddRange(new ToolStripItem[] { GridContextMenu_FindInDescendent, GridContextMenu_FindInAncestor, deleteUnusedForeignKeysToolStripMenuItem, correctDuplicateDKsToolStripMenuItem });
+            GridContextMenu.Items.AddRange(new ToolStripItem[] { GridContextMenu_FindInDescendent, GridContextMenu_FindInAncestor, GridContextMenu_TimesUsedAsFK, deleteUnusedForeignKeysToolStripMenuItem, correctDuplicateDKsToolStripMenuItem });
             GridContextMenu.Name = "contextMenuStrip1";
-            GridContextMenu.Size = new Size(248, 100);
+            GridContextMenu.Size = new Size(248, 124);
             // 
             // GridContextMenu_FindInDescendent
             // 
@@ -855,12 +856,19 @@
             GridContextMenu_FindInAncestor.Text = "Find in Ancestor table";
             GridContextMenu_FindInAncestor.Click += GridContextMenu_FindInAncestor_Click;
             // 
+            // GridContextMenu_TimesUsedAsFK
+            // 
+            GridContextMenu_TimesUsedAsFK.Name = "GridContextMenu_TimesUsedAsFK";
+            GridContextMenu_TimesUsedAsFK.Size = new Size(247, 24);
+            GridContextMenu_TimesUsedAsFK.Text = "Count FK uses";
+            GridContextMenu_TimesUsedAsFK.Click += GridContextMenu_TimesUsedAsFK_Click;
+            // 
             // deleteUnusedForeignKeysToolStripMenuItem
             // 
             deleteUnusedForeignKeysToolStripMenuItem.Name = "deleteUnusedForeignKeysToolStripMenuItem";
             deleteUnusedForeignKeysToolStripMenuItem.Size = new Size(247, 24);
             deleteUnusedForeignKeysToolStripMenuItem.Text = "Find &Unused Foreign Keys";
-            deleteUnusedForeignKeysToolStripMenuItem.Click += GridContextMenu_DeleteUnusedFK_Click;
+            deleteUnusedForeignKeysToolStripMenuItem.Click += GridContextMenu_FindUnusedFK_Click;
             // 
             // correctDuplicateDKsToolStripMenuItem
             // 
@@ -1258,11 +1266,10 @@
             dataGridView1.AllowUserToDeleteRows = false;
             dataGridViewCellStyle1.BackColor = Color.WhiteSmoke;
             dataGridView1.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
-            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             dataGridView1.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
-            dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridView1.ColumnHeadersHeight = 29;
             dataGridView1.ContextMenuStrip = GridContextMenu;
-            dataGridView1.Dock = DockStyle.Fill;
+            dataGridView1.Dock = DockStyle.Left;
             dataGridView1.EnableHeadersVisualStyles = false;
             dataGridView1.GridColor = Color.WhiteSmoke;
             dataGridView1.Location = new Point(0, 0);
@@ -1284,6 +1291,7 @@
             dataGridView1.CellValidating += dataGridView1_CellValidating;
             dataGridView1.CellValueChanged += dataGridView1_CellValueChanged;
             dataGridView1.ColumnHeaderMouseClick += dataGridView1_ColumnHeaderMouseClick;
+            dataGridView1.ColumnWidthChanged += dataGridView1_ColumnWidthChanged;
             dataGridView1.CurrentCellDirtyStateChanged += dataGridView1_CurrentCellDirtyStateChanged;
             dataGridView1.DataError += dataGridView1_DataError;
             dataGridView1.EditingControlShowing += dataGridView1_EditingControlShowing;
@@ -1424,6 +1432,7 @@
         private Button btnReload;
         private ToolStripMenuItem deleteUnusedForeignKeysToolStripMenuItem;
         private ToolStripMenuItem correctDuplicateDKsToolStripMenuItem;
+        private ToolStripMenuItem GridContextMenu_TimesUsedAsFK;
         //private Button button2;
     }
 }

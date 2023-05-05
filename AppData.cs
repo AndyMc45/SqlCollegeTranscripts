@@ -101,6 +101,8 @@ namespace SqlCollegeTranscripts
 
         public static string GetKeyValue(string key)
         {
+            // string dir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
             return Interaction.GetSetting(appName, "SingleValue", key, string.Empty);
         }
 

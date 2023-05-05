@@ -390,7 +390,7 @@ namespace SqlCollegeTranscripts
             string strSql = sf.returnComboSql(pkField, comboValueType.PK_myTable);
             dataHelper.extraDT = new DataTable();
             MsSql.FillDataTable(dataHelper.extraDT, strSql);
-            string displayMember = "Missing DK";
+            string displayMember = "Missing DK";  // Default - modified below
             if (extraDT.Rows.Count > 0)
             {
                 int colIndex = extraDT.Columns["DisplayMember"].Ordinal;
@@ -455,6 +455,13 @@ namespace SqlCollegeTranscripts
             DbType dbType = dataHelper.ConvertStringToDbType(strDbType);
             return new field(tableName, columnName, dbType, size);
         }
+
+        internal static void setIntValueFieldsDT(string tableName, string columnName, string columnToReturn, int value)
+        {
+            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
+            dr[columnToReturn] = value;
+        }
+
 
         internal static string getStringValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
@@ -542,25 +549,35 @@ namespace SqlCollegeTranscripts
 
                 // DK - used in program as well as to check for errors
                 DataRow[] drs = dataHelper.indexesDT.Select(string.Format("TableName = '{0}' AND _unique = 'True' AND is_PK = 'False'", tableName));
-                if(drs.Count() == 0) { NoDKList.Add(tableName); }
-                string indexName = string.Empty;
-                int dkRow = -1;
-                foreach (DataRow dr2 in drs)
-                {
-                    indexName = dr2["IndexName"].ToString();
-                    if (indexName.Length > 1)
-                    {
-                        if (indexName.Substring(0, 2).ToLower() == "dk")
-                        {
-                            dr["DK_Index"] = indexName;
-                            break; // break out of inner for loop
-                        }
+                if (drs.Count() == 0)
+                {   // Table is a foreign key
+                    DataRow[] drs3 = dataHelper.foreignKeysDT.Select(string.Format("RefTable = '{0}'", tableName));
+                    if(drs3.Count() > 0) 
+                    {  
+                        NoDKList.Add(tableName);
                     }
                 }
-                // Found non-primary unique index not starting with "dk"
-                if (indexName != string.Empty)
-                {
-                    dr["DK_Index"] = indexName;
+                else
+                { 
+                    string indexName = string.Empty;
+                    int dkRow = -1;
+                    foreach (DataRow dr2 in drs)
+                    {
+                        indexName = dr2["IndexName"].ToString();
+                        if (indexName.Length > 1)
+                        {
+                            if (indexName.Substring(0, 2).ToLower() == "dk")
+                            {
+                                dr["DK_Index"] = indexName;
+                                break; // break out of inner for loop
+                            }
+                        }
+                    }
+                    // Found non-primary unique index not starting with "dk"
+                    if (indexName != string.Empty)
+                    {
+                        dr["DK_Index"] = indexName;
+                    }
                 }
             }
             if(NoDKList.Count > 0 || NoPKList.Count>0)
