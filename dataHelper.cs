@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace SqlCollegeTranscripts
 {
-    #region Helper classes - field, where, innerJoin, orderBy, and enum command
+    #region Helper classes - field, where, innerJoin, orderBy, enums: command, ProgramMode, DbTypeType, fieldType, comboValueType
 
     public class field
     {
@@ -71,6 +71,8 @@ namespace SqlCollegeTranscripts
                 }
             }
         }  // Used to display where in combo
+
+        public List<Tuple<string, string, string>> keyStack { get; set; }
 
         public bool isSameFieldAs(field fl)
         {   
@@ -142,6 +144,7 @@ namespace SqlCollegeTranscripts
     {
         select,
         selectAll,
+        selectOneField,
         count
     }
 
@@ -318,6 +321,7 @@ namespace SqlCollegeTranscripts
         internal static string errMsgParameter1 = String.Empty;
         internal static string errMsgParameter2 = String.Empty;
 
+
         internal static bool TryParseToDbType(string str, DbType dbType)
         {
             DbTypeType dbTypeType = GetDbTypeType(dbType);
@@ -380,16 +384,16 @@ namespace SqlCollegeTranscripts
             return true;  // Not checking anything else - assuming it will be a string
         }
 
-        internal static where GetWhereFromPrimaryKey(string table, string PKvalue)
+        internal static where GetWhereFromPrimaryKeyValue(string table, string PKvalue)
         {
             field pkField = getTablePrimaryKeyField(table);
             where newWhere = new where(pkField, PKvalue);
             // Get display name 
-            sqlFactory sf = new sqlFactory(table, 0, 0);
+            SqlFactory sf = new SqlFactory(table, 0, 0);
             sf.myComboWheres.Add(newWhere);
             string strSql = sf.returnComboSql(pkField, comboValueType.PK_myTable);
             dataHelper.extraDT = new DataTable();
-            MsSql.FillDataTable(dataHelper.extraDT, strSql);
+            string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, strSql);
             string displayMember = "Missing DK";  // Default - modified below
             if (extraDT.Rows.Count > 0)
             {
@@ -415,34 +419,57 @@ namespace SqlCollegeTranscripts
         }
 
 
-        #region  Get values from FieldsDT DataRow (&& overloads)
+        #region  Getting information from FieldDT: public (internal) methods
 
-        private static string getStringValueFromFieldsDT(DataRow dr, string fieldToReturn)
+        internal static field getTablePrimaryKeyField(string table)
         {
-            return Convert.ToString(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
+            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND is_PK", table)).FirstOrDefault();
+            return getFieldFromFieldsDT(dr);
         }
 
-        private static int getIntValueFromFieldsDT(DataRow dr, string fieldToReturn)
-        {
-            return Convert.ToInt32(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
+        internal static field getForeignKeyFromRefTableName(string myTable, string refTable)
+        {   // Assumes we have checked that there is this foreignkey in FkTable - if two returns the first
+            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND RefTable = '{1}'", myTable, refTable)).FirstOrDefault();
+            return getFieldFromFieldsDT(dr);
         }
 
-        private static bool getBoolValueFromFieldsDT(DataRow dr, string fieldToReturn)
-        {
-            int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
-            return Convert.ToBoolean(dr[returnField]);
+        internal static field getForeignKeyRefField(field foreignKey)
+        {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
+            DataRow dr = getDataRowFromFieldsDT(foreignKey.table, foreignKey.fieldName);
+            string FkRefTable = getStringValueFromFieldsDT(dr, "RefTable");
+            string FkRefCol = getStringValueFromFieldsDT(dr, "RefPkColumn");
+            return getFieldFromFieldsDT(FkRefTable, FkRefCol);
+            //            return getFieldFromTableAndColumnName(FkRefTable, FkRefCol);
         }
-
-        // Use above private methods to get specific data from a DataRow
 
         internal static bool isDisplayKey(field fi)
         {
             return dataHelper.getBoolValueFieldsDT(fi.table, fi.fieldName, "is_DK");
         }
 
+        internal static bool isTablePrimaryKeyField(field columnField)
+        {
+            return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_PK");
+        }
+
+        internal static bool isForeignKeyField(field columnField)
+        {
+            return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_FK");
+        }
+
+        internal static void storeColumnWidth(string tableName, string columnName, int width)
+        {
+            setIntValueFieldsDT(tableName, columnName, "Width", width);
+        }
+
+        internal static int getStoredWidth(string tableName, string columnName)
+        {
+            return getIntValueFieldsDT(tableName, columnName, "Width");
+        }
+
         internal static field getFieldFromFieldsDT(string tableName, string columnName)
         {
-            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
             return getFieldFromFieldsDT(dr);
         }
         
@@ -456,75 +483,55 @@ namespace SqlCollegeTranscripts
             return new field(tableName, columnName, dbType, size);
         }
 
-        internal static void setIntValueFieldsDT(string tableName, string columnName, string columnToReturn, int value)
+        internal static string getStringValueFromFieldsDT(DataRow dr, string fieldToReturn)
         {
-            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
+            // This will actually work on non FieldsDT datarows, but may return null or have alias problems
+            return Convert.ToString(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
+        }
+
+        #endregion
+
+        #region Getting information from FieldsDT and setting width: private methods
+
+        private static DataRow getDataRowFromFieldsDT(string tableName, string columnName)
+        {
+            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", tableName, columnName)).FirstOrDefault();
+            return dr;
+        }
+
+        private static int getIntValueFieldsDT(string tableName, string columnName, string columnToReturn)
+        {
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            return getIntValueFromFieldsDT(dr, columnToReturn);
+        }
+
+        private static void setIntValueFieldsDT(string tableName, string columnName, string columnToReturn, int value)
+        {
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
             dr[columnToReturn] = value;
         }
 
-
-        internal static string getStringValueFieldsDT(string tableName, string columnName, string columnToReturn)
+        private static string getStringValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
-            return getStringValueFromFieldsDT(dr,columnToReturn);
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            return getStringValueFromFieldsDT(dr, columnToReturn);
         }
 
-        internal static int getIntValueFieldsDT(string tableName, string columnName, string columnToReturn)
+        private static int getIntValueFromFieldsDT(DataRow dr, string fieldToReturn)
         {
-            DataRow dr = getDataRowFromFieldsDTFoundational(tableName,columnName);
-            return getIntValueFromFieldsDT(dr,columnToReturn);
+            return Convert.ToInt32(dr[dr.Table.Columns.IndexOf(fieldToReturn)]);
         }
- 
-        internal static bool getBoolValueFieldsDT(string tableName, string columnName, string columnToReturn)
+
+        private static bool getBoolValueFieldsDT(string tableName, string columnName, string columnToReturn)
         {
-            DataRow dr = getDataRowFromFieldsDTFoundational(tableName, columnName);
-            return getBoolValueFromFieldsDT(dr,columnToReturn);
+            DataRow dr = getDataRowFromFieldsDT(tableName, columnName);
+            return getBoolValueFieldsDT(dr, columnToReturn);
         }
 
-        internal static field getFieldFromTableAndColumnName(string tableName, string columnName)
+        private static bool getBoolValueFieldsDT(DataRow dr, string fieldToReturn)
         {
-            string strDbType = getStringValueFieldsDT(tableName, columnName, "DataType");
-            DbType dbType = dataHelper.ConvertStringToDbType(strDbType);
-            int size = getIntValueFieldsDT(tableName, columnName, "MaxLength");
-            field fi = new field(tableName, columnName, dbType, size);
-            return fi;
-        }
-
-        internal static bool isTablePrimaryKeyField(field columnField)
-        {
-            return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_PK");
-        }
- 
-        internal static bool isForeignKeyField(field columnField)
-        {
-            return getBoolValueFieldsDT(columnField.table, columnField.fieldName, "is_FK");
-        }
-
-        internal static field getForeignKeyRefField(DataRow dr)
-        {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
-            string FkRefTable = getStringValueFromFieldsDT(dr, "RefTable");
-            string FkRefCol = getStringValueFromFieldsDT(dr, "RefPkColumn");
-            return getFieldFromTableAndColumnName(FkRefTable,FkRefCol);
-        }
-
-        internal static field getForeignKeyRefField(field foreignKey)
-        {   // Assumes we have checked that this row in the FieldsDT is a foreignkey
-            DataRow dr = getDataRowFromFieldsDTFoundational(foreignKey.table,foreignKey.fieldName);
-            string FkRefTable = getStringValueFromFieldsDT(dr, "RefTable");
-            string FkRefCol = getStringValueFromFieldsDT(dr, "RefPkColumn");
-            return getFieldFromTableAndColumnName(FkRefTable, FkRefCol);
-        }
-
-        internal static field getForeignKeyFromRefField(field RefField, string FkTable)
-        {   // Assumes we have checked that there is this foreignkey in FkTable
-            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND RefTable = '{1}'", FkTable, RefField.table)).FirstOrDefault();
-            return getFieldFromFieldsDT(dr);
-        }
-
-        internal static field getTablePrimaryKeyField(string table)
-        {
-            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND is_PK", table)).FirstOrDefault();
-            return getFieldFromFieldsDT(dr);
+            int returnField = dr.Table.Columns.IndexOf(fieldToReturn);
+            return Convert.ToBoolean(dr[returnField]);
         }
 
         #endregion
@@ -676,13 +683,6 @@ namespace SqlCollegeTranscripts
             }
             return false;
         }
-
-        private static DataRow getDataRowFromFieldsDTFoundational(string tableName, string columnName)
-        {
-            DataRow dr = dataHelper.fieldsDT.Select(string.Format("TableName = '{0}' AND ColumnName = '{1}'", tableName, columnName)).FirstOrDefault();
-            return dr;
-        }
-
 
         #endregion
 

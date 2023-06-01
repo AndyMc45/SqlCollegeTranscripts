@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DataGridViewForm));
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             lblMainFilter = new Label();
             MainMenu1 = new MenuStrip();
@@ -41,6 +42,7 @@
             mnuClose = new ToolStripMenuItem();
             mnuOpenTables = new ToolStripMenuItem();
             mnuTranscript = new ToolStripMenuItem();
+            mnuTranscriptCheckGradRequirements = new ToolStripMenuItem();
             mnuTranscriptPrint = new ToolStripMenuItem();
             mnuPrintTranscript = new ToolStripMenuItem();
             mnuPrintTranscriptEnglish = new ToolStripMenuItem();
@@ -76,6 +78,7 @@
             toolStripButton3 = new ToolStripButton();
             toolStripButton2 = new ToolStripButton();
             toolStripButton1 = new ToolStripButton();
+            toolStripButtonColumnWidth = new ToolStripButton();
             splitContainer1 = new SplitContainer();
             tableLayoutPanel = new TableLayoutPanel();
             cmbMainFilter = new ComboBox();
@@ -220,10 +223,17 @@
             // 
             // mnuTranscript
             // 
-            mnuTranscript.DropDownItems.AddRange(new ToolStripItem[] { mnuTranscriptPrint, mnuLocations, mnuLine, mnuPrintTermSummary });
+            mnuTranscript.DropDownItems.AddRange(new ToolStripItem[] { mnuTranscriptCheckGradRequirements, mnuTranscriptPrint, mnuLocations, mnuLine, mnuPrintTermSummary });
             mnuTranscript.Name = "mnuTranscript";
             mnuTranscript.Size = new Size(87, 24);
             mnuTranscript.Text = "Transcript";
+            // 
+            // mnuTranscriptCheckGradRequirements
+            // 
+            mnuTranscriptCheckGradRequirements.Name = "mnuTranscriptCheckGradRequirements";
+            mnuTranscriptCheckGradRequirements.Size = new Size(302, 26);
+            mnuTranscriptCheckGradRequirements.Text = "Check Grad Requirements";
+            mnuTranscriptCheckGradRequirements.Click += mnuTranscriptCheckGradRequirements_Click;
             // 
             // mnuTranscriptPrint
             // 
@@ -231,6 +241,7 @@
             mnuTranscriptPrint.Name = "mnuTranscriptPrint";
             mnuTranscriptPrint.Size = new Size(302, 26);
             mnuTranscriptPrint.Text = "Print transcript files";
+            mnuTranscriptPrint.Click += mnuTranscriptPrint_Click;
             // 
             // mnuPrintTranscript
             // 
@@ -400,7 +411,7 @@
             toolStripBottom.AutoSize = false;
             toolStripBottom.Dock = DockStyle.Bottom;
             toolStripBottom.ImageScalingSize = new Size(20, 20);
-            toolStripBottom.Items.AddRange(new ToolStripItem[] { toolStripMsg, txtRecordsPerPage, toolStripButton5, toolStripButton4, toolStripButton3, toolStripButton2, toolStripButton1 });
+            toolStripBottom.Items.AddRange(new ToolStripItem[] { toolStripMsg, txtRecordsPerPage, toolStripButton5, toolStripButton4, toolStripButton3, toolStripButton2, toolStripButton1, toolStripButtonColumnWidth });
             toolStripBottom.Location = new Point(0, 768);
             toolStripBottom.Name = "toolStripBottom";
             toolStripBottom.Size = new Size(1538, 27);
@@ -427,6 +438,7 @@
             // toolStripButton5
             // 
             toolStripButton5.Alignment = ToolStripItemAlignment.Right;
+            toolStripButton5.AutoToolTip = false;
             toolStripButton5.DisplayStyle = ToolStripItemDisplayStyle.Image;
             toolStripButton5.Image = Properties.Resources.end_arrow_32;
             toolStripButton5.ImageTransparentColor = Color.Magenta;
@@ -439,6 +451,7 @@
             // toolStripButton4
             // 
             toolStripButton4.Alignment = ToolStripItemAlignment.Right;
+            toolStripButton4.AutoToolTip = false;
             toolStripButton4.DisplayStyle = ToolStripItemDisplayStyle.Image;
             toolStripButton4.Image = Properties.Resources.iconmonstr_arrow_32_OneRight;
             toolStripButton4.ImageTransparentColor = Color.Magenta;
@@ -451,6 +464,7 @@
             // toolStripButton3
             // 
             toolStripButton3.Alignment = ToolStripItemAlignment.Right;
+            toolStripButton3.AutoToolTip = false;
             toolStripButton3.DisplayStyle = ToolStripItemDisplayStyle.Text;
             toolStripButton3.ImageTransparentColor = Color.Magenta;
             toolStripButton3.Name = "toolStripButton3";
@@ -463,6 +477,7 @@
             // toolStripButton2
             // 
             toolStripButton2.Alignment = ToolStripItemAlignment.Right;
+            toolStripButton2.AutoToolTip = false;
             toolStripButton2.DisplayStyle = ToolStripItemDisplayStyle.Image;
             toolStripButton2.Image = Properties.Resources.iconmonstr_arrow_32_OneLEFT;
             toolStripButton2.ImageTransparentColor = Color.Magenta;
@@ -475,6 +490,7 @@
             // toolStripButton1
             // 
             toolStripButton1.Alignment = ToolStripItemAlignment.Right;
+            toolStripButton1.AutoToolTip = false;
             toolStripButton1.DisplayStyle = ToolStripItemDisplayStyle.Image;
             toolStripButton1.Image = Properties.Resources.iconmonstr_arrow_32_LEFT;
             toolStripButton1.ImageTransparentColor = Color.Magenta;
@@ -483,6 +499,23 @@
             toolStripButton1.Text = "toolStripButton1";
             toolStripButton1.ToolTipText = "-3 pages";
             toolStripButton1.Click += toolStripButton1_Click;
+            // 
+            // toolStripButtonColumnWidth
+            // 
+            toolStripButtonColumnWidth.Alignment = ToolStripItemAlignment.Right;
+            toolStripButtonColumnWidth.AutoSize = false;
+            toolStripButtonColumnWidth.AutoToolTip = false;
+            toolStripButtonColumnWidth.BackColor = Color.Silver;
+            toolStripButtonColumnWidth.CheckOnClick = true;
+            toolStripButtonColumnWidth.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            toolStripButtonColumnWidth.DoubleClickEnabled = true;
+            toolStripButtonColumnWidth.Image = (Image)resources.GetObject("toolStripButtonColumnWidth.Image");
+            toolStripButtonColumnWidth.ImageTransparentColor = Color.Magenta;
+            toolStripButtonColumnWidth.Margin = new Padding(10, 0, 10, 0);
+            toolStripButtonColumnWidth.Name = "toolStripButtonColumnWidth";
+            toolStripButtonColumnWidth.Size = new Size(162, 24);
+            toolStripButtonColumnWidth.Text = "Narrow";
+            toolStripButtonColumnWidth.Click += toolStripColumnWidth_Click;
             // 
             // splitContainer1
             // 
@@ -1433,6 +1466,8 @@
         private ToolStripMenuItem deleteUnusedForeignKeysToolStripMenuItem;
         private ToolStripMenuItem correctDuplicateDKsToolStripMenuItem;
         private ToolStripMenuItem GridContextMenu_TimesUsedAsFK;
+        private ToolStripMenuItem mnuTranscriptCheckGradRequirements;
+        private ToolStripButton toolStripButtonColumnWidth;
         //private Button button2;
     }
 }

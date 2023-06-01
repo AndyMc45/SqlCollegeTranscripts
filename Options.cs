@@ -8,11 +8,12 @@ namespace SqlCollegeTranscripts
 {
     public class FormOptions
     {
-        public FormOptions()
+        public FormOptions()   // After the program runs once, these options are stored in registry - no use changing here
         {
             debugging = false;
-            runTimer = true;
+            runTimer = false;
             loadingMainFilter = false;
+            narrowColumns = false;
             pageSize = 0;
             logFileName = string.Empty;
         }
@@ -21,6 +22,7 @@ namespace SqlCollegeTranscripts
         public bool loadingMainFilter { get; set; } //use updating to stop events when making programatic changes 
         public int pageSize { get; set; }
         public string logFileName { get; set; }
+        public bool narrowColumns { get; set; }
 
         public FileStream? ts;
         public Color[] nonDkColorArray = new Color[] { Color.LightCyan, Color.LavenderBlush, Color.Plum, Color.Pink, Color.LightGray, Color.LightSalmon, Color.Azure, Color.OrangeRed };
@@ -56,7 +58,8 @@ namespace SqlCollegeTranscripts
             tableHasForeignKeys = false;
             firstTimeWritingTable = true;
             currentComboFilterValue_isDirty = false;
-            allowDisplayKeyEdit = true;
+            allowDisplayKeyEdit = false;
+
         }
         internal bool fixingDatabase { get; set; }
         internal string strFixingDatabaseSql { get; set; }

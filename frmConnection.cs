@@ -2,6 +2,7 @@ using Microsoft.VisualBasic;
 // using System.Data.SqlClient;
 using System.Text;
 using System.Data;
+using InfoBox;
 
 namespace SqlCollegeTranscripts
 {
@@ -65,7 +66,7 @@ namespace SqlCollegeTranscripts
             }
             if (sb.Length > 0)
             {
-                MessageBox.Show(sb.ToString());
+                InformationBox.Show(sb.ToString());
             }
             else
             {
@@ -122,7 +123,7 @@ namespace SqlCollegeTranscripts
             }
             catch (Exception exc)
             {
-                MessageBox.Show("Error opening connection: " + exc.Message);
+                InformationBox.Show("Error opening connection: " + exc.Message, "Error opening Connection", InformationBoxIcon.Error);
             }
             return strList;
         }
@@ -155,16 +156,16 @@ namespace SqlCollegeTranscripts
 
                 if (Information.Err().Description != "")
                 {
-                    MessageBox.Show("The connection failed. " + Environment.NewLine
+                    InformationBox.Show("The connection failed. " + Environment.NewLine
                                     + "Your connection string : " + Environment.NewLine + showUser
                                     + Environment.NewLine + "VB error message:"
-                                    + Environment.NewLine + Information.Err().Description);
+                                    + Environment.NewLine + Information.Err().Description, "Error",InformationBoxIcon.Error);
                     cmdOK.Enabled = false;
                     success = false;
                 }
                 else
                 {
-                    MessageBox.Show("Test passed.");
+                    InformationBox.Show("Test passed.", "Success", InformationBoxIcon.Exclamation);
                     cmdOK.Enabled = true;
                     success = true;
                 }
@@ -173,10 +174,10 @@ namespace SqlCollegeTranscripts
             {
                 if (Information.Err().Description != "")
                 {
-                    MessageBox.Show("We are sorry to report that the connection failed. " + Environment.NewLine
+                    InformationBox.Show("We are sorry to report that the connection failed. " + Environment.NewLine
                                     + "Your connection string : " + Environment.NewLine + showUser
                                     + Environment.NewLine + "Error message:"
-                                    + Environment.NewLine + Information.Err().Description);
+                                    + Environment.NewLine + Information.Err().Description, "Error", InformationBoxIcon.Error);
                     cmdOK.Enabled = false;
                     success = false;
                 }

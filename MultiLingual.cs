@@ -1,4 +1,5 @@
 using System.Data;
+using InfoBox;
 // using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 // using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -37,7 +38,8 @@ namespace SqlCollegeTranscripts
             //Load zMultilingual into dtExtra
             string strSql = "Select zMultilingualID, Form, Control, Property, en from zMultilingual";
             dataHelper.extraDT = new DataTable();
-            MsSql.FillDataTable(dataHelper.extraDT, strSql);
+            string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, strSql);
+            if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "InsertEnglishIntoDatabase (multiLingual.cs"); }
             List<Control> listA = GetChildList(form);
             foreach (Control cnt in listA)
             {

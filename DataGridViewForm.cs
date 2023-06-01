@@ -8,6 +8,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Web;
 using System.ComponentModel.DataAnnotations;
+using System.Data.Common;
+using InfoBox;
 
 namespace SqlCollegeTranscripts
 {
@@ -41,7 +43,7 @@ namespace SqlCollegeTranscripts
         private ConnectionOptions? connectionOptions;
         private TableOptions? tableOptions;
         internal ProgramMode programMode = ProgramMode.none;
-        internal sqlFactory? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
+        internal SqlFactory? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
         internal BindingList<where>? MainFilterList;  // Use this to fill in past main filters in combo box
 
         #endregion
@@ -55,7 +57,6 @@ namespace SqlCollegeTranscripts
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
-
 
 
         //----------------------------------------------------------------------------------------------------------------------
@@ -72,6 +73,7 @@ namespace SqlCollegeTranscripts
         private void DataGridViewForm_Load(object sender, EventArgs e)
         {
             formOptions = AppData.GetFormOptions();  // Sets initial option values
+            formOptions.runTimer = false;
 
             // Set things that don't change even if connection changes
             // 0.  Main filter datasource and 'last' element never changes
@@ -338,7 +340,7 @@ namespace SqlCollegeTranscripts
             catch (System.Exception excep)
             {
                 sb.AppendLine("Error opening connection.");
-                MessageBox.Show("Error opening the connection. " + Environment.NewLine + excep.Message + Environment.NewLine + Information.Err().Number.ToString());
+                InformationBox.Show("Error opening the connection. " + Environment.NewLine + excep.Message + Environment.NewLine + Information.Err().Number.ToString());
                 CloseConnection();
             }
             return sb.ToString();
@@ -357,7 +359,7 @@ namespace SqlCollegeTranscripts
                 mnuOpenTables.DropDownItems.Clear();
             }
             // Hide special menus
-            mnuTranscript.Available = false;
+            mnuTranscript.Available = true;
             mnuAddressBook.Available = false;
             mnuForeignKeyMissing.Enabled = false;
 
@@ -377,8 +379,10 @@ namespace SqlCollegeTranscripts
             ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5, cmbGridFilterValue_6, cmbGridFilterValue_7, cmbGridFilterValue_8 };
 
             Stopwatch watch = new Stopwatch();
-            if (formOptions.runTimer) Stopwatch.StartNew();
-
+            if (formOptions.runTimer)
+            {
+                watch.Start();
+            }
 
             // 0. New tableOptions and Clear Grid-Combo filters
             tableOptions = new TableOptions(); // Resets options
@@ -386,16 +390,14 @@ namespace SqlCollegeTranscripts
             ClearFiltersOnNewTable(); // All events are cancelled via "if(Selected_index != -1) . . ."
             tableOptions.writingTable = false;
             //1. Create currentSql - same currentSql used until new table is loaded - same myFIelds and myInnerJoins
-            currentSql = new sqlFactory(table, 1, formOptions.pageSize);
+            currentSql = new SqlFactory(table, 1, formOptions.pageSize);
             // Above may produce error message
             if (!String.IsNullOrEmpty(currentSql.errorMsg))
             {
-                msgColor(Color.Red);
-                msgText(currentSql.errorMsg);
+                msgTextError(currentSql.errorMsg);
             }
             else
             {
-                msgColor(Color.Navy);
                 msgText(currentSql.myTable);
             }
 
@@ -465,10 +467,15 @@ namespace SqlCollegeTranscripts
             GridContextMenu_FindInDescendent.Enabled = (drs2.Count() > 0);
             mnuForeignKeyMissing.Enabled = true;
 
+            if (formOptions.runTimer)
+            {
+                watch.Stop();
+                msgTextAdd(" NewTable: " + watch.Elapsed.TotalMilliseconds.ToString() + ". ");
+            }
+
             //7. WriteGrid - next step
             writeGrid_NewFilter();
 
-            if (formOptions.runTimer) { watch.Stop(); msgTextAdd(" " + watch.ElapsedMilliseconds.ToString() + " "); }
         }
 
         internal void writeGrid_NewFilter()
@@ -492,6 +499,12 @@ namespace SqlCollegeTranscripts
 
         internal void writeGrid_NewPage()
         {
+            Stopwatch watch = new Stopwatch();
+            if (formOptions.runTimer)
+            {
+                watch.Start();
+            }
+
 
             // 1. Get the Sql command for grid
             // CENTRAL and Only USE OF sqlCurrent.returnSql IN PROGRAM
@@ -514,7 +527,8 @@ namespace SqlCollegeTranscripts
 
             // 3. Fill currentDT and Bind the Grid to it.
             dataHelper.currentDT = new DataTable();
-            MsSql.FillDataTable(dataHelper.currentDT, strSql);
+            string errorMsg = MsSql.FillDataTable(dataHelper.currentDT, strSql);
+            if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in WriteGrid_NewPage", InformationBoxIcon.Error); return; }
             tableOptions.writingTable = true;
             dataGridView1.DataSource = dataHelper.currentDT;
             tableOptions.writingTable = false;
@@ -541,6 +555,12 @@ namespace SqlCollegeTranscripts
                 }
             }
 
+            if (formOptions.runTimer)
+            {
+                // watch.Stop();
+                msgTextAdd(" NewPage1: " + watch.Elapsed.TotalMilliseconds.ToString() + ". ");
+            }
+
             //5. On first load, Bind the cmbComboTableList with Primary keys of Reference Tables
 
             if (tableOptions.firstTimeWritingTable && tableOptions.tableHasForeignKeys)
@@ -564,6 +584,12 @@ namespace SqlCollegeTranscripts
                 tableOptions.writingTable = false;
             }
 
+            if (formOptions.runTimer)
+            {
+                // watch.Stop();
+                msgTextAdd(" NewPage2: " + watch.Elapsed.TotalMilliseconds.ToString() + ". ");
+            }
+
             //6. Format controls
             // a. Set toolStripButton3 caption
             toolStripButton3.Text = currentSql.myPage.ToString() + "/" + currentSql.TotalPages.ToString();
@@ -583,7 +609,7 @@ namespace SqlCollegeTranscripts
                 string baseTable = currentSql.myFields[i].table; // Convert.ToString(currentDR.GetField(fld).getProperties().Item("BASETABLENAME").getValue());
 
                 //Change to default width if set in afdFieldData
-                int savedWidth = dataHelper.getIntValueFieldsDT(baseTable, fld, "width");
+                int savedWidth = dataHelper.getStoredWidth(baseTable, fld);
                 if (savedWidth > (47 * 15))
                 {
                     dataGridView1.Columns[i].Width = savedWidth / 15;
@@ -599,18 +625,43 @@ namespace SqlCollegeTranscripts
                 dataGridView1.Columns[gridColumn].HeaderCell.SortGlyphDirection = sortOrder;
             }
 
+
             // e. Format the rest of the grid and form
             SetHeaderColorsOnWritePage();  // Must do everytime we re-write grid
             SetColumnsReadOnlyProperty(); // Might change editable column
+            if (formOptions.runTimer)
+            {
+                // watch.Stop();
+                msgTextAdd(" NewPage3: " + watch.Elapsed.TotalMilliseconds.ToString() + ". ");
+            }
+
             SetAllFiltersByMode();   // Because Write_NewPage may require changes
+
+            if (formOptions.runTimer)
+            {
+                msgTextAdd(" NewPage4: " + watch.Elapsed.TotalMilliseconds.ToString() + ". ");
+            }
+
             if (tableOptions.firstTimeWritingTable)
             {
                 ColorComboBoxes();   // Must do after the above for some reason
             }
+            if (formOptions.runTimer)
+            {
+                msgTextAdd(" NewPage5: " + watch.Elapsed.TotalMilliseconds.ToString() + ". ");
+            }
+
             tableOptions.writingTable = true;
             SetColumnWidths();
             tableOptions.writingTable = false;
             tableOptions.firstTimeWritingTable = false;
+
+            if (formOptions.runTimer)
+            {
+                watch.Stop();
+                msgTextAdd(" NewPage6: " + watch.Elapsed.TotalMilliseconds.ToString() + ". ");
+            }
+
         }
 
         #endregion
@@ -622,18 +673,20 @@ namespace SqlCollegeTranscripts
 
         private void SetColumnWidths()
         {
-            // Start with autosize if the table is  first load - will not be needed if already done once 
+            // Starting with autosize when the table is  first load takes too much time 
+            // dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
+
             // Sign that it has been done once: The primary key field has a value
             // field primaryKey = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
             // if (dataHelper.getIntValueFieldsDT(primaryKey.table, primaryKey.fieldName, "Width") < 100)
             // {
             // 1. Fill in the width column of FieldDT using a default or autosize - dont set any widths
-            dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
+            // dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
             for (int i = 0; i < dataGridView1.Columns.Count; i++)
             {
                 field fl = currentSql.myFields[i];
-                int lastWidth = dataHelper.getIntValueFieldsDT(fl.table, fl.fieldName, "Width");
-                if (lastWidth < 40)  // Reset if user has set to very small  
+                int lastWidth = dataHelper.getStoredWidth(fl.table, fl.fieldName);
+                if (lastWidth < 130 || formOptions.narrowColumns)  // Reset if user has set to very small or wants small  
                 {
                     DbType dbType = fl.dbType;
                     switch (dbType)
@@ -646,36 +699,79 @@ namespace SqlCollegeTranscripts
                         case DbType.SByte:   // -127 to 127 - signed byte
                         case DbType.Double:
                         case DbType.Single:
-                            dataHelper.setIntValueFieldsDT(fl.table, fl.fieldName, "Width", 50);
-                            dataGridView1.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                            if (formOptions.narrowColumns || lastWidth < 61)
+                            {
+                                dataHelper.storeColumnWidth(fl.table, fl.fieldName, 60);
+                                dataGridView1.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                                // string headerText =  dataGridView1.Columns[i].HeaderText;
+                                string headerText = currentSql.myFields[i].fieldName;
+                                if (headerText.Length > 4)
+                                {
+                                    if (headerText.Substring(headerText.Length - 2, 2) == "ID")
+                                    {
+                                        string prefix = headerText.Substring(0, 1);
+                                        for (int j = 1; j < headerText.Length - 2; j++)  // Skip "ID" at end
+                                        {
+                                            if (prefix.Length < 4)
+                                            {
+                                                if (Char.IsUpper(headerText[j]))
+                                                {
+                                                    prefix = prefix + headerText[j];
+                                                }
+                                            }
+                                        }
+                                        prefix = prefix.ToLower();
+                                        dataGridView1.Columns[i].HeaderText = prefix + "_ID";
+                                        dataGridView1.Columns[i].HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                                    }
+                                }
+                            }
                             break;
                         case DbType.Boolean:
-                            dataHelper.setIntValueFieldsDT(fl.table, fl.fieldName, "Width", 40);
+                            dataHelper.storeColumnWidth(fl.table, fl.fieldName, 40);
                             dataGridView1.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
                             break;
                         default:
                             int currentWidth = dataGridView1.Columns[i].Width;
-                            if (currentWidth > 70)
+                            if (formOptions.narrowColumns)
                             {
-                                dataHelper.setIntValueFieldsDT(fl.table, fl.fieldName, "Width", currentWidth);
+                                currentWidth = 40;
                             }
-                            else
+                            // Get largest width of first 20 items
+                            int r = 0;
+                            System.Drawing.Font font = dataGridView1.Font;
+                            using (Graphics g = dataGridView1.CreateGraphics())
                             {
-                                dataHelper.setIntValueFieldsDT(fl.table, fl.fieldName, "Width", 70);
+                                foreach (DataGridViewRow row in dataGridView1.Rows)
+                                {
+                                    if (r > 100) { break; }
+                                    int newWidth = (int)g.MeasureString(row.Cells[i].Value.ToString(), font).Width;
+                                    if (currentWidth < newWidth)
+                                    {
+                                        currentWidth = newWidth + 10;
+                                    }
+                                }
+                                if (!formOptions.narrowColumns)
+                                {
+                                    int headerWidth = (int)g.MeasureString(dataGridView1.Columns[i].HeaderText, font).Width;
+                                    if (currentWidth < headerWidth) { currentWidth = headerWidth; }
+                                }
                             }
+                            // Prepare for next load of table before program closed
+                            dataHelper.storeColumnWidth(fl.table, fl.fieldName, Math.Max(62, currentWidth));
                             dataGridView1.Columns[i].DefaultCellStyle.Alignment = DataGridViewContentAlignment.TopLeft;
                             break;
                     }
                 }
             }
             // 2. Switch off autosize
-            dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.None;
+            // dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.None;
             // }
             // 3. Resize all columns by FieldDT - Must be done on every reload
             for (int i = 0; i < dataGridView1.Columns.Count; i++)
             {
                 field fl = currentSql.myFields[i];
-                dataGridView1.Columns[i].Width = dataHelper.getIntValueFieldsDT(fl.table, fl.fieldName, "Width");
+                dataGridView1.Columns[i].Width = dataHelper.getStoredWidth(fl.table, fl.fieldName);
             }
         }
 
@@ -1125,12 +1221,13 @@ namespace SqlCollegeTranscripts
             string fields2 = fields + ", Count(*)";
             String sql1 = String.Format("Select {0} From {1} Group By {2} Having Count(*) > 1", fields2, currentSql.myTable, fields);
             dataHelper.extraDT = new DataTable();
-            MsSql.FillDataTable(dataHelper.extraDT, sql1);
+            string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, sql1);
+            if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in mnuToolDuplicateDisplayKeys_Click"); }
             if (dataHelper.extraDT.Rows.Count == 0)
             {
-                msgColor(Color.Red); msgText("Everything O.K. No duplicates!" + "                " + "Everything O.K. No duplicates!"); return;
+                msgTextError("Everything O.K. No duplicates!" + "                " + "Everything O.K. No duplicates!");
+                return;
             }
-            msgColor(Color.Navy);
             msgText("Count: " + dataHelper.extraDT.Rows.Count.ToString());
             List<String> andConditions = new List<String>();
             foreach (DataRow row in dataHelper.extraDT.Rows)
@@ -1139,7 +1236,7 @@ namespace SqlCollegeTranscripts
                 foreach (string dkField in dkFields)
                 {
                     field fl = new field(currentSql.myTable, dkField, DbType.String, 0);
-                    String atomicStatement = String.Format("{0} = '{1}'", dataHelper.QualifiedAliasFieldName(fl), row[dkField].ToString());
+                    String atomicStatement = String.Format("({0} = '{1}' OR {0} IS NULL)", dataHelper.QualifiedAliasFieldName(fl), row[dkField].ToString());
                     atomicStatements.Add(atomicStatement);
                 }
                 andConditions.Add("(" + String.Join(" AND ", atomicStatements) + ")");
@@ -1215,7 +1312,7 @@ namespace SqlCollegeTranscripts
 
                         ////3. Get filter "where" for selected row
                         //field fi2 = new field(currentSql.myFields[0].table, currentSql.myFields[0].fieldName, DbType.Int32, 4);
-                        where newMainFilter = dataHelper.GetWhereFromPrimaryKey(currentSql.myTable, value);
+                        where newMainFilter = dataHelper.GetWhereFromPrimaryKeyValue(currentSql.myTable, value);
 
                         foreach (where wh in MainFilterList)
                         {
@@ -1238,17 +1335,26 @@ namespace SqlCollegeTranscripts
         {
             if (dataGridView1.SelectedRows.Count == 1)
             {
+                List<field> foreignKeys = new List<field>();
                 // Get list of Foriegn keys
-                DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("TableName = '{0}' AND is_FK = 'True'", currentSql.myTable));
-                if (drs.Count() > 0)
+                for (int i = 0; i < currentSql.myFields.Count; i++)
+                {
+                    if (currentSql.myFields[i].table == currentSql.myTable && dataHelper.isForeignKeyField(currentSql.myFields[i]))
+                    {
+                        foreignKeys.Add(currentSql.myFields[i]);
+                    }
+                }
+                //                DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("TableName = '{0}' AND is_FK = 'True'", currentSql.myTable));
+                if (foreignKeys.Count() > 0)  // always true because we only enable the event if true;
                 {
                     List<string> tableList = new List<string>();
-                    foreach (DataRow dr in drs)
+                    foreach (field fld in foreignKeys)
                     {
-                        tableList.Add(dr["RefTable"].ToString());
+                        field pkRefTable = dataHelper.getForeignKeyRefField(fld);
+                        tableList.Add(pkRefTable.table);
                     }
 
-                    // Get user choice if more than one
+                    // Get user choice
                     frmListItems AncestorTablesForm = new frmListItems();
                     AncestorTablesForm.myList = tableList;
                     AncestorTablesForm.myJob = frmListItems.job.SelectString;
@@ -1260,22 +1366,13 @@ namespace SqlCollegeTranscripts
                     if (selectedTableIndex > -1 && !String.IsNullOrEmpty(selectedTable))
                     {
                         // 1.  Get Where for ancestor table 
-                        DataRow dr = drs[selectedTableIndex];
-                        field fieldInCurrentTable = dataHelper.getFieldFromFieldsDT(dr);
-                        int dgColumnIndex = -1;
-                        for (int i = 0; i < currentSql.myFields.Count; i++)
-                        {
-                            if (currentSql.myFields[i].isSameFieldAs(fieldInCurrentTable))
-                            {
-                                dgColumnIndex = i;
-                                break;
-                            }
-                        }
+                        field fieldInCurrentTable = foreignKeys[selectedTableIndex];
+                        int dgColumnIndex = currentSql.colIndexOfBaseField(fieldInCurrentTable);
                         if (dgColumnIndex > -1)  // A needless check
                         {
                             string whereValue = dataGridView1.SelectedRows[0].Cells[dgColumnIndex].Value.ToString();
 
-                            where newMainFilter = dataHelper.GetWhereFromPrimaryKey(selectedTable, whereValue);
+                            where newMainFilter = dataHelper.GetWhereFromPrimaryKeyValue(selectedTable, whereValue);
                             foreach (where wh in MainFilterList)
                             {
                                 if (wh.isSameWhereAs(newMainFilter)) { MainFilterList.Remove(wh); break; }
@@ -1287,6 +1384,10 @@ namespace SqlCollegeTranscripts
                             cmbMainFilter.Enabled = true;
                             formOptions.loadingMainFilter = false;
                             writeGrid_NewTable(selectedTable);
+                        }
+                        else
+                        {
+                            InformationBox.Show("Unusual error in Find in Ancester table", "Error", InformationBoxIcon.Error);
                         }
                     }
                 }
@@ -1301,7 +1402,8 @@ namespace SqlCollegeTranscripts
             {
                 string sqlString = currentSql.returnSql(command.selectAll);
                 dataHelper.extraDT = new DataTable();
-                MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in GridContextMenu_FindUsedFK_Click"); }
                 foreach (DataRow dr in dataHelper.extraDT.Rows)
                 {
                     // Get PK values
@@ -1312,15 +1414,14 @@ namespace SqlCollegeTranscripts
                     int firstPKCount = 0;
                     foreach (DataRow drInner in drs)    // Only 1 dr with "Courses" main table, and that is the CourseTerm table.
                     {
-                        string FKColumnName = drInner.ItemArray[drInner.Table.Columns.IndexOf("ColumnName")].ToString();
-                        string TableWithFK = drInner.ItemArray[drInner.Table.Columns.IndexOf("TableName")].ToString();
+                        string FKColumnName = dataHelper.getStringValueFromFieldsDT(drInner, "ColumnName");
+                        string TableWithFK = dataHelper.getStringValueFromFieldsDT(drInner, "TableName");
                         string strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, drPKValue);
                         firstPKCount = firstPKCount + MsSql.GetRecordCount(strSql);
                     }
                     if (firstPKCount == 0)
                     {
-
-                        where newMainFilter = dataHelper.GetWhereFromPrimaryKey(currentSql.myTable, drPKValue.ToString());
+                        where newMainFilter = dataHelper.GetWhereFromPrimaryKeyValue(currentSql.myTable, drPKValue.ToString());
                         foreach (where wh in MainFilterList)
                         {
                             if (wh.isSameWhereAs(newMainFilter)) { MainFilterList.Remove(wh); break; }
@@ -1331,23 +1432,12 @@ namespace SqlCollegeTranscripts
                         cmbMainFilter.SelectedIndex = 0;
                         cmbMainFilter.Enabled = true;
                         formOptions.loadingMainFilter = false;
-                        writeGrid_NewTable(currentSql.myTable);
-
-
-
-
-                        //tableOptions.fixingDatabase = true;
-                        //string strField = dataHelper.QualifiedAliasFieldName(currentSql.myFields[0]);
-                        //string strWhere = String.Format(" WHERE {0} = '{1}'", strField, drPKValue);
-                        //tableOptions.strFixingDatabaseSql = currentSql.returnFixDatabaseSql(strWhere);
-                        //writeGrid_NewPage();
+                        writeGrid_NewTable(currentSql.myTable);  // Shows one row, which is selected
                         txtMessages.Text = String.Format("The slected row is not the value of a foreign key.");
                         return;
                     }
                 }
-                msgColor(Color.Red);
-                msgText("All keys in this page are in use");
-                msgColor(Color.Navy);
+                msgTextError("All keys in this page are in use");
             }
         }
 
@@ -1358,9 +1448,7 @@ namespace SqlCollegeTranscripts
             {
                 if (dataGridView1.SelectedRows.Count != 1)
                 {
-                    msgColor(Color.Red);
-                    msgText("Please select exactly one row.");
-                    msgColor(Color.Navy);
+                    msgTextError("Please select exactly one row.");
                 }
 
                 // 1a. This assumes the first column in row is the Primary Key and it is an integer
@@ -1372,24 +1460,12 @@ namespace SqlCollegeTranscripts
                 int firstPKCount = 0;
                 foreach (DataRow drInner in drs)    // Only 1 dr with "Courses" main table, and that is the CourseTerm table.
                 {
-                    string FKColumnName = drInner.ItemArray[drInner.Table.Columns.IndexOf("ColumnName")].ToString();
-                    string TableWithFK = drInner.ItemArray[drInner.Table.Columns.IndexOf("TableName")].ToString();
+                    string FKColumnName = dataHelper.getStringValueFromFieldsDT(drInner, "ColumnName");
+                    string TableWithFK = dataHelper.getStringValueFromFieldsDT(drInner, "TableName");
                     string strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, intValue);
                     firstPKCount = firstPKCount + MsSql.GetRecordCount(strSql);
                 }
-                //if (firstPKCount == 0)
-                //{
-                //    tableOptions.fixingDatabase = true;
-                //    string strField = dataHelper.QualifiedAliasFieldName(currentSql.myFields[0]);
-                //    string strWhere = String.Format(" WHERE {0} = '{1}'", strField, intValue);
-                //    tableOptions.strFixingDatabaseSql = currentSql.returnFixDatabaseSql(strWhere);
-                //    writeGrid_NewPage();
-                //    txtMessages.Text = String.Format("The slected row is not the value of a foreign key.");
-                //    return;
-                //}
-                msgColor(Color.Red);
-                msgText("Count: " + firstPKCount.ToString());
-                msgColor(Color.Navy);
+                msgTextError("Count: " + firstPKCount.ToString());
             }
         }
 
@@ -1432,8 +1508,7 @@ namespace SqlCollegeTranscripts
             }
             //2. Open connection - this reads the index 0 settings.  Main use of openConnection
             string msg = OpenConnection();
-            msgColor(Color.Red);
-            if (msg != string.Empty) { msgText(msg); }
+            if (msg != string.Empty) { msgTextError(msg); }
 
         }
 
@@ -1450,8 +1525,7 @@ namespace SqlCollegeTranscripts
             {
                 load_mnuDatabaseList();
                 string msg = OpenConnection();
-                msgColor(Color.Red);
-                if (msg != string.Empty) { msgText(msg); }
+                if (msg != string.Empty) { msgTextError(msg); }
             }
         }
 
@@ -1479,7 +1553,7 @@ namespace SqlCollegeTranscripts
         {
             if (dataGridView1.IsCurrentCellDirty)
             {
-                MessageBox.Show("Current cell not yet saved. Click any cell to save.", "Change not saved");
+                InformationBox.Show("Current cell not yet saved. Click any cell to save.", "Change not saved");
             }
         }
 
@@ -1491,7 +1565,7 @@ namespace SqlCollegeTranscripts
                 {
                     int i = e.Column.Index;
                     field fl = currentSql.myFields[i];
-                    dataHelper.setIntValueFieldsDT(fl.table, fl.fieldName, "Width", e.Column.Width);
+                    dataHelper.storeColumnWidth(fl.table, fl.fieldName, e.Column.Width);
                 }
             }
         }
@@ -1518,7 +1592,9 @@ namespace SqlCollegeTranscripts
             {
                 field colField = currentSql.myFields[e.ColumnIndex];
                 // Set update command
-                MsSql.SetUpdateCommand(colField, dataHelper.currentDT);
+                List<field> fieldsToUpdate = new List<field>();
+                fieldsToUpdate.Add(colField);
+                MsSql.SetUpdateCommand(fieldsToUpdate, dataHelper.currentDT);
                 // Handle foreign keys
                 DataGridViewColumn col = dataGridView1.Columns[e.ColumnIndex];
                 FkComboColumn Fkcol = col as FkComboColumn;
@@ -1590,7 +1666,6 @@ namespace SqlCollegeTranscripts
                     DataRow[] drArray = new DataRow[1];
                     drArray[0] = dr;
                     int i = MsSql.currentDA.Update(drArray);
-                    msgColor(Color.Navy);
                     msgText("Rows Modified: ");
                     msgTextAdd(i.ToString());
                     // Write the grid if this is a foreign key
@@ -1641,7 +1716,7 @@ namespace SqlCollegeTranscripts
                 e.ThrowException = false;
             }
 
-            MessageBox.Show(sb.ToString());
+            InformationBox.Show(sb.ToString());
 
         }
 
@@ -2035,12 +2110,7 @@ namespace SqlCollegeTranscripts
                         oneOrMoreComboFVRebound = true;
 
                         // Set color of combo
-                        int colIndex = -1;
-                        for (int i = 0; i < currentSql.myFields.Count; i++)
-                        {
-                            // Normal case
-                            if (currentSql.myFields[i].isSameFieldAs(fi)) { colIndex = i; break; }
-                        }
+                        int colIndex = currentSql.colIndexOfBaseField(fi);
                         // I added primary key if there is no display-key -  O.K. if this is the PK of this table.  But . . .
                         // If this is the primary key of a FK of this table, It will not be in table and colIndex will be -1
                         // I arbitrarily set this to .BackColor = formOptions.DkColorArray[0]
@@ -2141,13 +2211,14 @@ namespace SqlCollegeTranscripts
                 }
                 if (dataGridView1.SelectedRows.Count != 2)
                 {
-                    msgColor(Color.Red);
-                    msgText("Please select exactly two rows");
+                    msgTextError("Please select exactly two rows");
                     return;
                 }
                 // Get two PK values
                 int firstPK = Convert.ToInt32(dataGridView1.SelectedRows[0].Cells[0].Value);
                 int secondPK = Convert.ToInt32(dataGridView1.SelectedRows[1].Cells[0].Value);
+
+
                 txtMessages.Text = String.Format(" {0} is the first and {1} is the second", firstPK, secondPK);
                 //  Get rows in the fieldsDT that have myTable as RefTable 
                 DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("RefTable = '{0}'", currentSql.myTable));
@@ -2156,8 +2227,8 @@ namespace SqlCollegeTranscripts
                 int secondPKCount = 0;
                 foreach (DataRow dr in drs)    // Only 1 dr with "Courses" main table, and that is the CourseTerm table.
                 {
-                    string FKColumnName = dr.ItemArray[dr.Table.Columns.IndexOf("ColumnName")].ToString();
-                    string TableWithFK = dr.ItemArray[dr.Table.Columns.IndexOf("TableName")].ToString();
+                    string FKColumnName = dataHelper.getStringValueFromFieldsDT(dr, "ColumnName");
+                    string TableWithFK = dataHelper.getStringValueFromFieldsDT(dr, "TableName");
 
                     string strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, firstPK);
                     firstPKCount = firstPKCount + MsSql.GetRecordCount(strSql);
@@ -2175,12 +2246,15 @@ namespace SqlCollegeTranscripts
                         "Deleting row with ID {0} will have no other effect on the Database.  " +
                         "Do you want us to delete the row with ID {0}?", PkToDelete);
 
-                    DialogResult reply = MessageBox.Show(msg, "Delete one row", MessageBoxButtons.YesNo);
-                    if (reply == DialogResult.Yes)
+                    InformationBoxResult reply = InformationBox.Show(msg, "Delete one row", InformationBoxButtons.YesNo, InformationBoxIcon.Question);
+                    if (reply == InformationBoxResult.Yes)
                     {
                         field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
-                        DataRow dr = dataHelper.currentDT.Select(string.Format("{0} = {1}", PKField.fieldName, PkToDelete)).FirstOrDefault();
-                        DeleteOneDataRowFromCurrentDT(dr);
+                        where wh = new where(PKField, PkToDelete.ToString());
+                        string errorMsg = MsSql.DeleteRowsFromDT(dataHelper.currentDT, wh);
+                        if (errorMsg != string.Empty)
+                        {
+                        }
                     }
                 }
                 else
@@ -2188,18 +2262,20 @@ namespace SqlCollegeTranscripts
                     msg = String.Format("Other tables use this table as a foreign key.  To merge these two rows, we will first " +
                         "replace {0} occurances of {1} with {2} in these tables. " +
                         "Then we will delete the row {1} from this table.  Do you want to continue?", firstPKCount, firstPK, secondPK);
-                    DialogResult reply = MessageBox.Show(msg, "Merge two rows?", MessageBoxButtons.YesNo);
-                    if (reply == DialogResult.Yes)
+                    InformationBoxResult reply = InformationBox.Show(msg, "Merge two rows?", InformationBoxButtons.YesNo);
+                    if (reply == InformationBoxResult.Yes)
                     {
                         foreach (DataRow dr in drs)
                         {
-                            string FKColumnName = dr.ItemArray[dr.Table.Columns.IndexOf("ColumnName")].ToString();
-                            string TableWithFK = dr.ItemArray[dr.Table.Columns.IndexOf("TableName")].ToString();
+                            string FKColumnName = dataHelper.getStringValueFromFieldsDT(dr, "ColumnName");
+                            string TableWithFK = dataHelper.getStringValueFromFieldsDT(dr, "TableName");
                             field fld = new field(TableWithFK, FKColumnName, DbType.Int32, 4);
                             // 1. Put the rows to be updated into extraDT  (i.e. select rows where FK value in firstPK)
                             string sqlString = String.Format("Select * from {0} where {1} = '{2}'", TableWithFK, FKColumnName, firstPK);
                             dataHelper.extraDT = new DataTable();
-                            MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                            string errorMsg2 = MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                            if (errorMsg2 != string.Empty) { InformationBox.Show(errorMsg2, "ERROR in btnDeleteAddMerge (Merge)", InformationBoxIcon.Error); }
+
                             txtMessages.Text = txtMessages.Text + "; " + dataHelper.extraDT.Rows.Count;
                             // 2. Update these rows in extraDT - loop through these rows and change the FK column)
                             foreach (DataRow dr2 in dataHelper.extraDT.Rows)
@@ -2208,23 +2284,34 @@ namespace SqlCollegeTranscripts
                                 // dr2.AcceptChanges();
                             }
                             // 3. Push these changes to the Database.
-                            MsSql.SetUpdateCommand(fld, dataHelper.extraDT);
-                            MsSql.extraDA.Update(dataHelper.extraDT);
+                            List<field> fieldsToUpdate = new List<field>();
+                            fieldsToUpdate.Add(fld);
+                            MsSql.SetUpdateCommand(fieldsToUpdate, dataHelper.extraDT);
+                            try
+                            {
+                                MsSql.extraDA.Update(dataHelper.extraDT);
+                            }
+                            catch (Exception ex)
+                            {
+                                string errMsg = String.Format("You must first merge rows in the Descendant table {0}.", TableWithFK) +
+                                        "Database Error Message: " + ex.Message;
+                                InformationBox.Show(errMsg, "Error", InformationBoxIcon.Exclamation);
+                            }
                         }
                         // 4.  Delete merged row from currentDT
                         field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
-                        DataRow dr3 = dataHelper.currentDT.Select(String.Format("{0} = {1}", PKField.fieldName, firstPK)).FirstOrDefault();
-                        DeleteOneDataRowFromCurrentDT(dr3);
+                        where wh = new where(PKField, firstPK.ToString());
+                        string errorMsg = MsSql.DeleteRowsFromDT(dataHelper.currentDT, wh);
                     }
 
                 }
             }
+
             else if (programMode == ProgramMode.delete)
             {
                 if (dataGridView1.SelectedRows.Count != 1)
                 {
-                    msgColor(Color.Red);
-                    msgText("Please select row to delete");
+                    msgTextError("Please select row to delete");
                     return;
                 }
                 // int index = dataGridView1.Rows.IndexOf(dataGridView1.SelectedRows[0]);
@@ -2232,14 +2319,15 @@ namespace SqlCollegeTranscripts
                 int colIndex = dataGridView1.Columns[PKfield.fieldName].Index;
                 if (colIndex != 0)
                 {
-                    msgColor(Color.Red);
-                    msgText("The first column must be the primary key.");
+                    msgTextError("The first column must be the primary key.");
                     return;
                 }
                 int PKvalue = Convert.ToInt32(dataGridView1.SelectedRows[0].Cells[colIndex].Value);
-                DataRow dr = dataHelper.currentDT.Select(string.Format("{0} = {1}", PKfield.fieldName, PKvalue)).FirstOrDefault();
-                DeleteOneDataRowFromCurrentDT(dr);
+                field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
+                where wh = new where(PKField, PKvalue.ToString());
+                string errorMsg = MsSql.DeleteRowsFromDT(dataHelper.currentDT, wh);
             }
+
             else if (programMode == ProgramMode.add)
             {
                 // 1. Check that all display keys and foreign keys are loaded - and build where list
@@ -2259,7 +2347,7 @@ namespace SqlCollegeTranscripts
                             {
                                 if (i > 0)  // ignore the first yellow dropdown if empty
                                 {
-                                    MessageBox.Show(String.Format("Please select a value for {0}", cmbLabel), "Please select a value.");
+                                    InformationBox.Show(String.Format("Please select a value for {0}", cmbLabel), "Please select a value.", InformationBoxIcon.Information);
                                     return;
                                 }
                             }
@@ -2280,7 +2368,7 @@ namespace SqlCollegeTranscripts
                             {
                                 if (i > 0)  // ignore the first yellow dropdown if empty
                                 {
-                                    MessageBox.Show(String.Format("Please select a value for {0}", cmbLabel), "Please select a value.");
+                                    InformationBox.Show(String.Format("Please select a value for {0}", cmbLabel), "Please select a value.", InformationBoxIcon.Information);
                                     return;
                                 }
                             }
@@ -2306,10 +2394,12 @@ namespace SqlCollegeTranscripts
                 {
                     string strSQL = currentSql.returnFixDatabaseSql(dkWhere);  // Only display keys enabled so filtered
                     dataHelper.extraDT = new DataTable();
-                    MsSql.FillDataTable(dataHelper.extraDT, strSQL);
+                    string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, strSQL);
+                    if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in btnDeleteAddMerge_Click (Add)", InformationBoxIcon.Error); }
+
                     if (dataHelper.extraDT.Rows.Count > 0)
                     {
-                        MessageBox.Show(String.Format("You already have this object in your database!"), "Display key value array must be unique.");
+                        InformationBox.Show(String.Format("You already have this object in your database!"), "Display key value array must be unique.", InformationBoxIcon.Error);
                         return;
                     }
                 }
@@ -2323,10 +2413,11 @@ namespace SqlCollegeTranscripts
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "DATABASE ERROR");
+                    InformationBox.Show(ex.Message, "DATABASE ERROR", InformationBoxIcon.Error);
                 }
             }
         }
+
 
         private void rbView_CheckedChanged(object sender, EventArgs e)
         {
@@ -2495,6 +2586,7 @@ namespace SqlCollegeTranscripts
         #region Other events
         private void DataGridViewForm_Resize(object sender, EventArgs e)
         {
+            dataGridView1.Width = this.Width;
             SetTableLayoutPanelHeight();
         }
 
@@ -2565,7 +2657,6 @@ namespace SqlCollegeTranscripts
                 }
                 senderComboBox.DropDownWidth = width;
             }
-
         }
 
 
@@ -2575,6 +2666,19 @@ namespace SqlCollegeTranscripts
         //----------------------------------------------------------------------------------------------------------------------
 
         #region Other functions and methods
+
+        private int getDGVcolumn(field fld)
+        {
+            for (int i = 0; i < dataGridView1.Columns.Count; i++)
+            {
+                if (fld.isSameBaseFieldAs(currentSql.myFields[i]))
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
 
         private void callSqlWheres()
         {
@@ -2639,8 +2743,7 @@ namespace SqlCollegeTranscripts
                             else
                             {
                                 string erroMsg = String.Format(dataHelper.errMsg, dataHelper.errMsgParameter1, dataHelper.errMsgParameter2);
-                                msgColor(Color.Red);
-                                msgText(erroMsg);
+                                msgTextError(erroMsg);
                             }
                         }
                     }
@@ -2668,16 +2771,12 @@ namespace SqlCollegeTranscripts
                             else
                             {
                                 string erroMsg = String.Format(dataHelper.errMsg, dataHelper.errMsgParameter1, dataHelper.errMsgParameter2);
-                                msgColor(Color.Red);
-                                msgText(erroMsg);
+                                msgTextError(erroMsg);
                             }
                         }
                     }
                 }
             }
-
-
-
         }
 
         private void callSqlWheresForCombo(field PkField)  // PK used to get inner joins 
@@ -2724,8 +2823,7 @@ namespace SqlCollegeTranscripts
                                 else
                                 {
                                     string erroMsg = String.Format(dataHelper.errMsg, dataHelper.errMsgParameter1, dataHelper.errMsgParameter2);
-                                    msgColor(Color.Red);
-                                    msgText(erroMsg);
+                                    msgTextError(erroMsg);
                                 }
                             }
                         }
@@ -2750,32 +2848,9 @@ namespace SqlCollegeTranscripts
             // combo.returnComboSql works very differently for Primary keys and non-Primary keys
             string strSql = currentSql.returnComboSql(fl, cmbValueType);
             dataHelper.extraDT = new DataTable();
-            MsSql.FillDataTable(dataHelper.extraDT, strSql);
-        }
+            string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, strSql);
+            if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in FillExtarDTFOrUseInCombo", InformationBoxIcon.Error); }
 
-        private void DeleteOneDataRowFromCurrentDT(DataRow dr)
-        {
-            if (dr == null)
-            {
-                msgColor(Color.Red);
-                msgText("Can't find underlying data row in data table");
-                return;
-            }
-            try
-            {
-                dr.Delete();  // Delete datarow from grid
-                // Only update this one row
-                DataRow[] drArray = new DataRow[1];
-                drArray[0] = dr;
-                MsSql.currentDA.Update(drArray);
-            }
-            catch (Exception ex)
-            {
-                msgColor(Color.Red);
-                msgText(ex.Message);
-                Console.Beep();
-
-            }
         }
 
         private void SetSelectedCellsColor()
@@ -2801,12 +2876,6 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        private void msgColor(Color color)
-        {
-            txtMessages.ForeColor = color;
-            toolStripMsg.ForeColor = color;
-        }
-
         private void msgText(string text)
         {
             string msg = MultiLingual.tr(text, this);
@@ -2814,18 +2883,22 @@ namespace SqlCollegeTranscripts
             toolStripMsg.Text = msg;
         }
 
+        private void msgTextError(string text)
+        {
+            txtMessages.ForeColor = Color.Red;
+            toolStripMsg.ForeColor = Color.Red;
+            msgText(text);
+            txtMessages.ForeColor = Color.Navy;
+            toolStripMsg.ForeColor = Color.Navy;
+
+
+        }
+
         private void msgTextAdd(string text)
         {
             string msg = MultiLingual.tr(text, this);
             txtMessages.Text += msg;
             toolStripMsg.Text += msg;
-        }
-
-        private bool InAnEditingMode()
-        {
-            if (programMode == ProgramMode.edit || programMode == ProgramMode.add)
-            { return true; }
-            return false;
         }
 
         #endregion
@@ -2888,6 +2961,51 @@ namespace SqlCollegeTranscripts
 
         #endregion
 
+        private void mnuTranscriptPrint_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void mnuTranscriptCheckGradRequirements_Click(object sender, EventArgs e)
+        {
+            if (currentSql == null) { return; }
+            if (currentSql.myTable == TaColNames.transcriptTable)
+            {
+                if (dataGridView1.SelectedRows.Count == 1)
+                {
+                    //Get studentDegreeID column
+                    field fld = dataHelper.getForeignKeyFromRefTableName(currentSql.myTable, TaColNames.studentDegreeTable);
+                    int colNum = getDGVcolumn(fld);
+                    int studentDegreeID = (Int32)dataGridView1.SelectedRows[0].Cells[colNum].Value;
+                    Transcript tScript = new Transcript(studentDegreeID);
+                    DataRow dr = tScript.studentDegreesDataRow;
+                    if (dr == null)
+                    {
+                        InformationBox.Show("Did not find student information.", "Missing student ?", InformationBoxIcon.Question);
+                        return;
+                    }
+
+                    // Fill other two tScript dataTables - not necessarily the same records as in our table
+                    tScript.fillTranscriptTable();
+                    msgText("Transcript rows: " + tScript.transcriptDT.Rows.Count.ToString());
+
+                    //Fill Student Grad requirements table
+                    tScript.fillGradRequirementsDT();
+
+                }
+
+            }
+        }
+
+        private void toolStripColumnWidth_Click(object sender, EventArgs e)
+        {
+            toolStripButtonColumnWidth.Enabled = false;
+            formOptions.narrowColumns = !formOptions.narrowColumns;
+            if (formOptions.narrowColumns) { toolStripButtonColumnWidth.Text = "Wide"; }
+            else { toolStripButtonColumnWidth.Text = "Narrow"; }
+            SetColumnWidths();
+            toolStripButtonColumnWidth.Enabled = true;
+        }
     }
 }
 

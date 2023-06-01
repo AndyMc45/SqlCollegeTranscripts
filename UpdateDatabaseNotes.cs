@@ -22,7 +22,7 @@ First, make the following changes using SSMS  (sql files found in Documents > SQ
     a.  Drop "non-student" table
     b.  Add All Requirement tables - You can generate this code in SQL Server Management Studio
     c.  Add new Departments table - Add values for short names:  NT, OT, PT, TH, CH, BC, --
-    d.  Drop Primary keys that have chinese names and then readd (or just change the name)
+    d.  Drop Primary keys that have chinese names and then re-add (or just change the name)
    'Backup database at every drop or change content step'
 
 Next Create all ForeignKeys and  Display Keys - important to do to prevent deleting things you should not delete
@@ -93,6 +93,7 @@ Other things to do
 	        Requirements
 
     d. Add New RequirementID column to Grad_Requirement, and make it "match" the depart_OldID requirement
+
         UPDATE [dbo].[GradRequirements]  
         SET GradRequirements.requirementID = 
         (
@@ -101,6 +102,8 @@ Other things to do
             Where GradRequirements.departmentID = Departs_Old.depart_oldID
 	    ) 
     
+        (Transfer credit table should be done here with similar logic for departments - see below step p.)
+
     e.  Add degreeLevelID as FK to COURSETERMS, DEGREES)  (Set these = old 'graduateCourse' 'graduateDegree'.) 
 
         UPDATE [dbo].[CourseTerms]
@@ -251,13 +254,77 @@ Other things to do
 
 
 
+    N.  Add Handbooks table.  Insert rows with
+        INSERT INTO [dbo].[Handbooks]
+           ([handbook])
+        Select  DISTINCT
+		        GradRequirements.yearbook
+        FROM	GradRequirements
+
+        Update GradRequirements and studentDegrees with handbookID column using
+
+        UPDATE [dbo].[GradRequirements]
+        SET  [handbookID] = 
+        (Select Handbooks.handbookID From Handbooks Where HandBooks.handbook = GradRequirements.yearbook)
+   
+        StudentDegrees yearbook has various errors, so before updating we must
+        1.  Add "Unknown" as a value in new Handbooks table (probably ID 8)
+            Add "1997" as a value in new Handbooks table
+
+        2.  Use sqlEditor to change all values with leading spaces in "yearbook" - first change to 1000 then back to original value
+
+        To find other problem rows use
+        select yearbook from studentDegrees WHERE NOT EXISTS ( Select handbook FROM Handbooks Where handbook = yearbook)
+
+        UPDATE StudentDegrees
+        SET yearBook = 'Unknown' Where yearbook is null
+
+        UPDATE StudentDegrees
+        SET yearBook = 'Unknown' Where yearbook = '80'
+
+        UPDATE StudentDegrees
+        SET yearBook = '2008' Where yearbook = '2009'
+
+        UPDATE StudentDegrees
+        SET yearBook = '2008' Where yearbook = '2009'
+
+        UPDATE StudentDegrees
+        SET yearbook = '2012' Where yearbook = '2011' OR yearbook = '2013'
+
+        Once there are no problem rows, run
+        UPDATE [dbo].[StudentDegrees]
+        SET  [handbookID] = 
+        (Select Handbooks.handbookID From Handbooks Where HandBooks.handbook = StudentDegrees.yearbook)
+
+    o.  Add "deliveryMethodID" to degrees - for each degree, update by hand in SqlEditor
+        Add online degrees to degree table - Ask school to switch studentdegree to these for all online students 
+
+    p.  Transfer credits
+        1.  Delete "FulfillsGradRequirements from Grades table
+        2.  Transfer table: 
+            a. Add requirementID.  Run (this grabs the first because we have already added 2 - 1 for Master and 1 for BA
+
+                UPDATE [dbo].[TransferCredits]
+                SET 
+                  [requirementID] = 
+		            (
+			            Select Top 1 Requirements.requirementID From Requirements
+			            inner join Departs_Old on Requirements.depart_OldID = Departs_Old.depart_oldID
+			            Where TransferCredits.requirementID = Departs_Old.depart_oldID
+		            ) 
+
+                GO
+
+
+               Correct FK errors in SqlEditor - and make it a foreign key
+            b. Add deliveryMethod - set default to "1", and make a foreign key
+            c. FullfillsRequirmentNoCredits column - bit (obvious meaning) 
+            d. Delete the S grade in grades file after chaning to P it in all transcripts 
 
 
 
 
-
-    z.  Finally, after Courses And GradRequirements have the correct requirementID, delete everything related to OldDeptID 
-        and delete "degreeLevel" from CourseTerms if added.  DO THIS AFTER WEEKS OF TESTING
+    z.  Finally, delete all old, unused columns.       DO THIS AFTER WEEKS OF TESTING
          
          
          

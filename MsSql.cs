@@ -17,8 +17,7 @@ namespace SqlCollegeTranscripts
         internal static SqlConnection noDatabaseConnection { get; set; }
         // Three sql dataAdapters
         internal static SqlDataAdapter currentDA { get; set; }
-        // I update extraDT when merging; O.K. because same event loads and updates it.
-        // Other functions can change extraDT, so don't update in later events
+        // When using extraDT, be careful not to change it before executing any DA command on it.
         internal static SqlDataAdapter extraDA { get; set; } 
         // Used for all datatables that don't have own DataAdaptor - see "GetDataAdaptor" below
         internal static SqlDataAdapter readOnlyDA { get; set; }  // No update of table and so no need to keep adaptar, etc.
@@ -44,22 +43,31 @@ namespace SqlCollegeTranscripts
         }
 
         // Set update command - only one set field and the where is for PK=@PK - i.e. only one row
-        internal static void SetUpdateCommand(field fieldToSet, DataTable dataTable)
-        { 
-            string msg = string.Empty;
-            // Get data adapter
-            SqlDataAdapter da = GetDataAdaptor(dataTable);
-            string tableName = fieldToSet.table;
-            string fieldName = fieldToSet.fieldName;
-            SqlDbType sqlDbType = GetSqlDbType(fieldToSet.dbType);
-            int size = fieldToSet.size;
-            string PK = dataHelper.getTablePrimaryKeyField(tableName).fieldName;
-            string sqlUpdate =  String.Format("UPDATE {0} SET {1} = {2} WHERE {3} = {4}", 
-                    tableName, fieldName, "@" + fieldName, PK, "@" + PK);
-            SqlCommand sqlCmd = new SqlCommand(sqlUpdate, MsSql.cn);
-            sqlCmd.Parameters.Add("@" + fieldName, sqlDbType, size, fieldName);
-            sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, size, PK);
-            da.UpdateCommand = sqlCmd;
+        internal static void SetUpdateCommand(List<field> fieldsToSet, DataTable dataTable)
+        {
+            if (fieldsToSet.Count > 0)  // Should always be true
+            { 
+                // Get data adapter
+                SqlDataAdapter da = GetDataAdaptor(dataTable);
+                SqlCommand sqlCmd = new SqlCommand();
+                // Get primary key field and add it as parameter
+                field pkFld = dataHelper.getTablePrimaryKeyField(fieldsToSet[0].table);
+                string PK = pkFld.fieldName;
+                sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, 4, PK);
+                // Get update query String
+                List<string> setList = new List<string>();
+                foreach (field fieldToSet in fieldsToSet ) 
+                { 
+                    SqlDbType sqlDbType = GetSqlDbType(fieldToSet.dbType);
+                    int size = fieldToSet.size;
+                    setList.Add(String.Format("{0} = @{1}", fieldToSet.fieldName, fieldToSet.fieldName));
+                    sqlCmd.Parameters.Add("@" + fieldToSet.fieldName, sqlDbType, size, fieldToSet.fieldName);
+                }
+                string sqlUpdate = String.Format("UPDATE {0} SET {1} WHERE {2} = {3}", fieldsToSet[0].table, String.Join(",", setList), PK, "@" + PK);
+                sqlCmd.CommandText = sqlUpdate;
+                sqlCmd.Connection = MsSql.cn;
+                da.UpdateCommand = sqlCmd;
+            }
         }
 
         internal static void SetDeleteCommand(string tableName, DataTable dataTable)
@@ -205,15 +213,22 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        internal static void FillDataTable(DataTable dt, string sqlString)
+        internal static string FillDataTable(DataTable dt, string sqlString)
         {
-            // dt.Rows.Clear();
-            // dt.Columns.Clear();
             SqlDataAdapter da = GetDataAdaptor(dt);
             da = new SqlDataAdapter();  //I guess
             SqlCommand sqlCmd = new SqlCommand(sqlString, cn);
             da.SelectCommand = sqlCmd;
-            da.Fill(dt);
+            try
+            {
+                da.Fill(dt);
+                return string.Empty;
+            }
+            catch(Exception ex)
+            {
+                return ex.Message + "  SqlString: " + sqlString; 
+
+            }
         }
 
         internal static void CloseConnectionAndDataAdapters()
@@ -353,6 +368,40 @@ namespace SqlCollegeTranscripts
             return sqlParamter.DbType;
         }
 
+        internal static string DeleteRowsFromDT(DataTable dt, where wh )   // Doing 1 where only, usually the PK & value
+        {
+            try
+            {
+                DataRow[] drs = dt.Select(string.Format("{0} = {1}", wh.fl.fieldName, wh.whereValue));
+                foreach (DataRow dr in drs) 
+                { 
+                    // Delete datarow from dataTable
+                    dr.Delete();
+                }
+                DataRow[] drArray = new DataRow[drs.Count()];
+                for (int i = 0; i < drArray.Length; i++)
+                { 
+                    drArray[i] = drs[i];
+                }
+                // Delete Command (set above) uses PK field of each dr to delete - should be first column of dt
+                // Again, the dt might have inner joins but these are ignored.  Delete acts on the PK of main table.
+                // A pledge - the dataTable must have an adaptor and its deleteCommand must be set
+                MsSql.GetDataAdaptor(dt).Update(drArray);  
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+                Console.Beep();
+            }
+        }
+
+        internal static int ExecuteIntScalar(string sqlString)
+        {
+            SqlCommand cmd = new SqlCommand(sqlString,cn);
+            int value = (int) cmd.ExecuteScalar();
+            return value;
+        }
 
     }
 }
