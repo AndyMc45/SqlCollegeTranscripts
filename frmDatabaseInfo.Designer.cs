@@ -28,141 +28,132 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.toolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.cmdTables = new System.Windows.Forms.ToolStripButton();
-            this.cmdFields = new System.Windows.Forms.ToolStripButton();
-            this.cmdForeignKeys = new System.Windows.Forms.ToolStripButton();
-            this.cmdIndexes = new System.Windows.Forms.ToolStripButton();
-            this.cmdIndexColumns = new System.Windows.Forms.ToolStripButton();
-            this.cmdExtraDT = new System.Windows.Forms.ToolStripButton();
-            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
-            this.btnExit = new System.Windows.Forms.ToolStripButton();
-            this.dgvMain = new System.Windows.Forms.DataGridView();
-            this.toolStrip1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvMain)).BeginInit();
-            this.SuspendLayout();
+            toolStrip1 = new ToolStrip();
+            cmdTables = new ToolStripButton();
+            cmdFields = new ToolStripButton();
+            cmdForeignKeys = new ToolStripButton();
+            cmdIndexes = new ToolStripButton();
+            cmdIndexColumns = new ToolStripButton();
+            cmdComboDT = new ToolStripButton();
+            toolStripLabel1 = new ToolStripLabel();
+            btnExit = new ToolStripButton();
+            dgvMain = new DataGridView();
+            toolStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvMain).BeginInit();
+            SuspendLayout();
             // 
             // toolStrip1
             // 
-            this.toolStrip1.ImageScalingSize = new System.Drawing.Size(24, 24);
-            this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.cmdTables,
-            this.cmdFields,
-            this.cmdForeignKeys,
-            this.cmdIndexes,
-            this.cmdIndexColumns,
-            this.cmdExtraDT,
-            this.toolStripLabel1,
-            this.btnExit});
-            this.toolStrip1.Location = new System.Drawing.Point(0, 0);
-            this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(1182, 27);
-            this.toolStrip1.TabIndex = 0;
-            this.toolStrip1.Text = "toolStrip1";
+            toolStrip1.ImageScalingSize = new Size(24, 24);
+            toolStrip1.Items.AddRange(new ToolStripItem[] { cmdTables, cmdFields, cmdForeignKeys, cmdIndexes, cmdIndexColumns, cmdComboDT, toolStripLabel1, btnExit });
+            toolStrip1.Location = new Point(0, 0);
+            toolStrip1.Name = "toolStrip1";
+            toolStrip1.Size = new Size(1182, 27);
+            toolStrip1.TabIndex = 0;
+            toolStrip1.Text = "toolStrip1";
             // 
             // cmdTables
             // 
-            this.cmdTables.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.cmdTables.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.cmdTables.Name = "cmdTables";
-            this.cmdTables.Size = new System.Drawing.Size(54, 24);
-            this.cmdTables.Text = "Tables";
-            this.cmdTables.Click += new System.EventHandler(this.cmdTables_Click);
+            cmdTables.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            cmdTables.ImageTransparentColor = Color.Magenta;
+            cmdTables.Name = "cmdTables";
+            cmdTables.Size = new Size(54, 24);
+            cmdTables.Text = "Tables";
+            cmdTables.Click += cmdTables_Click;
             // 
             // cmdFields
             // 
-            this.cmdFields.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.cmdFields.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.cmdFields.Name = "cmdFields";
-            this.cmdFields.Size = new System.Drawing.Size(51, 24);
-            this.cmdFields.Text = "Fields";
-            this.cmdFields.Click += new System.EventHandler(this.cmdFields_Click);
+            cmdFields.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            cmdFields.ImageTransparentColor = Color.Magenta;
+            cmdFields.Name = "cmdFields";
+            cmdFields.Size = new Size(51, 24);
+            cmdFields.Text = "Fields";
+            cmdFields.Click += cmdFields_Click;
             // 
             // cmdForeignKeys
             // 
-            this.cmdForeignKeys.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.cmdForeignKeys.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.cmdForeignKeys.Name = "cmdForeignKeys";
-            this.cmdForeignKeys.Size = new System.Drawing.Size(97, 24);
-            this.cmdForeignKeys.Text = "Foreign Keys";
-            this.cmdForeignKeys.Click += new System.EventHandler(this.cmdForeignKeys_Click);
+            cmdForeignKeys.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            cmdForeignKeys.ImageTransparentColor = Color.Magenta;
+            cmdForeignKeys.Name = "cmdForeignKeys";
+            cmdForeignKeys.Size = new Size(97, 24);
+            cmdForeignKeys.Text = "Foreign Keys";
+            cmdForeignKeys.Click += cmdForeignKeys_Click;
             // 
             // cmdIndexes
             // 
-            this.cmdIndexes.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.cmdIndexes.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.cmdIndexes.Name = "cmdIndexes";
-            this.cmdIndexes.Size = new System.Drawing.Size(63, 24);
-            this.cmdIndexes.Text = "Indexes";
-            this.cmdIndexes.Click += new System.EventHandler(this.cmdIndexes_Click);
+            cmdIndexes.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            cmdIndexes.ImageTransparentColor = Color.Magenta;
+            cmdIndexes.Name = "cmdIndexes";
+            cmdIndexes.Size = new Size(63, 24);
+            cmdIndexes.Text = "Indexes";
+            cmdIndexes.Click += cmdIndexes_Click;
             // 
             // cmdIndexColumns
             // 
-            this.cmdIndexColumns.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.cmdIndexColumns.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.cmdIndexColumns.Name = "cmdIndexColumns";
-            this.cmdIndexColumns.RightToLeftAutoMirrorImage = true;
-            this.cmdIndexColumns.Size = new System.Drawing.Size(110, 24);
-            this.cmdIndexColumns.Text = "Index-columns";
-            this.cmdIndexColumns.Click += new System.EventHandler(this.cmdIndexColumns_Click);
+            cmdIndexColumns.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            cmdIndexColumns.ImageTransparentColor = Color.Magenta;
+            cmdIndexColumns.Name = "cmdIndexColumns";
+            cmdIndexColumns.RightToLeftAutoMirrorImage = true;
+            cmdIndexColumns.Size = new Size(110, 24);
+            cmdIndexColumns.Text = "Index-columns";
+            cmdIndexColumns.Click += cmdIndexColumns_Click;
             // 
-            // cmdExtraDT
+            // cmdComboDT
             // 
-            this.cmdExtraDT.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.cmdExtraDT.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.cmdExtraDT.Name = "cmdExtraDT";
-            this.cmdExtraDT.Size = new System.Drawing.Size(64, 24);
-            this.cmdExtraDT.Text = "ExtraDT";
-            this.cmdExtraDT.Click += new System.EventHandler(this.cmdExtraDT_Click);
+            cmdComboDT.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            cmdComboDT.ImageTransparentColor = Color.Magenta;
+            cmdComboDT.Name = "cmdComboDT";
+            cmdComboDT.Size = new Size(80, 24);
+            cmdComboDT.Text = "ComboDT";
+            cmdComboDT.Click += cmdComboDT_Click;
             // 
             // toolStripLabel1
             // 
-            this.toolStripLabel1.Name = "toolStripLabel1";
-            this.toolStripLabel1.Size = new System.Drawing.Size(84, 24);
-            this.toolStripLabel1.Text = "lblMessage";
+            toolStripLabel1.Name = "toolStripLabel1";
+            toolStripLabel1.Size = new Size(84, 24);
+            toolStripLabel1.Text = "lblMessage";
             // 
             // btnExit
             // 
-            this.btnExit.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnExit.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnExit.Name = "btnExit";
-            this.btnExit.Size = new System.Drawing.Size(37, 24);
-            this.btnExit.Text = "Exit";
-            this.btnExit.Click += new System.EventHandler(this.btnExit_Click);
+            btnExit.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btnExit.ImageTransparentColor = Color.Magenta;
+            btnExit.Name = "btnExit";
+            btnExit.Size = new Size(37, 24);
+            btnExit.Text = "Exit";
+            btnExit.Click += btnExit_Click;
             // 
             // dgvMain
             // 
-            this.dgvMain.AllowUserToAddRows = false;
-            this.dgvMain.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
-            this.dgvMain.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
-            this.dgvMain.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvMain.Location = new System.Drawing.Point(0, 27);
-            this.dgvMain.Margin = new System.Windows.Forms.Padding(2);
-            this.dgvMain.Name = "dgvMain";
-            this.dgvMain.RowHeadersWidth = 62;
-            this.dgvMain.RowTemplate.Height = 33;
-            this.dgvMain.Size = new System.Drawing.Size(1182, 333);
-            this.dgvMain.TabIndex = 1;
+            dgvMain.AllowUserToAddRows = false;
+            dgvMain.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            dgvMain.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
+            dgvMain.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvMain.Dock = DockStyle.Fill;
+            dgvMain.Location = new Point(0, 27);
+            dgvMain.Margin = new Padding(2);
+            dgvMain.Name = "dgvMain";
+            dgvMain.RowHeadersWidth = 62;
+            dgvMain.RowTemplate.Height = 33;
+            dgvMain.Size = new Size(1182, 333);
+            dgvMain.TabIndex = 1;
             // 
             // frmDatabaseInfo
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1182, 360);
-            this.Controls.Add(this.dgvMain);
-            this.Controls.Add(this.toolStrip1);
-            this.Margin = new System.Windows.Forms.Padding(2);
-            this.Name = "frmDatabaseInfo";
-            this.Text = "dgvMaintenance";
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.frmDatabaseInfo_FormClosed);
-            this.Load += new System.EventHandler(this.frmDatabaseInfo_Load);
-            this.toolStrip1.ResumeLayout(false);
-            this.toolStrip1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvMain)).EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(1182, 360);
+            Controls.Add(dgvMain);
+            Controls.Add(toolStrip1);
+            Margin = new Padding(2);
+            Name = "frmDatabaseInfo";
+            Text = "dgvMaintenance";
+            FormClosed += frmDatabaseInfo_FormClosed;
+            Load += frmDatabaseInfo_Load;
+            toolStrip1.ResumeLayout(false);
+            toolStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvMain).EndInit();
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -175,7 +166,7 @@
         private ToolStripButton cmdIndexes;
         private ToolStripButton cmdIndexColumns;
         private ToolStripLabel toolStripLabel1;
-        private ToolStripButton cmdExtraDT;
+        private ToolStripButton cmdComboDT;
         private ToolStripButton btnExit;
     }
 }

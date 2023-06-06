@@ -120,9 +120,6 @@ namespace SqlCollegeTranscripts
             }
             loading = false;
 
-            // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            MultiLingual.InsertEnglishIntoDatabase(this);
-
         }
         private void label_Click(Object eventSender, EventArgs eventArgs)
         {

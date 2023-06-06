@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Data;
 using System.Reflection.Metadata.Ecma335;
+using System.Data.SqlClient;
 
 namespace SqlCollegeTranscripts
 {
@@ -89,21 +90,16 @@ namespace SqlCollegeTranscripts
         public DataRow studentDegreesDataRow { get; set; } // No editing 
         public DataTable gradRequirementsDT { get; set; } // No editing
 
-        // Note: Use dataHelper.extraDT for studentGradReq Table because this requires deleting, adding, editing
-
-        SqlFactory transcriptSql = new SqlFactory(TaColNames.transcriptTable, 0, 0, false);
-        SqlFactory studentDegreesSql = new SqlFactory(TaColNames.studentDegreesTable, 0, 0,false);
-
         public string studentName { get; set; }
         public string degreeName { get; set; }
         public int studentDegreeID { get; set; }
         public List<string> errorMsgs { get; set; }
 
+        SqlFactory transcriptSql = new SqlFactory(TaColNames.transcriptTable, 0, 0, true);
+        SqlFactory studentDegreesSql = new SqlFactory(TaColNames.studentDegreesTable, 0, 0, true);
 
         private DataRow getStudentDegreeDataRow() // Also sets studentDegreeID if not set
         {
-            studentDegreesSql.includeAllColumnsInAllTables = true; // Affects the next method call  
-            studentDegreesSql.SqlFactoryFinishConstructor();  // Will run addInnerJoins and include all columns of all tables
             // Add wheres
             if (studentDegreeID != 0)
             {
@@ -148,8 +144,6 @@ namespace SqlCollegeTranscripts
                 field fkStudentDegreeID = 
                     dataHelper.getForeignKeyFromRefTableName(TaColNames.transcriptTable, TaColNames.studentDegreeTable);
                 where wh = new where(fkStudentDegreeID, studentDegreeID.ToString());
-                transcriptSql.includeAllColumnsInAllTables = true; // Affects the next method call  
-                transcriptSql.SqlFactoryFinishConstructor();  // Will run addInnerJoins and include all columns of all tables
                 transcriptSql.myWheres.Add(wh);
                 string sqlString = transcriptSql.returnSql(command.selectAll);
                 transcriptDT = new DataTable();
@@ -164,19 +158,19 @@ namespace SqlCollegeTranscripts
             { 
                 Dictionary<int,List<int>> requirement_fullmap = new Dictionary<int,List<int>>();
 
-                //1. Get old records for this student (put in extraDT) -- added these last time we printed his/her transcript
+                //1. Get old records for this student (put in sgrDaDt) -- added these last time we printed his/her transcript
                 SqlFactory studentGradReqSql = new SqlFactory(TaColNames.studentGradReqTable, 0, 0);
                 field fkSGR_StudentDegreeID = dataHelper.getForeignKeyFromRefTableName(TaColNames.studentGradReqTable, TaColNames.studentDegreeTable);
                 where wh_Sgr_SdID = new where(fkSGR_StudentDegreeID, studentDegreeID.ToString());
                 studentGradReqSql.myWheres.Add(wh_Sgr_SdID);
                 string sqlString = studentGradReqSql.returnSql(command.selectAll);
-                dataHelper.extraDT = new DataTable();
-                string strError = MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                MsSqlWithDaDt sgrDaDt = new MsSqlWithDaDt(sqlString);
+                string strError = sgrDaDt.errorMsg;
                 if (strError != string.Empty) { errorMsgs.Add("ERROR in fillGradRequirementsDT (Transcript.cs): " + strError); }
 
-                //2. Delete these old records from extraDT / and push deletes down to studentGradReqTable
-                MsSql.SetDeleteCommand(studentGradReqSql.myTable, dataHelper.extraDT); // delete rows based on primary key
-                MsSql.DeleteRowsFromDT(dataHelper.extraDT, wh_Sgr_SdID); //wh used to select rows to delete, and then deletes (based on pk of selected rows)
+                //2. Delete these old records from sgrDaDt / and push deletes down to studentGradReqTable
+                MsSql.SetDeleteCommand(studentGradReqSql.myTable, sgrDaDt.da); // delete rows based on primary key
+                MsSql.DeleteRowsFromDT(sgrDaDt.dt, wh_Sgr_SdID); //wh used to select rows to delete, and then deletes (based on pk of selected rows)
 
                 //3. Get GradRequirements records for this student / degree / handbook (Place in gradRequirementDT - not edited)
                 SqlFactory GradRequirementsSql = new SqlFactory(TaColNames.gradRequirementsTable, 0, 0);
@@ -214,18 +208,18 @@ namespace SqlCollegeTranscripts
                     where wh_GradReqID = new where(fk_studgradReq_gradReqID, pkGradReqTable_value);  // Used to insert into studGradReq table
                     whList.Add(wh_GradReqID);
                     // Insert row into studentGradReqTable with only StudentDegreeID and gradReqID foreign key filled
-                    MsSql.SetInsertCommand(TaColNames.studentGradReqTable, whList, dataHelper.extraDT);
-                    MsSql.extraDA.InsertCommand.ExecuteNonQuery();
+                    MsSql.SetInsertCommand(TaColNames.studentGradReqTable, whList, sgrDaDt.da);
+                    sgrDaDt.da.InsertCommand.ExecuteNonQuery();
                 }
-                // 4b. Reload extraDT into memory with new values from studentGradReq table - i.e. the rows inserted in 4a
+                // 4b. Reload sgrDaDt into memory with new values from studentGradReq table - i.e. the rows inserted in 4a
                 studentGradReqSql.myWheres.Clear();
                 studentGradReqSql.myWheres.Add(wh_Sgr_SdID);
                 sqlString = studentGradReqSql.returnSql(command.selectAll);
-                dataHelper.extraDT = new DataTable();
-                strError = MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                sgrDaDt.dt = new DataTable();
+                strError = MsSql.FillDataTable(sgrDaDt.dt, sqlString);
                 if (strError != string.Empty) { errorMsgs.Add("ERROR in fillGradRequirementsDT (Transcript.cs): " + strError); }
 
-                //5a.  Set update command on extraDA - (Note: still using extraDT/extraDA - now with rows that have only stuDegreeID and gradReqID  .)
+                //5a.  Set update command on extraDA - (Note: still using sgrDaDt.dt and da - now with rows that have only stuDegreeID and gradReqID  .)
                 List<field> updateFields = new List<field>();
                 updateFields.Add(TaColNames.SGRT_crReq);
                 updateFields.Add(TaColNames.SGRT_crEarned);
@@ -238,9 +232,9 @@ namespace SqlCollegeTranscripts
                 updateFields.Add(TaColNames.SGRT_QP_total);
                 updateFields.Add(TaColNames.SGRT_QP_credits);
                 updateFields.Add(TaColNames.SGRT_QP_average);
-                MsSql.SetUpdateCommand(updateFields, dataHelper.extraDT);
+                MsSql.SetUpdateCommand(updateFields, sgrDaDt.dt);
 
-                //5c. Fill rows of extraDT (studentGradReqTable for this student) from the rows in transcriptDT
+                //5c. Fill rows of sgrDaDt.dt (studentGradReqTable for this student) from the rows in transcriptDT
                 field pkTranscripts = dataHelper.getTablePrimaryKeyField(TaColNames.transcriptTable);
                 foreach (DataRow transDR in transcriptDT.Rows)
                 {
@@ -275,7 +269,7 @@ namespace SqlCollegeTranscripts
 
                     // 3. Insert this information in dataHelper.extraDT, and then push down to studentGradRequirments (the table in extraDT)
                     //    Loop through stuGradReq table and add this transcript row if it meets this requirement 
-                    foreach (DataRow stuGradReqDR in dataHelper.extraDT.Rows)
+                    foreach (DataRow stuGradReqDR in sgrDaDt.dt.Rows)
                     {
                         // fk_studgradReq_gradReqID defined above when inserting values into sgrt (Just getting FK field name in sgrt - probabaly 'requirementID')
                         int sgrt_reqID = studentGradReqSql.getIntValueFromDataRowBasefield(stuGradReqDR, fk_studgradReq_gradReqID);
@@ -299,7 +293,7 @@ namespace SqlCollegeTranscripts
             }
         }
 
-        // Get requirements fulfilled by this requirement
+        // Get list of requirements fulfilled by this requirement
         private void getlistOfRequirementsFulfilledBy(int reqID, ref List<int> returnList)
         { 
             if(!returnList.Contains(reqID)) { 

@@ -22,8 +22,6 @@ namespace SqlCollegeTranscripts
             {
                 if (dataHelper.fieldsDT != null) { dgvMain.DataSource = dataHelper.fieldsDT; }
             }
-            // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            MultiLingual.InsertEnglishIntoDatabase(this);
         }
 
         private void cmdTables_Click(object sender, EventArgs e)
@@ -51,9 +49,9 @@ namespace SqlCollegeTranscripts
             if (dataHelper.indexColumnsDT != null) { dgvMain.DataSource = dataHelper.indexColumnsDT; }
         }
 
-        private void cmdExtraDT_Click(object sender, EventArgs e)
+        private void cmdComboDT_Click(object sender, EventArgs e)
         {
-            if (dataHelper.extraDT != null) { dgvMain.DataSource = dataHelper.extraDT; }
+            if (dataHelper.comboDT != null) { dgvMain.DataSource = dataHelper.comboDT; }
         }
 
         private void frmDatabaseInfo_FormClosed(object sender, FormClosedEventArgs e)

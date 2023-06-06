@@ -6,6 +6,18 @@ using System.Text;
 namespace SqlCollegeTranscripts
 
 {
+    internal class MsSqlWithDaDt
+    {
+        internal MsSqlWithDaDt(string sqlString)
+        { 
+            errorMsg = MsSql.FillDataTable(da,dt,sqlString);
+        }
+        internal SqlDataAdapter da = new SqlDataAdapter();
+        internal DataTable dt = new DataTable();
+        internal string errorMsg = string.Empty;
+    }
+
+
     internal static class MsSql
     {
         // Properties
@@ -18,7 +30,7 @@ namespace SqlCollegeTranscripts
         // Three sql dataAdapters
         internal static SqlDataAdapter currentDA { get; set; }
         // When using extraDT, be careful not to change it before executing any DA command on it.
-        internal static SqlDataAdapter extraDA { get; set; } 
+        internal static SqlDataAdapter comboDA { get; set; } 
         // Used for all datatables that don't have own DataAdaptor - see "GetDataAdaptor" below
         internal static SqlDataAdapter readOnlyDA { get; set; }  // No update of table and so no need to keep adaptar, etc.
 
@@ -30,10 +42,10 @@ namespace SqlCollegeTranscripts
                 if(currentDA == null) { currentDA = new SqlDataAdapter(); }
                 return currentDA;
             }
-            else if(dataTable == dataHelper.extraDT)
+            else if(dataTable == dataHelper.comboDT)
             {
-                if (extraDA == null) { extraDA = new SqlDataAdapter(); }
-                return extraDA;
+                if (comboDA == null) { comboDA = new SqlDataAdapter(); }
+                return comboDA;
             }
             else
             {
@@ -49,33 +61,42 @@ namespace SqlCollegeTranscripts
             { 
                 // Get data adapter
                 SqlDataAdapter da = GetDataAdaptor(dataTable);
-                SqlCommand sqlCmd = new SqlCommand();
-                // Get primary key field and add it as parameter
-                field pkFld = dataHelper.getTablePrimaryKeyField(fieldsToSet[0].table);
-                string PK = pkFld.fieldName;
-                sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, 4, PK);
-                // Get update query String
-                List<string> setList = new List<string>();
-                foreach (field fieldToSet in fieldsToSet ) 
-                { 
-                    SqlDbType sqlDbType = GetSqlDbType(fieldToSet.dbType);
-                    int size = fieldToSet.size;
-                    setList.Add(String.Format("{0} = @{1}", fieldToSet.fieldName, fieldToSet.fieldName));
-                    sqlCmd.Parameters.Add("@" + fieldToSet.fieldName, sqlDbType, size, fieldToSet.fieldName);
-                }
-                string sqlUpdate = String.Format("UPDATE {0} SET {1} WHERE {2} = {3}", fieldsToSet[0].table, String.Join(",", setList), PK, "@" + PK);
-                sqlCmd.CommandText = sqlUpdate;
-                sqlCmd.Connection = MsSql.cn;
-                da.UpdateCommand = sqlCmd;
+                SetUpdateCommand(fieldsToSet, da);
             }
         }
+        internal static void SetUpdateCommand(List<field> fieldsToSet, SqlDataAdapter da)
+        {
+            SqlCommand sqlCmd = new SqlCommand();
+            // Get primary key field and add it as parameter
+            field pkFld = dataHelper.getTablePrimaryKeyField(fieldsToSet[0].table);
+            string PK = pkFld.fieldName;
+            sqlCmd.Parameters.Add("@" + PK, SqlDbType.Int, 4, PK);
+            // Get update query String
+            List<string> setList = new List<string>();
+            foreach (field fieldToSet in fieldsToSet)
+            {
+                SqlDbType sqlDbType = GetSqlDbType(fieldToSet.dbType);
+                int size = fieldToSet.size;
+                setList.Add(String.Format("{0} = @{1}", fieldToSet.fieldName, fieldToSet.fieldName));
+                sqlCmd.Parameters.Add("@" + fieldToSet.fieldName, sqlDbType, size, fieldToSet.fieldName);
+            }
+            string sqlUpdate = String.Format("UPDATE {0} SET {1} WHERE {2} = {3}", fieldsToSet[0].table, String.Join(",", setList), PK, "@" + PK);
+            sqlCmd.CommandText = sqlUpdate;
+            sqlCmd.Connection = MsSql.cn;
+            da.UpdateCommand = sqlCmd;
+        }
 
+        // Set delete command - one parameter: the primary key of the row to delete 
         internal static void SetDeleteCommand(string tableName, DataTable dataTable)
         {
             // Do this once in the program
             string msg = string.Empty;
             // Get data adapter
             SqlDataAdapter da = GetDataAdaptor(dataTable);
+            SetDeleteCommand(tableName, da);
+        }
+        internal static void SetDeleteCommand(string tableName, SqlDataAdapter da)
+        {
             string PK = dataHelper.getTablePrimaryKeyField(tableName).fieldName;
             string sqlUpdate = String.Format("DELETE FROM {0} WHERE {1} = {2}", tableName, PK, "@" + PK);
             SqlCommand sqlCmd = new SqlCommand(sqlUpdate, MsSql.cn);
@@ -86,28 +107,30 @@ namespace SqlCollegeTranscripts
         // Set insert command - one parameter for each enabled combo field
         internal static void SetInsertCommand(string tableName, List<where> whereList, DataTable dataTable)
         {
-            if(whereList.Count == 0)
+            SqlDataAdapter da = GetDataAdaptor(dataTable);
+            SetInsertCommand(tableName, whereList, da);
+        }
+        internal static void SetInsertCommand(string tableName, List<where> whereList, SqlDataAdapter da)
+        {
+
+            if (whereList.Count == 0)
             {
-                SqlDataAdapter da = GetDataAdaptor(dataTable);
                 string sqlString = String.Format("INSERT INTO {0} DEFAULT VALUES", tableName);
                 SqlCommand sqlCmd = new SqlCommand(sqlString, MsSql.cn);
                 da.InsertCommand = sqlCmd;
             }
             else
-            { 
-                // Get data adapter
-                SqlDataAdapter da = GetDataAdaptor(dataTable);
-
+            {
                 // Get the insert command and attach to adapter
                 StringBuilder sb = new StringBuilder();
                 sb.Append("INSERT INTO ");
                 sb.Append(tableName + " (");
-                List<string> strFieldList = new List<string>(); 
-                foreach(where wh in whereList) 
+                List<string> strFieldList = new List<string>();
+                foreach (where wh in whereList)
                 {
                     strFieldList.Add(wh.fl.fieldName);
                 }
-                string strFieldNames = String.Join(", ",strFieldList);
+                string strFieldNames = String.Join(", ", strFieldList);
                 sb.Append(strFieldNames);
                 sb.Append(") VALUES (");
                 string strParamFieldNames = "@" + String.Join(", @", strFieldList);
@@ -217,6 +240,10 @@ namespace SqlCollegeTranscripts
         {
             SqlDataAdapter da = GetDataAdaptor(dt);
             da = new SqlDataAdapter();  //I guess
+            return FillDataTable(da, dt, sqlString);
+        }
+        internal static string FillDataTable(SqlDataAdapter da, DataTable dt, string sqlString)
+        {
             SqlCommand sqlCmd = new SqlCommand(sqlString, cn);
             da.SelectCommand = sqlCmd;
             try
@@ -224,17 +251,19 @@ namespace SqlCollegeTranscripts
                 da.Fill(dt);
                 return string.Empty;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                return ex.Message + "  SqlString: " + sqlString; 
+                return ex.Message + "  SqlString: " + sqlString;
 
             }
         }
 
+
+
         internal static void CloseConnectionAndDataAdapters()
         {
             currentDA = null;
-            extraDA = null;
+            comboDA = null;
             readOnlyDA = null;
             if (cn != null)
             {

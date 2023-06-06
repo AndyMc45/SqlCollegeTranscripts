@@ -195,7 +195,7 @@ namespace SqlCollegeTranscripts
         public static DataTable foreignKeysDT { get; set; }
         public static DataTable indexesDT { get; set; }
         public static DataTable indexColumnsDT { get; set; }
-        public static DataTable extraDT { get; set; }
+        public static DataTable comboDT { get; set; }
         public static DataTable editingControlDT { get; set; }
 
         internal static void initializeDataTables()
@@ -206,7 +206,7 @@ namespace SqlCollegeTranscripts
             foreignKeysDT = new DataTable("foreighKeysDT");
             indexesDT = new DataTable("indexesDT");
             indexColumnsDT = new DataTable("indexColumnsDT");
-            extraDT = new DataTable("extraDT");
+            comboDT = new DataTable("comboDT");
             editingControlDT = new DataTable("editingControlDT");
         }
 
@@ -392,13 +392,13 @@ namespace SqlCollegeTranscripts
             SqlFactory sf = new SqlFactory(table, 0, 0);
             sf.myComboWheres.Add(newWhere);
             string strSql = sf.returnComboSql(pkField, comboValueType.PK_myTable);
-            dataHelper.extraDT = new DataTable();
-            string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, strSql);
+            MsSqlWithDaDt dadt = new MsSqlWithDaDt(strSql);
+            string errorMsg = dadt.errorMsg;
             string displayMember = "Missing DK";  // Default - modified below
-            if (extraDT.Rows.Count > 0)
+            if (dadt.dt.Rows.Count > 0)
             {
-                int colIndex = extraDT.Columns["DisplayMember"].Ordinal;
-                displayMember = extraDT.Rows[0][colIndex].ToString();
+                int colIndex = dadt.dt.Columns["DisplayMember"].Ordinal;
+                displayMember = dadt.dt.Rows[0][colIndex].ToString();
             }
             displayMember = table + ": " + displayMember;
             newWhere.DisplayMember = displayMember;

@@ -48,21 +48,25 @@ namespace SqlCollegeTranscripts
         #endregion
 
         //Constructors
-        internal SqlFactory(string table, int page, int pageSize, bool includeInnerJoin)
+        internal SqlFactory(string table, int page, int pageSize, bool includeAllColumnsInAllTables)
         {
-                includeAllColumnsInAllTables = false;   // Very slow in datagridview, if we make this true for transcripts - 89 columns; but database call fast
-                myTable = table;
-                myPage = page;
-                myPageSize = pageSize;
+            this.includeAllColumnsInAllTables = includeAllColumnsInAllTables;   // If true, very slow in datagridview, if we make this true for transcripts - 89 columns; but database call fast
+            myTable = table;
+            myPage = page;
+            myPageSize = pageSize;
 
-            // This sets currentSql table and field strings - and these remain the same for this table.
-            // This also sets DisplayFieldDicitionary each foreign table key in main table
-            if (includeInnerJoin)
-            {
-                SqlFactoryFinishConstructor();
-            }
+            SqlFactoryFinishConstructor();
         }
-        internal SqlFactory(string table, int page, int pageSize):this(table,page,pageSize,true){  }
+        internal SqlFactory(string table, int page, int pageSize)
+        {
+            this.includeAllColumnsInAllTables = false;   // Normal case
+            myTable = table;
+            myPage = page;
+            myPageSize = pageSize;
+
+            SqlFactoryFinishConstructor();
+
+        }
 
         internal void SqlFactoryFinishConstructor()
         {

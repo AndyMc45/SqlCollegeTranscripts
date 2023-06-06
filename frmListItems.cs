@@ -43,9 +43,6 @@ namespace SqlCollegeTranscripts
             }
 //            this.Text = formCaption; //"List of Databases on the Server";
             listBox1.Items.AddRange(myList.ToArray());
-
-            // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            MultiLingual.InsertEnglishIntoDatabase(this);
         }
 
         // Set width of form

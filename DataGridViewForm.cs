@@ -117,7 +117,6 @@ namespace SqlCollegeTranscripts
             if (msg != string.Empty) { msgText(msg); txtMessages.ForeColor = Color.Red; }
 
             // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            MultiLingual.InsertEnglishIntoDatabase(this);
             programMode = ProgramMode.none;
             SetAllFiltersByMode(); // Will disable filters and call SetTableLayoutPanelHeight();
         }
@@ -139,8 +138,8 @@ namespace SqlCollegeTranscripts
         {
             // Note: these things that never change           
             // Translations
-            lblGridFilter.Text = MultiLingual.tr("Filter Grid:", this);
-            lblComboFilter.Text = MultiLingual.tr("Filter Grid/Combos:", this);
+            lblGridFilter.Text = "Filter Grid: ";
+            lblComboFilter.Text = "Filter Grid/Combos: ";
 
             // Control arrays - can't make array in design mode in .net
             ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
@@ -293,7 +292,7 @@ namespace SqlCollegeTranscripts
                 connectionString csObject = AppData.GetFirstConnectionStringOrNull();
                 if (csObject == null)
                 {
-                    sb.AppendLine(MultiLingual.tr("No previous connection string.", this));
+                    sb.AppendLine("No previous connection string.");
                 }
                 else
                 {
@@ -1220,17 +1219,20 @@ namespace SqlCollegeTranscripts
             string fields = String.Join(",", dkFields);
             string fields2 = fields + ", Count(*)";
             String sql1 = String.Format("Select {0} From {1} Group By {2} Having Count(*) > 1", fields2, currentSql.myTable, fields);
-            dataHelper.extraDT = new DataTable();
-            string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, sql1);
-            if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in mnuToolDuplicateDisplayKeys_Click"); }
-            if (dataHelper.extraDT.Rows.Count == 0)
+
+            MsSqlWithDaDt DaDt = new MsSqlWithDaDt(sql1);
+            if (DaDt.errorMsg != string.Empty)
+            {
+                InformationBox.Show(DaDt.errorMsg, "ERROR in mnuToolDuplicateDisplayKeys_Click");
+            }
+            if (DaDt.dt.Rows.Count == 0)
             {
                 msgTextError("Everything O.K. No duplicates!" + "                " + "Everything O.K. No duplicates!");
                 return;
             }
-            msgText("Count: " + dataHelper.extraDT.Rows.Count.ToString());
+            msgText("Count: " + DaDt.dt.Rows.Count.ToString());
             List<String> andConditions = new List<String>();
-            foreach (DataRow row in dataHelper.extraDT.Rows)
+            foreach (DataRow row in DaDt.dt.Rows)
             {
                 List<String> atomicStatements = new List<String>();
                 foreach (string dkField in dkFields)
@@ -1401,10 +1403,10 @@ namespace SqlCollegeTranscripts
             if (currentSql != null)
             {
                 string sqlString = currentSql.returnSql(command.selectAll);
-                dataHelper.extraDT = new DataTable();
-                string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, sqlString);
+                MsSqlWithDaDt dadt = new MsSqlWithDaDt(sqlString);
+                string errorMsg = dadt.errorMsg;
                 if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in GridContextMenu_FindUsedFK_Click"); }
-                foreach (DataRow dr in dataHelper.extraDT.Rows)
+                foreach (DataRow dr in dadt.dt.Rows)
                 {
                     // Get PK values
                     int drPKValue = Convert.ToInt32(dr.Field<int>(0));
@@ -1616,7 +1618,7 @@ namespace SqlCollegeTranscripts
                     for (int j = 0; j < dataHelper.currentDT.Rows.Count; j++)
                     {
                         FkComboCell fkCell = (FkComboCell)dataGridView1.Rows[j].Cells[index];
-                        fkCell.dataTable = dataHelper.extraDT;
+                        fkCell.dataTable = dataHelper.comboDT;  // This extraDT goes across functions
                     }
                     tableOptions.FkFieldInEditingControl = colField;
                 }
@@ -2015,14 +2017,14 @@ namespace SqlCollegeTranscripts
                 {
                     FillExtraDTForUseInCombo(selectedField, comboValueType.textField_myTable);
                 }
-                DataRow firstRow = dataHelper.extraDT.NewRow();
+                DataRow firstRow = dataHelper.comboDT.NewRow();
                 // The Datasource in GridFieldsCombos must have "DisplayMember" and "ValueMember" columns
                 // Leave these values null, because they might need correct type
-                dataHelper.extraDT.Rows.InsertAt(firstRow, 0); // Even if no rows
+                dataHelper.comboDT.Rows.InsertAt(firstRow, 0); // Even if no rows
                 cmbGridFilterValue[i].DisplayMember = "DisplayMember";
                 cmbGridFilterValue[i].ValueMember = "ValueMember";
                 // Will not rewrite Grid because I set doNotRewriteGrid = true whenever I call this method
-                cmbGridFilterValue[i].DataSource = dataHelper.extraDT;  // Be careful not to use extraDt until finished loading
+                cmbGridFilterValue[i].DataSource = dataHelper.comboDT;  // Be careful not to use extraDt until finished loading
 
                 if (sameFilterField)
                 {
@@ -2172,7 +2174,7 @@ namespace SqlCollegeTranscripts
             field fi = (field)cmb.Tag;  // Non-FK myTable
             List<string> strList = new List<string>();
             FillExtraDTForUseInCombo(fi, comboValueType.textField_refTable);
-            strList = dataHelper.extraDT.AsEnumerable().Select(x => x["DisplayMember"].ToString()).ToList();
+            strList = dataHelper.comboDT.AsEnumerable().Select(x => x["DisplayMember"].ToString()).ToList();
 
             // Insert Dummy element
             strList.Insert(0, String.Empty);
@@ -2202,6 +2204,7 @@ namespace SqlCollegeTranscripts
             txtMessages.Text = string.Empty;
             if (programMode == ProgramMode.merge)
             {
+                // Select two if there are only 2 rows and they are not selected
                 if (dataGridView1.Rows.Count == 2)
                 {
                     if (dataGridView1.SelectedRows.Count != 2)
@@ -2217,94 +2220,7 @@ namespace SqlCollegeTranscripts
                 // Get two PK values
                 int firstPK = Convert.ToInt32(dataGridView1.SelectedRows[0].Cells[0].Value);
                 int secondPK = Convert.ToInt32(dataGridView1.SelectedRows[1].Cells[0].Value);
-
-
-                txtMessages.Text = String.Format(" {0} is the first and {1} is the second", firstPK, secondPK);
-                //  Get rows in the fieldsDT that have myTable as RefTable 
-                DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("RefTable = '{0}'", currentSql.myTable));
-                // Count how many rows the firstPK and secondPK as FK's in other tables
-                int firstPKCount = 0;
-                int secondPKCount = 0;
-                foreach (DataRow dr in drs)    // Only 1 dr with "Courses" main table, and that is the CourseTerm table.
-                {
-                    string FKColumnName = dataHelper.getStringValueFromFieldsDT(dr, "ColumnName");
-                    string TableWithFK = dataHelper.getStringValueFromFieldsDT(dr, "TableName");
-
-                    string strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, firstPK);
-                    firstPKCount = firstPKCount + MsSql.GetRecordCount(strSql);
-                    strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, secondPK);
-                    secondPKCount = secondPKCount + MsSql.GetRecordCount(strSql);
-                    txtMessages.Text = String.Format(" Counts: {0} and {1}", firstPKCount, secondPKCount);
-                }
-                string msg = String.Empty;
-                if (firstPKCount == 0 || secondPKCount == 0)
-                {
-                    int PkToDelete = 0;
-                    if (firstPKCount == 0) { PkToDelete = firstPK; }
-                    else { PkToDelete = secondPK; }
-                    msg = String.Format(
-                        "Deleting row with ID {0} will have no other effect on the Database.  " +
-                        "Do you want us to delete the row with ID {0}?", PkToDelete);
-
-                    InformationBoxResult reply = InformationBox.Show(msg, "Delete one row", InformationBoxButtons.YesNo, InformationBoxIcon.Question);
-                    if (reply == InformationBoxResult.Yes)
-                    {
-                        field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
-                        where wh = new where(PKField, PkToDelete.ToString());
-                        string errorMsg = MsSql.DeleteRowsFromDT(dataHelper.currentDT, wh);
-                        if (errorMsg != string.Empty)
-                        {
-                        }
-                    }
-                }
-                else
-                {
-                    msg = String.Format("Other tables use this table as a foreign key.  To merge these two rows, we will first " +
-                        "replace {0} occurances of {1} with {2} in these tables. " +
-                        "Then we will delete the row {1} from this table.  Do you want to continue?", firstPKCount, firstPK, secondPK);
-                    InformationBoxResult reply = InformationBox.Show(msg, "Merge two rows?", InformationBoxButtons.YesNo);
-                    if (reply == InformationBoxResult.Yes)
-                    {
-                        foreach (DataRow dr in drs)
-                        {
-                            string FKColumnName = dataHelper.getStringValueFromFieldsDT(dr, "ColumnName");
-                            string TableWithFK = dataHelper.getStringValueFromFieldsDT(dr, "TableName");
-                            field fld = new field(TableWithFK, FKColumnName, DbType.Int32, 4);
-                            // 1. Put the rows to be updated into extraDT  (i.e. select rows where FK value in firstPK)
-                            string sqlString = String.Format("Select * from {0} where {1} = '{2}'", TableWithFK, FKColumnName, firstPK);
-                            dataHelper.extraDT = new DataTable();
-                            string errorMsg2 = MsSql.FillDataTable(dataHelper.extraDT, sqlString);
-                            if (errorMsg2 != string.Empty) { InformationBox.Show(errorMsg2, "ERROR in btnDeleteAddMerge (Merge)", InformationBoxIcon.Error); }
-
-                            txtMessages.Text = txtMessages.Text + "; " + dataHelper.extraDT.Rows.Count;
-                            // 2. Update these rows in extraDT - loop through these rows and change the FK column)
-                            foreach (DataRow dr2 in dataHelper.extraDT.Rows)
-                            {
-                                dr2[FKColumnName] = secondPK;
-                                // dr2.AcceptChanges();
-                            }
-                            // 3. Push these changes to the Database.
-                            List<field> fieldsToUpdate = new List<field>();
-                            fieldsToUpdate.Add(fld);
-                            MsSql.SetUpdateCommand(fieldsToUpdate, dataHelper.extraDT);
-                            try
-                            {
-                                MsSql.extraDA.Update(dataHelper.extraDT);
-                            }
-                            catch (Exception ex)
-                            {
-                                string errMsg = String.Format("You must first merge rows in the Descendant table {0}.", TableWithFK) +
-                                        "Database Error Message: " + ex.Message;
-                                InformationBox.Show(errMsg, "Error", InformationBoxIcon.Exclamation);
-                            }
-                        }
-                        // 4.  Delete merged row from currentDT
-                        field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
-                        where wh = new where(PKField, firstPK.ToString());
-                        string errorMsg = MsSql.DeleteRowsFromDT(dataHelper.currentDT, wh);
-                    }
-
-                }
+                merge(currentSql.myTable, dataHelper.currentDT, firstPK, secondPK);
             }
 
             else if (programMode == ProgramMode.delete)
@@ -2393,11 +2309,11 @@ namespace SqlCollegeTranscripts
                 if (dkWhere.Count > 0)
                 {
                     string strSQL = currentSql.returnFixDatabaseSql(dkWhere);  // Only display keys enabled so filtered
-                    dataHelper.extraDT = new DataTable();
-                    string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, strSQL);
+                    MsSqlWithDaDt dadt = new MsSqlWithDaDt(strSQL);
+                    string errorMsg = dadt.errorMsg;
                     if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in btnDeleteAddMerge_Click (Add)", InformationBoxIcon.Error); }
 
-                    if (dataHelper.extraDT.Rows.Count > 0)
+                    if (dadt.dt.Rows.Count > 0)
                     {
                         InformationBox.Show(String.Format("You already have this object in your database!"), "Display key value array must be unique.", InformationBoxIcon.Error);
                         return;
@@ -2414,6 +2330,107 @@ namespace SqlCollegeTranscripts
                 catch (Exception ex)
                 {
                     InformationBox.Show(ex.Message, "DATABASE ERROR", InformationBoxIcon.Error);
+                }
+            }
+        }
+
+        private void merge(string table, DataTable tableDT, int pk1, int pk2)
+        {
+            StringBuilder msgSB = new StringBuilder();
+            MsSql.SetDeleteCommand(table, tableDT); // I will delete from tableDT and then update
+
+            txtMessages.Text = String.Format(" {0} is the first and {1} is the second", pk1, pk2);
+            //  Get rows in the fieldsDT that have table as RefTable - i.e. descendants of table 
+            DataRow[] drs = dataHelper.fieldsDT.Select(String.Format("RefTable = '{0}'", table));
+            // Count how many rows the firstPK and secondPK as FK's in other tables
+            int firstPKCount = 0;
+            int secondPKCount = 0;
+            foreach (DataRow dr in drs)    // Only 1 dr with "Courses" main table, and that is the CourseTerm table.
+            {
+                string FKColumnName = dataHelper.getStringValueFromFieldsDT(dr, "ColumnName");
+                string TableWithFK = dataHelper.getStringValueFromFieldsDT(dr, "TableName");
+
+                string strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, pk1);
+                firstPKCount = firstPKCount + MsSql.GetRecordCount(strSql);
+                strSql = String.Format("SELECT COUNT(1) FROM {0} where {1} = '{2}'", TableWithFK, FKColumnName, pk2);
+                secondPKCount = secondPKCount + MsSql.GetRecordCount(strSql);
+                txtMessages.Text = String.Format(" Counts: {0} and {1}", firstPKCount, secondPKCount);
+            }
+            if (firstPKCount == 0 || secondPKCount == 0)
+            {
+                int PkToDelete = 0;
+                if (firstPKCount == 0) { PkToDelete = pk1; }
+                else { PkToDelete = pk2; }
+                msgSB.AppendLine(String.Format("Deleting row with ID {0} will have no other effect on the Database.  ", PkToDelete));
+                msgSB.AppendLine(String.Format("Do you want us to delete the row with ID {0}?", PkToDelete));
+                InformationBoxResult reply = InformationBox.Show(msgSB.ToString(), "Delete one row", InformationBoxButtons.YesNo, InformationBoxIcon.Question);
+                if (reply == InformationBoxResult.Yes)
+                {
+                    field PKField = dataHelper.getTablePrimaryKeyField(table);
+                    where wh = new where(PKField, PkToDelete.ToString());
+                    string errorMsg = MsSql.DeleteRowsFromDT(tableDT, wh);
+                    if (errorMsg != string.Empty)
+                    {
+
+                    }
+                }
+            }
+            else
+            {
+                msgSB.AppendLine(String.Format("Other tables use {0} as a foreign key.", table));
+                msgSB.AppendLine(String.Format("To merge these two rows, we will first replace {0} occurances of ID {1} with ID {2} in these tables.", firstPKCount, pk1, pk2));
+                msgSB.AppendLine(String.Format("Then we will delete the row {0} from this table.  Do you want to continue?", pk1));
+                InformationBoxResult reply = InformationBox.Show(msgSB.ToString(), "Merge two rows?", InformationBoxButtons.YesNo);
+                if (reply == InformationBoxResult.Yes)
+                {
+                    foreach (DataRow dr in drs)
+                    {
+                        string FKColumnName = dataHelper.getStringValueFromFieldsDT(dr, "ColumnName");
+                        string TableWithFK = dataHelper.getStringValueFromFieldsDT(dr, "TableName");
+                        field fld = new field(TableWithFK, FKColumnName, DbType.Int32, 4);
+                        // 1. Put the rows to be updated into extraDT  (i.e. select rows where FK value in firstPK)
+                        string sqlString = String.Format("Select * from {0} where {1} = '{2}'", TableWithFK, FKColumnName, pk1);
+                        MsSqlWithDaDt dadt = new MsSqlWithDaDt(sqlString);
+                        string errorMsg2 = dadt.errorMsg;
+                        if (errorMsg2 != string.Empty)
+                        {
+                            msgSB.Clear();
+                            msgSB.AppendLine(String.Format("Error filling datatable with table {0}.", TableWithFK));
+                            InformationBox.Show(msgSB.ToString(), "ERROR in btnDeleteAddMerge (Merge)", InformationBoxIcon.Error);
+                        }
+                        txtMessages.Text = txtMessages.Text + "; " + dadt.dt.Rows.Count;
+                        // 2. Update these rows in extraDT - loop through these rows and change the FK column)
+                        foreach (DataRow dr2 in dadt.dt.Rows)
+                        {
+                            // Check for display key violation - and war if there is one
+                            if (dataHelper.isDisplayKey(fld))
+                            {
+                                // Check for a conflict - i.e. if pk2-->pk1 will produce a duplicate.  If so, merge the two.
+
+                            }
+                            dr2[FKColumnName] = pk2;
+                        }
+                        // 3. Push these changes to the Database.
+                        List<field> fieldsToUpdate = new List<field>();
+                        fieldsToUpdate.Add(fld);
+                        MsSql.SetUpdateCommand(fieldsToUpdate, dadt.da);
+                        try
+                        {
+                            dadt.da.Update(dadt.dt);
+                        }
+                        catch (Exception ex)
+                        {
+                            msgSB.Clear();
+                            msgSB.AppendLine(String.Format("We must first merge rows in the Descendant table {0}.", TableWithFK));
+                            msgSB.AppendLine("Database Error Messsage: " + ex.Message);
+                            msgSB.AppendLine("Do you want me to proceed?");
+                            InformationBox.Show(msgSB.ToString(), "Error", InformationBoxIcon.Exclamation);
+                        }
+                    }
+                    // 4.  Delete merged row from currentDT
+                    field PKField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
+                    where wh = new where(PKField, 1.ToString());
+                    string errorMsg = MsSql.DeleteRowsFromDT(dataHelper.currentDT, wh);
                 }
             }
         }
@@ -2439,7 +2456,7 @@ namespace SqlCollegeTranscripts
                 dataGridView1.MultiSelect = false;
                 dataGridView1.EditMode = DataGridViewEditMode.EditProgrammatically;
                 btnDeleteAddMerge.Enabled = true;
-                btnDeleteAddMerge.Text = MultiLingual.tr("Delete row", this);
+                btnDeleteAddMerge.Text = "Delete row";
                 // Add deleteCommand
                 MsSql.SetDeleteCommand(currentSql.myTable, dataHelper.currentDT);
                 SetAllFiltersByMode();
@@ -2470,7 +2487,7 @@ namespace SqlCollegeTranscripts
                 dataGridView1.MultiSelect = false;
                 dataGridView1.EditMode = DataGridViewEditMode.EditProgrammatically;
                 btnDeleteAddMerge.Enabled = true;
-                btnDeleteAddMerge.Text = MultiLingual.tr("Add row", this);
+                btnDeleteAddMerge.Text = "Add row";
                 SetAllFiltersByMode();
             }
         }
@@ -2481,9 +2498,8 @@ namespace SqlCollegeTranscripts
             {
                 programMode = ProgramMode.merge;
                 btnDeleteAddMerge.Enabled = true;
-                btnDeleteAddMerge.Text = MultiLingual.tr("Merge 2 rows", this);
+                btnDeleteAddMerge.Text = "Merge 2 rows";
                 dataGridView1.MultiSelect = true;
-                MsSql.SetDeleteCommand(currentSql.myTable, dataHelper.currentDT);
                 SetAllFiltersByMode();
             }
         }
@@ -2847,8 +2863,8 @@ namespace SqlCollegeTranscripts
             }
             // combo.returnComboSql works very differently for Primary keys and non-Primary keys
             string strSql = currentSql.returnComboSql(fl, cmbValueType);
-            dataHelper.extraDT = new DataTable();
-            string errorMsg = MsSql.FillDataTable(dataHelper.extraDT, strSql);
+            dataHelper.comboDT = new DataTable();
+            string errorMsg = MsSql.FillDataTable(dataHelper.comboDT, strSql);
             if (errorMsg != string.Empty) { InformationBox.Show(errorMsg, "ERROR in FillExtarDTFOrUseInCombo", InformationBoxIcon.Error); }
 
         }
@@ -2878,7 +2894,7 @@ namespace SqlCollegeTranscripts
 
         private void msgText(string text)
         {
-            string msg = MultiLingual.tr(text, this);
+            string msg = text;
             txtMessages.Text = msg;
             toolStripMsg.Text = msg;
         }
@@ -2896,7 +2912,7 @@ namespace SqlCollegeTranscripts
 
         private void msgTextAdd(string text)
         {
-            string msg = MultiLingual.tr(text, this);
+            string msg = text;
             txtMessages.Text += msg;
             toolStripMsg.Text += msg;
         }
@@ -2912,7 +2928,7 @@ namespace SqlCollegeTranscripts
         {
             if (formOptions.debugging)
             {
-                string msg = MultiLingual.tr(text, this);
+                string msg = text;
                 txtMessages.Text += msg;
                 toolStripMsg.Text += msg;
             }

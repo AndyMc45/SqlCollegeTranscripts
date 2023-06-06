@@ -47,10 +47,6 @@ namespace SqlCollegeTranscripts
             }
             // Select the first - this will set the 3 txtboxes
             cmbStrings.SelectedIndex = 0;
-
-            // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
-            MultiLingual.InsertEnglishIntoDatabase(this);
-
         }
 
         private void cmdDatabaseList_Click(Object eventSender, EventArgs eventArgs)
