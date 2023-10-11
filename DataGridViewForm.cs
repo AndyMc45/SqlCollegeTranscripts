@@ -1,15 +1,9 @@
-﻿using Microsoft.VisualBasic;
+﻿using InfoBox;
+using Microsoft.VisualBasic;
 using System.ComponentModel;
 using System.Data;
-using System.Data.SqlTypes;
-using System.Globalization;
 using System.Diagnostics;
-using System.Net.Http.Headers;
 using System.Text;
-using System.Web;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
-using InfoBox;
 
 namespace SqlCollegeTranscripts
 {
@@ -18,20 +12,20 @@ namespace SqlCollegeTranscripts
     // sqlCurrent.returnSql returns the sql string.  This is then bound to the Grid (via an sqlDataAdaptor)
 
     //User actions, and how the program reacts to each as follows
-    //0.  Form Load - Loads user settings and other things which don't depend on the table
+    //0.  Form Load - Loads user settings and other things which don't depend on the Connection
     //1.  Open New connection -- called near end of Form Load and by File-->connection menu
     //    First calls closeConnection (reinitiae everything to empty state; list tables in menu), 
     //    and then open the new connection
     //2.  Open New Table -- calls writeGrid_NewTable
     //    WriteGrid_NewTable - Sets new sqlCurrent - Calls sqlCurrent.SetInnerJoins which sets sql table strings and field strings.
     //    WriteGrid_NewTable also resets the top filters and then sets them up for the table (with no actual filtering)
-    //    WriteGrid_NewTable calls Write New Filters calls write New Orderby calls write Grid
-    //    Write the New Filters sets the where clauses in sqlCurrent
-    //    Write New OrderBy simply adds an order by clause -- this can be changed via click header of grid event.
-    //    Write the Grid - binds dataViewGrid1 and then does some formatting on datagridview.
+    //    WriteGrid_NewTable calls Write New Filters that calls write Grid
+    //    Write the New Filters sets the where clauses in sqlCurrent.  Sets orderBy on first call.
+    //    Write the New Page - binds dataViewGrid1 and then does some formatting on datagridview.
     //3.  Five modes
     //    View -- Base
-    //    Edit  -- User selects 1 column in table to edit - not table PK or DK but may be FK - and FK may have several DK columns. 
+    //    Edit  -- User selects 1 column in table to edit - not table PK or DK but may be FK - and FK may have several DK columns.
+    //             (PK - Primary Key, FK - Foreign key, DK - Display Key.  DK is a column that defines the object - user can't change a DK.)
     //          -- Selecting a column also sets currentDA.UpdateCommand (i.e. currentSql's dataadapter's UpdateCommand)
     //          -- User clicks on an edit column - textbox appears for non-keys, drop-down appears for FK.
     //          -- When user exits the cell, call currentDA.Update()
@@ -41,8 +35,8 @@ namespace SqlCollegeTranscripts
         #region Variables
         private FormOptions? formOptions;
         private ConnectionOptions? connectionOptions;
-        private TableOptions? tableOptions;
-        internal ProgramMode programMode = ProgramMode.none;
+        private TableOptions? tableOptions;  // Many: writingTable, donotWriteTable, tableHasForiegnKeys, FKFieldInEditingControl, etc. 
+        internal ProgramMode programMode = ProgramMode.none;  //none, view, edit, add, delete, merge
         internal SqlFactory? currentSql = null;  //builds the sql string via .myInnerJoins, .myFields, .myWheres, my.OrderBys
         internal BindingList<where>? MainFilterList;  // Use this to fill in past main filters in combo box
 
@@ -72,11 +66,21 @@ namespace SqlCollegeTranscripts
 
         private void DataGridViewForm_Load(object sender, EventArgs e)
         {
+            // Dynamically add menu
+            System.Windows.Forms.ToolStripMenuItem mnuTranscriptDynamic;
+            mnuTranscriptDynamic = new System.Windows.Forms.ToolStripMenuItem();
+            mnuTranscriptDynamic.Name = "mnuTranscriptDynamic";
+            mnuTranscriptDynamic.Text = "Transcript2";
+            mnuTranscriptDynamic.Size = new Size(103, 29);
+            mnuTranscriptDynamic.DropDownItems.AddRange(new ToolStripItem[] { mnuTranscriptCheckGradRequirements, mnuTranscriptPrint, mnuLocations, mnuLine, mnuPrintTermSummary });
+
+            int x = MainMenu1.Items.Add(mnuTranscriptDynamic);
+
             formOptions = AppData.GetFormOptions();  // Sets initial option values
-            formOptions.runTimer = false;
+            formOptions.runTimer = false;  // Used when debugging to check what is slow
 
             // Set things that don't change even if connection changes
-            // 0.  Main filter datasource and 'last' element never changes
+            // 0.  Main filter datasource always a list of wheres and 'last' element always the same (i.e. "No Reasearch object")
             field fi = new field("none", "none", DbType.Int32, 4, fieldType.pseudo);
             where wh = new where(fi, "0");
             wh.DisplayMember = "No Research object";
@@ -104,16 +108,16 @@ namespace SqlCollegeTranscripts
 
             // 3. Menu options from last save
             // 4. Set font size
-            DesignControlsOnFormLoad();
+            DesignControlsOnFormLoad();  // Set font size and other features of various controls
 
             // 5. Load Database List (in files menu)
-            load_mnuDatabaseList();
+            load_mnuDatabaseList();  // Add previously open databases to databases menu dropdown list
 
             // 6. Open Log file
-            // openLogFile(); //errors ignored
+            // openLogFile(); //errors ignored 
 
             // 7. Open last connection 
-            string msg = OpenConnection();
+            string msg = OpenConnection();  // Returns any error msg
             if (msg != string.Empty) { msgText(msg); txtMessages.ForeColor = Color.Red; }
 
             // 8. Build English database - will do nothing if Boolean BuildingUpEnglishDatabase in MultiLingual.cs set to false
@@ -141,14 +145,14 @@ namespace SqlCollegeTranscripts
             lblGridFilter.Text = "Filter Grid: ";
             lblComboFilter.Text = "Filter Grid/Combos: ";
 
-            // Control arrays - can't make array in design mode in .net
+            // Control arrays - can't make array in design mode in .net; so I make them here
             ComboBox[] cmbGridFilterFields = { cmbGridFilterFields_0, cmbGridFilterFields_1, cmbGridFilterFields_2, cmbGridFilterFields_3, cmbGridFilterFields_4, cmbGridFilterFields_5, cmbGridFilterFields_6, cmbGridFilterFields_7, cmbGridFilterFields_8 };
             ComboBox[] cmbGridFilterValue = { cmbGridFilterValue_0, cmbGridFilterValue_1, cmbGridFilterValue_2, cmbGridFilterValue_3, cmbGridFilterValue_4, cmbGridFilterValue_5, cmbGridFilterValue_6, cmbGridFilterValue_7, cmbGridFilterValue_8 };
             Label[] lblCmbFilterFields = { lblCmbFilterField_0, lblCmbFilterField_1, lblCmbFilterField_2, lblCmbFilterField_3, lblCmbFilterField_4, lblCmbFilterField_5 };
             ComboBox[] cmbComboFilterValue = { cmbComboFilterValue_0, cmbComboFilterValue_1, cmbComboFilterValue_2, cmbComboFilterValue_3, cmbComboFilterValue_4, cmbComboFilterValue_5 };
             RadioButton[] radioButtons = { rbView, rbEdit, rbDelete, rbAdd, rbMerge };
 
-            //Get size from registry and define "font"
+            //Get font size from registry and define "font"
             int size = 8;  // default
             try { size = Convert.ToInt32(Interaction.GetSetting("AccessFreeData", "Options", "FontSize", "9")); } catch { }
             System.Drawing.Font font = new System.Drawing.Font("Arial", size, FontStyle.Regular);
@@ -287,7 +291,7 @@ namespace SqlCollegeTranscripts
                 CloseConnection();
 
                 // 2. Get connection string
-                connectionOptions.msSql = true;
+                connectionOptions.msSql = true;  // Other options not yet implemented
 
                 connectionString csObject = AppData.GetFirstConnectionStringOrNull();
                 if (csObject == null)
@@ -310,15 +314,15 @@ namespace SqlCollegeTranscripts
                     }
 
                     //Read only database variable
-                    connectionOptions.readOnly = csObject.readOnly;
+                    connectionOptions.readOnly = csObject.readOnly;  // Not yet implemented
 
                     // 5. Open connection
                     MsSql.openConnection(cs);
 
                     // 6. Initialize datatables
-                    dataHelper.initializeDataTables();
+                    dataHelper.initializeDataTables();  // Program uses 8 different dataTables - this sets 8 variables to these tables
 
-                    // 7. Fill Information Datatables
+                    // 7. Fill Information Datatables  // Files 6 of the above tables with info about the database
                     string NoDK = MsSql.initializeDatabaseInformationTables();
                     if (!string.IsNullOrEmpty(NoDK)) { msgTextAdd(NoDK); }
 
@@ -388,7 +392,7 @@ namespace SqlCollegeTranscripts
             tableOptions.writingTable = true;
             ClearFiltersOnNewTable(); // All events are cancelled via "if(Selected_index != -1) . . ."
             tableOptions.writingTable = false;
-            //1. Create currentSql - same currentSql used until new table is loaded - same myFIelds and myInnerJoins
+            //1. Create currentSql - same currentSql used until new table is loaded - same myFields and myInnerJoins
             currentSql = new SqlFactory(table, 1, formOptions.pageSize);
             // Above may produce error message
             if (!String.IsNullOrEmpty(currentSql.errorMsg))
@@ -403,12 +407,13 @@ namespace SqlCollegeTranscripts
             // 2. Bind 9 cmbGridFilterFields with fields for user to select
             //    Only setting up cmbGridFilterFields - cmbGridFilterValues set on cmbGridFilterField SelectionChanged event
             //    All cmbGridFilterFields values are fields in myTable
-            int comboNumber = 0;
+            int comboNumber = 0;  // Keeps track of which cmbGridFilterField we are loading
             //2a.  Bind cmbGridFilterFields[0] to all "yellow" text fields in my table (non-DK, non-FK, non-PK)
             BindingList<field> filterFields = new BindingList<field>();
             //First Fill filterFields
             foreach (field fl in currentSql.myFields)
             {
+                // A good place to set the "tableHasForeignKeys" tableOptions
                 if (fl.table == currentSql.myTable && dataHelper.isForeignKeyField(fl))
                 { tableOptions.tableHasForeignKeys = true; }
 
@@ -422,7 +427,7 @@ namespace SqlCollegeTranscripts
             field pkField = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
             filterFields.Add(pkField);
 
-            // Then Bind combo to filterField bindingList
+            // Then Bind combo to filterFields bindingList
             if (filterFields.Count > 0)
             {
                 cmbGridFilterFields[comboNumber].BindingContext = new BindingContext();  // Previously Required, but I still use it.
@@ -431,7 +436,7 @@ namespace SqlCollegeTranscripts
                 cmbGridFilterFields[comboNumber].Enabled = true;  // Required below (when binding cmbComboTableList)
                 // Fires change_selectedindex which binds cmbGridFilterValues 
                 // which calls cmbGridFilterValue_textchanged. Which writes grid with new value
-                tableOptions.writingTable = true;
+                tableOptions.writingTable = true;  // Used to cancel events that write the Table
                 cmbGridFilterFields[comboNumber].DataSource = filterFields;
                 tableOptions.writingTable = false;
                 comboNumber++;
@@ -672,15 +677,8 @@ namespace SqlCollegeTranscripts
 
         private void SetColumnWidths()
         {
-            // Starting with autosize when the table is  first load takes too much time 
-            // dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
+            // Starting with autosize when the table is first loaded takes too much time; don't do it. 
 
-            // Sign that it has been done once: The primary key field has a value
-            // field primaryKey = dataHelper.getTablePrimaryKeyField(currentSql.myTable);
-            // if (dataHelper.getIntValueFieldsDT(primaryKey.table, primaryKey.fieldName, "Width") < 100)
-            // {
-            // 1. Fill in the width column of FieldDT using a default or autosize - dont set any widths
-            // dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.AllCellsExceptHeader;
             for (int i = 0; i < dataGridView1.Columns.Count; i++)
             {
                 field fl = currentSql.myFields[i];
@@ -763,9 +761,7 @@ namespace SqlCollegeTranscripts
                     }
                 }
             }
-            // 2. Switch off autosize
-            // dataGridView1.AutoSizeColumnsMode = (DataGridViewAutoSizeColumnsMode)DataGridViewAutoSizeColumnMode.None;
-            // }
+
             // 3. Resize all columns by FieldDT - Must be done on every reload
             for (int i = 0; i < dataGridView1.Columns.Count; i++)
             {

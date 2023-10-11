@@ -12,7 +12,8 @@ namespace SqlCollegeTranscripts
             InitializeComponent();
         }
 
-        public enum job { 
+        public enum job
+        {
             DeleteConnections,
             SelectString
         }
@@ -33,15 +34,15 @@ namespace SqlCollegeTranscripts
         private void frmListItems_Load(object sender, EventArgs e)
         {
             // listing strings to select - maybe databases or tables or anything
-            if (myJob == job.SelectString)  
+            if (myJob == job.SelectString)
             {
                 this.cmdExit.Text = "OK";
             }
-            else if(myJob== job.DeleteConnections)   // deleting databases fromlist
+            else if (myJob == job.DeleteConnections)   // deleting databases fromlist
             {
                 this.cmdExit.Text = "Delete";
             }
-//            this.Text = formCaption; //"List of Databases on the Server";
+            //            this.Text = formCaption; //"List of Databases on the Server";
             listBox1.Items.AddRange(myList.ToArray());
         }
 
@@ -64,8 +65,8 @@ namespace SqlCollegeTranscripts
         //    }
         //}
         //senderComboBox.DropDownWidth = width;
-        
- 
+
+
         private void cmdExit_Click(Object eventSender, EventArgs eventArgs)
         {   // Return selected item 
             returnString = listBox1.GetItemText(listBox1.SelectedItem);
@@ -75,10 +76,16 @@ namespace SqlCollegeTranscripts
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listBox1.SelectedIndex > -1)
-            { 
+            {
                 returnIndex = listBox1.SelectedIndex;
             }
         }
 
+        private void frmListItems_Resize(object sender, EventArgs e)
+        {
+            if (this.Width > 150) { listBox1.Width = this.Width - 100; } else { listBox1.Width = this.Width - listBox1.Left; }
+            if (this.Height > 150) { listBox1.Height = this.Height - 150; } else { listBox1.Height = this.Height - 50; }
+        }
     }
 }
+
