@@ -326,31 +326,31 @@
             // mnuAddressBookLabels
             // 
             mnuAddressBookLabels.Name = "mnuAddressBookLabels";
-            mnuAddressBookLabels.Size = new Size(270, 34);
+            mnuAddressBookLabels.Size = new Size(264, 34);
             mnuAddressBookLabels.Text = "Print mailing labels";
             // 
             // mnuAddressBookPhoneNumbers
             // 
             mnuAddressBookPhoneNumbers.Name = "mnuAddressBookPhoneNumbers";
-            mnuAddressBookPhoneNumbers.Size = new Size(270, 34);
+            mnuAddressBookPhoneNumbers.Size = new Size(264, 34);
             mnuAddressBookPhoneNumbers.Text = "Print phone book";
             // 
             // mnuAddressBookAddresses
             // 
             mnuAddressBookAddresses.Name = "mnuAddressBookAddresses";
-            mnuAddressBookAddresses.Size = new Size(270, 34);
+            mnuAddressBookAddresses.Size = new Size(264, 34);
             mnuAddressBookAddresses.Text = "Print address book";
             // 
             // mnuAddressBookEmails
             // 
             mnuAddressBookEmails.Name = "mnuAddressBookEmails";
-            mnuAddressBookEmails.Size = new Size(270, 34);
+            mnuAddressBookEmails.Size = new Size(264, 34);
             mnuAddressBookEmails.Text = "Print email book";
             // 
             // mnuAddressBookGetEmails
             // 
             mnuAddressBookGetEmails.Name = "mnuAddressBookGetEmails";
-            mnuAddressBookGetEmails.Size = new Size(270, 34);
+            mnuAddressBookGetEmails.Size = new Size(264, 34);
             mnuAddressBookGetEmails.Text = "Get email list";
             // 
             // mnuTools
